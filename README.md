@@ -27,6 +27,7 @@ Architecture source of truth: `docs/plan_qore_zo_architecture.md`
 - Zo HTTP `/zo/ask` governance proxy: `implemented`
 - Zo SSH fallback wrapper and watcher pipeline: `implemented`
 - Zo direct model-policy enforcement (required model + allowlist controls): `implemented`
+- Zo model recommendation modes (`manual`, `suggest`, `auto`): `implemented`
 - Prompt transparency events for direct Zo dispatch (build and send stages): `implemented`
 - Actor proof signing, nonce replay protection, and key rotation tooling: `implemented`
 - Release gate and Zo assumption freshness checks: `implemented`
@@ -131,6 +132,20 @@ node dist/zo/fallback/start-watcher.js
 Your existing intent package output area is sufficient if it renders prompt-transparency payloads.
 Use `runtime/api/PromptTransparencyView.ts` to map ledger payloads (`type: prompt_transparency`) into a stable UI view model.
 
+Model selection behavior for Zo direct mode:
+- `manual`: use provided model only.
+- `suggest`: preserve provided model and emit recommendation metadata.
+- `auto`: select model automatically from catalog and attach a warning banner.
+
+Recommendation metadata includes token-efficiency and cost-savings signals:
+- estimated input and output tokens
+- estimated selected-model cost
+- baseline-model cost
+- projected cost saved (USD and percent)
+- token utilization percent
+
+These values are exposed for both Zo and extension surfaces through runtime API exports (`recommendModel`, `ZoModelSelectionResult`) and Zo response headers (`x-qore-model-*`).
+
 ## Zo Install and Bootstrap
 
 Recommended path is direct pull on Zo host after this repository is pushed:
@@ -153,6 +168,8 @@ npm run zo:bundle
 ```
 
 Then upload `dist/failsafe-qore-zo-bundle.tgz` to Zo and extract under `/opt/failsafe-qore` before running `deploy/zo/bootstrap-zo.sh`.
+
+Quick handoff doc: `deploy/zo/TAKE_THIS_AND_GO.md`.
 
 ## Documentation Map
 

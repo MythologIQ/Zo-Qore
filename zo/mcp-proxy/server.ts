@@ -28,6 +28,13 @@ import {
 } from "../security/mtls-actor-binding";
 import { MemoryReplayStore, ReplayStoreCloseable, SqliteReplayStore } from "../security/replay-store";
 import { createPromptTransparencyEvent, logPromptTransparency } from "../prompt-transparency";
+import {
+  recommendModel,
+  resolveCatalog,
+  ZoModelCatalogEntry,
+  ZoModelSelectionMode,
+  ZoModelSelectionResult,
+} from "../model-selection";
 
 interface CloseableRateLimiter extends RateLimiter {
   close?: () => void;
@@ -83,6 +90,10 @@ export interface ZoMcpProxyOptions {
   promptTransparency?: {
     enabled?: boolean;
     profile?: string;
+  };
+  modelSelection?: {
+    mode?: ZoModelSelectionMode;
+    catalog?: ZoModelCatalogEntry[];
   };
 }
 
@@ -151,7 +162,8 @@ export class ZoMcpProxyServer {
         responseId = mcpRequest.id ?? null;
         this.verifyMutualTlsActorBinding(req, actorId);
         this.verifySignedActorContext(req, actorId, body.rawBody, requireSignedActor, keyring);
-        const model = extractMcpModelId(mcpRequest) ?? "unknown";
+        const selected = this.applyModelSelection(mcpRequest);
+        const model = selected.model;
         this.enforceModelPolicy(model);
         const decisionRequest = toDecisionRequest(mcpRequest, actorId);
         this.emitPromptEvent({
@@ -207,6 +219,13 @@ export class ZoMcpProxyServer {
               decisionId: decision.decisionId,
               auditEventId: decision.auditEventId,
               requiredActions: decision.requiredActions,
+              modelRecommendation: selected.recommendation?.selectedModel,
+              modelEstimatedCostUsd: selected.recommendation?.estimatedCostUsd,
+              modelBaseline: selected.recommendation?.baselineModel,
+              modelBaselineCostUsd: selected.recommendation?.baselineCostUsd,
+              modelCostSavedUsd: selected.recommendation?.costSavedUsd,
+              modelCostSavedPercent: selected.recommendation?.costSavedPercent,
+              modelTokenUtilizationPercent: selected.recommendation?.tokenUtilizationPercent,
             },
           );
         }
@@ -652,6 +671,56 @@ export class ZoMcpProxyServer {
         ...event,
       },
     });
+  }
+
+  private applyModelSelection(
+    request: McpRequest,
+  ): { model: string; recommendation?: ZoModelSelectionResult } {
+    const mode = this.options.modelSelection?.mode ?? "manual";
+    const currentModel = extractMcpModelId(request) ?? "unknown";
+    const content = this.extractSelectionContent(request);
+    const catalog = resolveCatalog(this.options.modelSelection?.catalog);
+    const recommendation = recommendModel({
+      content,
+      mode,
+      currentModel: currentModel === "unknown" ? undefined : currentModel,
+      catalog,
+      baselineModelId: process.env.QORE_ZO_BASELINE_MODEL,
+    });
+    if (!recommendation) {
+      return { model: currentModel };
+    }
+    if (mode === "auto") {
+      this.setMcpModel(request, recommendation.selectedModel);
+      return { model: recommendation.selectedModel, recommendation };
+    }
+    return { model: currentModel, recommendation };
+  }
+
+  private extractSelectionContent(request: McpRequest): string {
+    if (!request.params || typeof request.params !== "object") return request.method;
+    const params = request.params as Record<string, unknown>;
+    const args = (params.arguments as Record<string, unknown> | undefined) ?? params;
+    const maybeText = args.content ?? args.text ?? args.body ?? args.patch ?? args.prompt;
+    if (typeof maybeText === "string" && maybeText.length > 0) return maybeText;
+    return request.method;
+  }
+
+  private setMcpModel(request: McpRequest, model: string): void {
+    if (!request.params || typeof request.params !== "object") {
+      request.params = { model };
+      return;
+    }
+    const params = request.params as Record<string, unknown>;
+    if (params.arguments && typeof params.arguments === "object") {
+      const args = params.arguments as Record<string, unknown>;
+      args.model = model;
+      params.arguments = args;
+      request.params = params;
+      return;
+    }
+    params.model = model;
+    request.params = params;
   }
 
   private sendJson(res: http.ServerResponse, statusCode: number, payload: unknown): void {

@@ -12,6 +12,13 @@ import { ZoApiForwarder, ZoApiTimeoutError, ZoApiUpstreamError } from "./forward
 import { extractModelId, toDecisionRequest } from "./translator";
 import { MemoryReplayStore, ReplayStoreCloseable, SqliteReplayStore } from "../security/replay-store";
 import { createPromptTransparencyEvent, logPromptTransparency } from "../prompt-transparency";
+import {
+  recommendModel,
+  resolveCatalog,
+  ZoModelCatalogEntry,
+  ZoModelSelectionMode,
+  ZoModelSelectionResult,
+} from "../model-selection";
 
 export interface ZoHttpProxyOptions {
   host?: string;
@@ -38,6 +45,10 @@ export interface ZoHttpProxyOptions {
   promptTransparency?: {
     enabled?: boolean;
     profile?: string;
+  };
+  modelSelection?: {
+    mode?: ZoModelSelectionMode;
+    catalog?: ZoModelCatalogEntry[];
   };
 }
 
@@ -78,12 +89,12 @@ export class ZoHttpProxyServer {
         const parsed = ZoAskRequestSchema.parse(JSON.parse(rawBody) as unknown);
         const actorId = this.extractActorId(req);
         this.verifySignedActorContext(req, actorId, rawBody, requireSignedActor, keyring);
-        const model = this.resolveModelId(parsed);
-        this.enforceModelPolicy(model);
+        const selected = this.applyModelSelection(parsed);
+        this.enforceModelPolicy(selected.model);
         this.emitPromptEvent({
           stage: "PROMPT_BUILD_STARTED",
           actorId,
-          model,
+          model: selected.model,
           target: "zo/ask_prompt",
           content: parsed.prompt,
           traceId,
@@ -91,7 +102,7 @@ export class ZoHttpProxyServer {
         this.emitPromptEvent({
           stage: "PROMPT_BUILD_COMPLETED",
           actorId,
-          model,
+          model: selected.model,
           target: "zo/ask_prompt",
           content: parsed.prompt,
           traceId,
@@ -102,7 +113,7 @@ export class ZoHttpProxyServer {
           this.emitPromptEvent({
             stage: "PROMPT_DISPATCH_BLOCKED",
             actorId,
-            model,
+            model: selected.model,
             target: "zo/ask_prompt",
             content: parsed.prompt,
             traceId,
@@ -134,12 +145,13 @@ export class ZoHttpProxyServer {
         this.emitPromptEvent({
           stage: "PROMPT_DISPATCHED",
           actorId,
-          model,
+          model: selected.model,
           target: "zo/ask_prompt",
           content: parsed.prompt,
           traceId,
         });
-        const upstream = await this.forwarder.forward(rawBody);
+        const upstream = await this.forwarder.forward(JSON.stringify(parsed));
+        this.attachModelSelectionHeaders(res, selected.recommendation);
         await this.ledger.appendEntry({
           eventType: "AUDIT_PASS",
           agentDid: actorId,
@@ -363,6 +375,27 @@ export class ZoHttpProxyServer {
     return model ?? "unknown";
   }
 
+  private applyModelSelection(body: ZoAskRequest): { model: string; recommendation?: ZoModelSelectionResult } {
+    const mode = this.options.modelSelection?.mode ?? "manual";
+    const currentModel = this.resolveModelId(body);
+    const catalog = resolveCatalog(this.options.modelSelection?.catalog);
+    const recommendation = recommendModel({
+      content: body.prompt,
+      mode,
+      currentModel: currentModel === "unknown" ? undefined : currentModel,
+      catalog,
+      baselineModelId: process.env.QORE_ZO_BASELINE_MODEL,
+    });
+    if (!recommendation) {
+      return { model: currentModel };
+    }
+    if (mode === "auto") {
+      body.model = recommendation.selectedModel;
+      return { model: recommendation.selectedModel, recommendation };
+    }
+    return { model: currentModel, recommendation };
+  }
+
   private enforceModelPolicy(model: string): void {
     const enforce = this.options.modelPolicy?.enforce ?? true;
     if (!enforce) return;
@@ -421,6 +454,23 @@ export class ZoHttpProxyServer {
         ...event,
       },
     });
+  }
+
+  private attachModelSelectionHeaders(
+    res: http.ServerResponse,
+    recommendation: ZoModelSelectionResult | undefined,
+  ): void {
+    if (!recommendation) return;
+    res.setHeader("x-qore-model-recommendation", recommendation.selectedModel);
+    res.setHeader("x-qore-model-cost-est-usd", recommendation.estimatedCostUsd.toFixed(6));
+    res.setHeader("x-qore-model-baseline", recommendation.baselineModel);
+    res.setHeader("x-qore-model-baseline-cost-usd", recommendation.baselineCostUsd.toFixed(6));
+    res.setHeader("x-qore-model-cost-saved-usd", recommendation.costSavedUsd.toFixed(6));
+    res.setHeader("x-qore-model-cost-saved-percent", recommendation.costSavedPercent.toFixed(2));
+    res.setHeader("x-qore-model-token-utilization-percent", recommendation.tokenUtilizationPercent.toFixed(2));
+    if (recommendation.warning) {
+      res.setHeader("x-qore-model-warning", recommendation.warning);
+    }
   }
 }
 

@@ -3,6 +3,8 @@ export { TrustEngine } from "./TrustEngine";
 export { ShadowGenomeManager } from "./ShadowGenomeManager";
 export { toPromptTransparencyView } from "./PromptTransparencyView";
 export type { PromptTransparencyView } from "./PromptTransparencyView";
+export { recommendModel, resolveCatalog } from "../../zo/model-selection";
+export type { ZoModelCatalogEntry, ZoModelSelectionMode, ZoModelSelectionResult } from "../../zo/model-selection";
 export { QoreRuntimeService } from "../service/QoreRuntimeService";
 export { LocalApiServer } from "../service/LocalApiServer";
 export { LedgerManager } from "../../ledger/engine/LedgerManager";

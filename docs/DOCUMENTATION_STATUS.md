@@ -23,8 +23,12 @@ Last reviewed: 2026-02-12.
 | Zo HTTP proxy implementation in this repository | implemented | `zo/http-proxy/server.ts:1` |
 | Zo direct adapters enforce model-required and model-allowlist policy before forwarding | implemented | `zo/http-proxy/server.ts:317`, `zo/mcp-proxy/server.ts:566` |
 | Prompt transparency events are emitted and ledgered for build and dispatch stages | implemented | `zo/prompt-transparency.ts:1`, `zo/http-proxy/server.ts:342`, `zo/mcp-proxy/server.ts:591` |
+| Zo model recommendation supports manual, suggest, and auto modes | implemented | `zo/model-selection.ts:1`, `zo/http-proxy/server.ts:373`, `zo/mcp-proxy/server.ts:639` |
+| Model recommendation emits token-efficiency and projected cost-savings metrics | implemented | `zo/model-selection.ts:13`, `zo/http-proxy/server.ts:466`, `runtime/api/index.ts:4` |
 | UI-facing prompt transparency view contract exists for intent output rendering | implemented | `runtime/api/PromptTransparencyView.ts:1` |
 | Zo bootstrap script supports pull-install-build-service setup | implemented | `deploy/zo/bootstrap-zo.sh:1`, `deploy/zo/env.example:1` |
+| Zo one-page handoff install guide is available for direct operator use | implemented | `deploy/zo/TAKE_THIS_AND_GO.md:1` |
+| Model suggestion performance regression test suite exists | implemented | `tests/zo.model.selection.performance.test.ts:1` |
 | Zo MCP proxy integration test baseline exists | implemented | `tests/zo.mcp.proxy.integration.test.ts:59` |
 | Zo SSH fallback controls in this repository | implemented | `docs/phase3_zo_fallback_setup.md:1` |
 | Zo fallback command wrapper setup exists | implemented | `zo/fallback/failsafe-run.ts:4` |

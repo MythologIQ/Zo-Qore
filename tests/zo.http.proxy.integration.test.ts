@@ -60,15 +60,36 @@ describe("Zo HTTP proxy integration", () => {
     );
     await runtime.initialize(path.join(process.cwd(), "policy", "definitions"));
     const upstreamUrl = await startUpstream();
-    const proxy = new ZoHttpProxyServer(
-      runtime,
-      ledger,
-      new ZoApiForwarder({ upstreamUrl, timeoutMs: 1000 }),
-      {
-        apiKey: "proxy-key",
-        actorSigningKey: "actor-signing-key",
-      },
-    );
+      const proxy = new ZoHttpProxyServer(
+        runtime,
+        ledger,
+        new ZoApiForwarder({ upstreamUrl, timeoutMs: 1000 }),
+        {
+          apiKey: "proxy-key",
+          actorSigningKey: "actor-signing-key",
+          modelSelection: {
+            mode: "suggest",
+            catalog: [
+              {
+                id: "zo-fast-1",
+                capabilities: ["general", "fast"],
+                maxInputTokens: 32000,
+                maxOutputTokens: 8000,
+                inputCostPer1kUsd: 0.0005,
+                outputCostPer1kUsd: 0.0015,
+              },
+              {
+                id: "zo-reasoning-1",
+                capabilities: ["general", "reasoning", "coding"],
+                maxInputTokens: 128000,
+                maxOutputTokens: 32000,
+                inputCostPer1kUsd: 0.003,
+                outputCostPer1kUsd: 0.012,
+              },
+            ],
+          },
+        },
+      );
 
     try {
       await proxy.start();
@@ -95,6 +116,8 @@ describe("Zo HTTP proxy integration", () => {
         body: allowedBody,
       });
       expect(allowed.status).toBe(200);
+      expect(allowed.headers.get("x-qore-model-recommendation")).toBeTruthy();
+      expect(allowed.headers.get("x-qore-model-cost-saved-usd")).toBeTruthy();
       const allowedJson = (await allowed.json()) as { reply?: string };
       expect(allowedJson.reply).toContain("ack:Summarize");
 
