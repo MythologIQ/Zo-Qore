@@ -30,6 +30,7 @@ This index tracks the authoritative planning, implementation, and validation art
 - `docs/zoqore_acceptance_gates.md`: ZoQore stage gates and pass/fail criteria.
 - `docs/zoqore_adversarial_sprint1.md`: Sprint 1 adversarial findings, remediations, and pass-state.
 - `docs/zoqore_adversarial_sprint2.md`: Sprint 2 adversarial findings, remediations, and pass-state.
+- `docs/zoqore_adversarial_sprint3.md`: Sprint 3 adversarial findings, remediations, and pass-state.
 
 ## Current Direction
 

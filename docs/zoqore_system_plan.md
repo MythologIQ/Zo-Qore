@@ -69,7 +69,7 @@ Deliverables:
 - rollback-safe upgrade path
 - migration hooks and release integrity checks
 
-Status: `planned`
+Status: `in_progress`
 
 ### Phase E: Substantiation
 
@@ -80,24 +80,24 @@ Deliverables:
 
 Status: `planned`
 
-## Sprint 2 Scope (Current)
+## Sprint 3 Scope (Current)
 
-1. Extend control-plane operations for session and device inventory. `implemented`
-2. Add MFA recovery reset flow with explicit confirmation semantics. `implemented`
-3. Enforce public-bind hardening defaults for standalone UI script path. `implemented`
-4. Validate via typecheck, targeted tests, lint, and build. `implemented`
-5. Record adversarial findings against Sprint 2 surfaces. `in_progress`
+1. Implement backup lifecycle for ledger/replay/auth installer state. `implemented`
+2. Implement restore path with checksum verification and explicit confirmation. `implemented`
+3. Add operator commands and docs for resilience workflows. `implemented`
+4. Validate via typecheck, tests, lint, and build. `pending`
+5. Record adversarial findings against Sprint 3 resilience surfaces. `pending`
 
-## Out of Scope (Sprint 2)
+## Out of Scope (Sprint 3)
 
 - visual rebrand sweep
 - multi-node distributed session store
 - backup/restore implementation
 - upgrade migration orchestration
 
-## Success Criteria (Sprint 2)
+## Success Criteria (Sprint 3)
 
-1. `qorectl` supports doctor, sessions, devices, revoke, and MFA recovery operations.
-2. Admin API path is test-covered for token enforcement and operational routes.
-3. Standalone script blocks unsafe public launch when required auth variables are missing.
+1. Resilience backup/restore commands are available and documented.
+2. Restore flow rejects missing manifest, missing files, and checksum mismatches.
+3. Backup assets are isolated under `.failsafe/backups` and do not include build artifacts.
 4. Typecheck/tests/lint/build pass after changes.

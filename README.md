@@ -273,6 +273,12 @@ Control-plane baseline (`qorectl`):
 - `npm run qorectl:mfa-reset`
 - `QORE_UI_ADMIN_TOKEN` is required for session revocation automation.
 
+Resilience operations:
+- `npm run zo:backup` to snapshot ledger/replay/auth installer state under `.failsafe/backups/`
+- `npm run zo:backups` to list available snapshots
+- `npm run zo:restore:dry-run -- --from <backupDir>` to validate restore inputs
+- `node scripts/zo-resilience.mjs restore --from <backupDir> --confirm RESTORE` to apply restore
+
 Systemd bootstrap path (non-Zo Linux hosts):
 
 ```bash

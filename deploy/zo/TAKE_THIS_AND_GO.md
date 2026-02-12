@@ -91,6 +91,15 @@ Admin endpoints:
 - `POST /api/admin/sessions/revoke` with `all`, `sessionId`, or `deviceId`
 - `POST /api/admin/mfa/recovery/reset` with `confirm=RESET_MFA`
 
+Resilience commands:
+
+```bash
+npm run zo:backup
+npm run zo:backups
+npm run zo:restore:dry-run -- --from /path/to/.failsafe/backups/<timestamp>
+node scripts/zo-resilience.mjs restore --from /path/to/.failsafe/backups/<timestamp> --confirm RESTORE
+```
+
 ## Option 2: Process Mode (No Service)
 
 ```bash
