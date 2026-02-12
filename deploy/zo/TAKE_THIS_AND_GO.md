@@ -1,38 +1,20 @@
 # Take This and Go
 
-## Fast Path (Recommended)
+## Option 1: Direct from GitHub
 
 On Zo host:
 
 ```bash
-sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/bootstrap-zo.sh)"
+sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/take-this-and-go.sh)"
 ```
 
-Then edit:
-
-- `/etc/failsafe-qore/env`
-
-Set at minimum:
-
-- `QORE_API_KEY`
-- `QORE_PROXY_API_KEY`
-- `QORE_ACTOR_KEYS`
-- `QORE_ZO_ALLOWED_MODELS`
-
-Restart services:
+## Option 2: From Cloned Repository
 
 ```bash
-sudo systemctl restart failsafe-qore.service failsafe-fallback-watcher.service
+sudo bash deploy/zo/take-this-and-go.sh
 ```
 
-Check status:
-
-```bash
-sudo systemctl status failsafe-qore.service --no-pager
-sudo systemctl status failsafe-fallback-watcher.service --no-pager
-```
-
-## One-File Upload Path
+## Option 3: Upload Bundle
 
 From Windows:
 
@@ -40,11 +22,18 @@ From Windows:
 npm run zo:bundle
 ```
 
-Upload `dist/failsafe-qore-zo-bundle.tgz` to Zo host, then:
+Upload `dist/failsafe-qore-zo-bundle.tgz` to Zo host, extract to `/opt/failsafe-qore`, then run:
 
 ```bash
-sudo mkdir -p /opt/failsafe-qore
-sudo tar -xzf failsafe-qore-zo-bundle.tgz -C /opt/failsafe-qore
 cd /opt/failsafe-qore
-sudo bash deploy/zo/bootstrap-zo.sh
+sudo bash deploy/zo/take-this-and-go.sh
 ```
+
+## After Install
+
+Edit `/etc/failsafe-qore/env` and set at minimum:
+
+- `QORE_API_KEY`
+- `QORE_PROXY_API_KEY`
+- `QORE_ACTOR_KEYS`
+- `QORE_ZO_ALLOWED_MODELS`

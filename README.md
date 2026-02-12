@@ -151,7 +151,7 @@ These values are exposed for both Zo and extension surfaces through runtime API 
 Recommended path is direct pull on Zo host after this repository is pushed:
 
 ```bash
-sudo bash deploy/zo/bootstrap-zo.sh
+sudo bash deploy/zo/take-this-and-go.sh
 ```
 
 Bootstrap script:
