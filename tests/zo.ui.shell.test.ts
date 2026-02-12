@@ -1,0 +1,164 @@
+import * as http from "http";
+import { afterEach, describe, expect, it } from "vitest";
+import { QoreUiShellServer } from "../zo/ui-shell/server";
+
+function withRuntimeStub(handler: (url: string) => Promise<void>): Promise<void> {
+  const server = http.createServer(async (req, res) => {
+    const method = req.method ?? "GET";
+    const url = req.url ?? "/";
+
+    if (method === "GET" && url === "/health") {
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ status: "ok", initialized: true }));
+      return;
+    }
+    if (method === "GET" && url === "/policy/version") {
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ policyVersion: "policy-test-v1" }));
+      return;
+    }
+    if (method === "POST" && url === "/evaluate") {
+      let raw = "";
+      for await (const chunk of req) {
+        raw += Buffer.from(chunk).toString("utf8");
+      }
+      res.statusCode = 200;
+      res.setHeader("content-type", "application/json");
+      res.end(JSON.stringify({ decision: "ALLOW", echo: JSON.parse(raw || "{}") }));
+      return;
+    }
+    res.statusCode = 404;
+    res.end();
+  });
+
+  return new Promise((resolve, reject) => {
+    server.listen(0, "127.0.0.1", async () => {
+      const address = server.address();
+      if (!address || typeof address === "string") {
+        reject(new Error("stub server address not available"));
+        return;
+      }
+      try {
+        await handler(`http://127.0.0.1:${address.port}`);
+        resolve();
+      } catch (error) {
+        reject(error);
+      } finally {
+        server.close();
+      }
+    });
+  });
+}
+
+const startedServers: QoreUiShellServer[] = [];
+const savedEnv = { ...process.env };
+
+afterEach(async () => {
+  while (startedServers.length > 0) {
+    const next = startedServers.pop();
+    if (next) await next.stop();
+  }
+  process.env = { ...savedEnv };
+});
+
+describe("QoreUiShellServer", () => {
+  it("serves hub and evaluate proxy successfully", async () => {
+    await withRuntimeStub(async (runtimeBaseUrl) => {
+      const ui = new QoreUiShellServer({
+        host: "127.0.0.1",
+        port: 0,
+        runtimeBaseUrl,
+        runtimeApiKey: "test-key",
+      });
+      startedServers.push(ui);
+      await ui.start();
+      const uiAddr = ui.getAddress();
+      const baseUrl = `http://127.0.0.1:${uiAddr.port}`;
+
+      const hubRes = await fetch(`${baseUrl}/api/hub`);
+      expect(hubRes.status).toBe(200);
+      expect(hubRes.headers.get("x-content-type-options")).toBe("nosniff");
+      const hub = (await hubRes.json()) as { qoreRuntime?: { connected?: boolean; policyVersion?: string } };
+      expect(hub.qoreRuntime?.connected).toBe(true);
+      expect(hub.qoreRuntime?.policyVersion).toBe("policy-test-v1");
+
+      const secRes = await fetch(`${baseUrl}/api/admin/security`);
+      expect(secRes.status).toBe(200);
+      const sec = (await secRes.json()) as { sessions?: { activeMfaSessions?: number } };
+      expect(typeof sec.sessions?.activeMfaSessions).toBe("number");
+
+      const evalRes = await fetch(`${baseUrl}/api/qore/evaluate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          requestId: "req-ui-1",
+          actorId: "did:myth:test",
+          action: "read",
+          targetPath: "repo://docs/readme.md",
+        }),
+      });
+      expect(evalRes.status).toBe(200);
+      const evalBody = (await evalRes.json()) as { decision?: string };
+      expect(evalBody.decision).toBe("ALLOW");
+    });
+  });
+
+  it("enforces admin token and exposes session and MFA recovery controls", async () => {
+    await withRuntimeStub(async (runtimeBaseUrl) => {
+      process.env.QORE_UI_REQUIRE_ADMIN_TOKEN = "true";
+      process.env.QORE_UI_ADMIN_TOKEN = "test-admin-token";
+
+      const ui = new QoreUiShellServer({
+        host: "127.0.0.1",
+        port: 0,
+        runtimeBaseUrl,
+        runtimeApiKey: "test-key",
+      });
+      startedServers.push(ui);
+      await ui.start();
+      const uiAddr = ui.getAddress();
+      const baseUrl = `http://127.0.0.1:${uiAddr.port}`;
+
+      const denied = await fetch(`${baseUrl}/api/admin/security`);
+      expect(denied.status).toBe(401);
+
+      const headers = { "x-qore-admin-token": "test-admin-token", "content-type": "application/json" };
+      const security = await fetch(`${baseUrl}/api/admin/security`, { headers });
+      expect(security.status).toBe(200);
+      const secBody = (await security.json()) as { auth?: { requireAdminToken?: boolean; adminTokenConfigured?: boolean } };
+      expect(secBody.auth?.requireAdminToken).toBe(true);
+      expect(secBody.auth?.adminTokenConfigured).toBe(true);
+
+      const sessions = await fetch(`${baseUrl}/api/admin/sessions`, { headers });
+      expect(sessions.status).toBe(200);
+      const sessionBody = (await sessions.json()) as { sessions?: unknown[] };
+      expect(Array.isArray(sessionBody.sessions)).toBe(true);
+
+      const devices = await fetch(`${baseUrl}/api/admin/devices`, { headers });
+      expect(devices.status).toBe(200);
+      const deviceBody = (await devices.json()) as { devices?: unknown[] };
+      expect(Array.isArray(deviceBody.devices)).toBe(true);
+
+      const mfaReset = await fetch(`${baseUrl}/api/admin/mfa/recovery/reset`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ confirm: "RESET_MFA" }),
+      });
+      expect(mfaReset.status).toBe(200);
+      const resetBody = (await mfaReset.json()) as { secret?: string; otpAuthUrl?: string };
+      expect((resetBody.secret ?? "").length).toBeGreaterThan(10);
+      expect(String(resetBody.otpAuthUrl ?? "").startsWith("otpauth://")).toBe(true);
+
+      const revoke = await fetch(`${baseUrl}/api/admin/sessions/revoke`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ all: true }),
+      });
+      expect(revoke.status).toBe(200);
+      const revokeBody = (await revoke.json()) as { mode?: string };
+      expect(revokeBody.mode).toBe("all");
+    });
+  });
+});

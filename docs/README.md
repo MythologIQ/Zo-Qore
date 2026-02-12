@@ -26,6 +26,10 @@ This index tracks the authoritative planning, implementation, and validation art
 - `docs/phase9_handoff_and_governance_closeout.md`: handoff and governance closeout artifact.
 - `docs/adversarial_review_phase6_phase9.md`: adversarial review for phases 6 through 9.
 - `docs/ZO_ASSUMPTION_EVIDENCE.json`: Zo assumption evidence registry for freshness checks.
+- `docs/zoqore_system_plan.md`: ZoQore system-level execution plan (functional-first track).
+- `docs/zoqore_acceptance_gates.md`: ZoQore stage gates and pass/fail criteria.
+- `docs/zoqore_adversarial_sprint1.md`: Sprint 1 adversarial findings, remediations, and pass-state.
+- `docs/zoqore_adversarial_sprint2.md`: Sprint 2 adversarial findings, remediations, and pass-state.
 
 ## Current Direction
 

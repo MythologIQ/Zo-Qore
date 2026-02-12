@@ -112,6 +112,57 @@ curl -X POST http://127.0.0.1:7777/evaluate \
   }'
 ```
 
+## Standalone UI (No IDE Required)
+
+FailSafe-Qore serves the full FailSafe extension web UI in standalone mode, so Zo users get the same interface without maintaining a second UI codebase.
+
+1. Start runtime API:
+```bash
+node dist/runtime/service/start.js
+```
+
+2. Sync canonical UI assets from `MythologIQ/failsafe`:
+```bash
+npm run ui:sync
+```
+
+3. Start standalone UI in another terminal:
+```bash
+node dist/zo/ui-shell/start.js
+```
+
+4. Open:
+```text
+http://127.0.0.1:9380
+```
+
+UI env controls:
+- `QORE_UI_HOST` (default `127.0.0.1`)
+- `QORE_UI_PORT` (default `9380`)
+- `QORE_RUNTIME_BASE_URL` (default `http://127.0.0.1:${QORE_API_PORT|7777}`)
+- `QORE_UI_TIMEOUT_MS` (default `5000`)
+- `QORE_UI_ASSETS_DIR` (default auto-detect, prefers `zo/ui-shell/shared`)
+- `QORE_UI_ALLOWED_IPS` (optional comma-separated IP allowlist)
+- `QORE_UI_TRUST_PROXY_HEADERS` (default `false`; set `true` only behind trusted reverse proxy)
+- `QORE_UI_AUTH_MAX_FAILURES` and `QORE_UI_AUTH_LOCKOUT_MS` (Basic Auth lockout controls)
+- `QORE_UI_MFA_MAX_FAILURES` and `QORE_UI_MFA_LOCKOUT_MS` (MFA lockout controls)
+- `QORE_UI_REQUIRE_ADMIN_TOKEN` (default `true` on public bind `0.0.0.0`)
+- `QORE_UI_ADMIN_TOKEN` (required when admin token mode is enabled)
+
+One-command local stack (runtime + UI):
+
+```bash
+npm run zo:one-click
+```
+
+By default, `/` serves the full extension UI. For the compact diagnostic shell, use `/?ui=compact`.
+
+Stop:
+
+```bash
+npm run zo:stop
+```
+
 ## Operational Tooling
 
 - Rotate actor keys:
@@ -148,7 +199,81 @@ These values are exposed for both Zo and extension surfaces through runtime API 
 
 ## Zo Install and Bootstrap
 
-Recommended path is direct pull on Zo host after this repository is pushed:
+Use one of these paths depending on host type:
+
+- Zo workspace host (no systemd): use Zo user service registration.
+- Standard Linux VM with systemd: use bootstrap service scripts.
+
+Zo user service path (recommended on Zo):
+
+```bash
+export QORE_UI_BASIC_AUTH_USER="admin"
+export QORE_UI_BASIC_AUTH_PASS="change-this-password"
+eval "$(npm run -s ui:mfa:secret | grep '^QORE_UI_TOTP_SECRET=')"
+npm ci
+npm run build
+bash deploy/zo/one-click-services.sh
+```
+
+Single-file Zo/Linux installer (recommended for distribution):
+
+```bash
+bash deploy/zo/install-zo-full.sh
+```
+
+This installer is Zo-specific and will:
+- clone/update repository
+- install dependencies
+- sync full shared UI
+- build runtime and UI host
+- generate missing API/Auth/MFA/Admin secrets
+- register `qore-runtime` and `qore-ui` user services
+
+Installer options:
+- `--non-interactive` for automation mode
+- `--config <path>` to load predefined values
+- `--write-config <path>` to persist resolved values
+- `--force-reconfigure` to recreate existing service labels
+
+Manual Zo service registration equivalent:
+
+```bash
+register_user_service \
+  --label "qore-runtime" \
+  --protocol "http" \
+  --local-port 7777 \
+  --workdir "/home/workspace/MythologIQ/FailSafe-Qore" \
+  --entrypoint "node dist/runtime/service/start.js" \
+  --env-vars "QORE_API_HOST=0.0.0.0,QORE_API_PORT=7777"
+
+register_user_service \
+  --label "qore-ui" \
+  --protocol "http" \
+  --local-port 9380 \
+  --workdir "/home/workspace/MythologIQ/FailSafe-Qore" \
+  --entrypoint "node dist/zo/ui-shell/start.js" \
+  --env-vars "QORE_UI_HOST=0.0.0.0,QORE_UI_PORT=9380,QORE_RUNTIME_BASE_URL=http://127.0.0.1:7777,QORE_UI_ASSETS_DIR=/home/workspace/MythologIQ/FailSafe-Qore/zo/ui-shell/shared,QORE_UI_REQUIRE_AUTH=true,QORE_UI_REQUIRE_MFA=true,QORE_UI_BASIC_AUTH_USER=admin,QORE_UI_BASIC_AUTH_PASS=change-this-password,QORE_UI_TOTP_SECRET=replace-with-base32-secret,QORE_UI_ADMIN_TOKEN=replace-with-admin-token"
+```
+
+MFA bootstrap:
+- Run `npm run ui:mfa:secret` and copy `OTPAuthURL` into your authenticator app (1Password, Authy, Google Authenticator, iOS Passwords).
+- Login flow becomes: Basic Auth (username/password), then TOTP step at `/mfa`.
+- Security admin endpoints:
+  - `GET /api/admin/security` (auth posture and active session count)
+  - `GET /api/admin/sessions` (active MFA session inventory)
+  - `GET /api/admin/devices` (grouped device/session inventory)
+  - `POST /api/admin/sessions/revoke` with `{ "all": true }`, `{ "sessionId": "<tokenId>" }`, or `{ "deviceId": "<deviceId>" }`
+  - `POST /api/admin/mfa/recovery/reset` with `{ "confirm": "RESET_MFA" }` (rotate TOTP secret and revoke all sessions)
+
+Control-plane baseline (`qorectl`):
+- `npm run qorectl:doctor`
+- `npm run qorectl:sessions`
+- `npm run qorectl:devices`
+- `npm run qorectl:revoke-all-sessions`
+- `npm run qorectl:mfa-reset`
+- `QORE_UI_ADMIN_TOKEN` is required for session revocation automation.
+
+Systemd bootstrap path (non-Zo Linux hosts):
 
 ```bash
 sudo bash deploy/zo/take-this-and-go.sh

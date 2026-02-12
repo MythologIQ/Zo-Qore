@@ -1,0 +1,84 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Segoe UI", Tahoma, sans-serif;
+  color: #e7efff;
+  background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%);
+}
+.shell {
+  max-width: 920px;
+  margin: 0 auto;
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+.card {
+  background: #13223a;
+  border: 1px solid #2f4a70;
+  border-radius: 12px;
+  padding: 14px;
+}
+h1, h2 { margin: 0 0 8px; }
+.muted { color: #a9bad7; margin: 0 0 10px; }
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.grid div {
+  background: #0f1c31;
+  border: 1px solid #29415f;
+  border-radius: 8px;
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+}
+.label {
+  color: #9cb0d1;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+.value { font-weight: 700; font-size: 13px; overflow-wrap: anywhere; }
+.status {
+  margin-top: 8px;
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid #3b5a84;
+  border-radius: 999px;
+  background: #102643;
+  font-size: 12px;
+}
+form {
+  display: grid;
+  gap: 8px;
+}
+label {
+  display: grid;
+  gap: 4px;
+  font-size: 13px;
+  color: #c7d8f5;
+}
+input, textarea, button {
+  border-radius: 8px;
+  border: 1px solid #35537b;
+  background: #0f1b30;
+  color: #e7efff;
+  padding: 8px 9px;
+  font: inherit;
+}
+textarea { min-height: 90px; resize: vertical; }
+button { cursor: pointer; background: #1c3f72; font-weight: 700; }
+button:hover { filter: brightness(1.1); }
+.output {
+  margin: 9px 0 0;
+  background: #0a1424;
+  border: 1px solid #2e496b;
+  border-radius: 8px;
+  padding: 10px;
+  max-height: 290px;
+  overflow: auto;
+}
+@media (max-width: 720px) {
+  .grid { grid-template-columns: 1fr; }
+}
