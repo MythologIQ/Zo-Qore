@@ -1,0 +1,47 @@
+{
+  "name": "@mythologiq/failsafe-qore",
+  "version": "0.1.0",
+  "description": "Standalone Qore governance runtime for FailSafe",
+  "license": "MIT",
+  "private": false,
+  "type": "commonjs",
+  "engines": {
+    "node": ">=20"
+  },
+  "main": "dist/runtime/api/index.js",
+  "types": "dist/runtime/api/index.d.ts",
+  "files": [
+    "dist",
+    "policy/definitions"
+  ],
+  "scripts": {
+    "clean": "rimraf dist coverage",
+    "build": "npm run clean && tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint . --ext .ts",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "keys:rotate": "node scripts/rotate-actor-keys.mjs",
+    "assumptions:check": "node scripts/check-zo-assumptions.mjs",
+    "release:gate": "node scripts/release-gate.mjs",
+    "verify:all": "npm run typecheck && npm run lint && npm test && npm run build && npm run assumptions:check",
+    "zo:bundle": "powershell -ExecutionPolicy Bypass -File scripts/create-zo-upload.ps1"
+  },
+  "dependencies": {
+    "@mythologiq/qore-contracts": "github:MythologIQ/qore-contracts#main",
+    "better-sqlite3": "^12.2.0",
+    "proper-lockfile": "^4.1.2",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.17.57",
+    "@types/proper-lockfile": "^4.1.4",
+    "@typescript-eslint/eslint-plugin": "^8.43.0",
+    "@typescript-eslint/parser": "^8.43.0",
+    "eslint": "^9.35.0",
+    "rimraf": "^6.0.1",
+    "typescript": "^5.9.2",
+    "vitest": "^3.2.4"
+  }
+}

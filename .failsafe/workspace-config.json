@@ -1,0 +1,23 @@
+{
+  "workspaceType": "failsafe-qore-runtime",
+  "detectedAt": "2026-02-12T00:00:00Z",
+  "applicationContainer": {
+    "root": ".",
+    "requiredDirectories": [
+      "docs",
+      "ledger",
+      "policy",
+      "risk",
+      "runtime",
+      "zo"
+    ],
+    "externalContractsPackage": "@mythologiq/qore-contracts"
+  },
+  "organizationExclusions": [
+    ".agent/",
+    ".claude/",
+    ".qorelogic/",
+    ".failsafe/"
+  ],
+  "exclusionReason": "Qore runtime repository must remain isolated from adapter/UI code and governance metadata must remain in dedicated root folders."
+}

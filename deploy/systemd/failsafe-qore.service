@@ -1,0 +1,17 @@
+[Unit]
+Description=FailSafe Qore Runtime Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/failsafe-qore
+Environment=NODE_ENV=production
+EnvironmentFile=-/etc/failsafe-qore/env
+ExecStart=/usr/bin/node /opt/failsafe-qore/dist/runtime/service/start.js
+Restart=always
+RestartSec=5
+User=failsafe
+Group=failsafe
+
+[Install]
+WantedBy=multi-user.target

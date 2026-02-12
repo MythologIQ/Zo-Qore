@@ -1,0 +1,51 @@
+{
+  "capturedAt": "2026-02-12",
+  "items": [
+    {
+      "id": "zo-http-primary-entry",
+      "surface": "zo-http",
+      "claim": "Zo HTTP primary entry path is /zo/ask for adapter planning",
+      "sourceType": "architecture-plan",
+      "source": "docs/plan_qore_zo_architecture.md",
+      "validatedAt": "2026-02-12",
+      "status": "in_progress",
+      "openUnknowns": [
+        "Live production path stability requires release-gate revalidation before deploy."
+      ]
+    },
+    {
+      "id": "zo-mcp-entry",
+      "surface": "zo-mcp",
+      "claim": "Zo MCP surface is reachable via HTTP bridge semantics for proxy governance",
+      "sourceType": "architecture-plan",
+      "source": "docs/plan_qore_zo_architecture.md",
+      "validatedAt": "2026-02-12",
+      "status": "in_progress",
+      "openUnknowns": [
+        "Live Zo-side protocol drift must be checked at release gate."
+      ]
+    },
+    {
+      "id": "zo-ssh-service-mode",
+      "surface": "zo-ssh",
+      "claim": "Zo SSH mode supports persistent Linux services for fallback controls",
+      "sourceType": "architecture-plan",
+      "source": "docs/plan_qore_zo_architecture.md",
+      "validatedAt": "2026-02-12",
+      "status": "in_progress",
+      "openUnknowns": [
+        "Host-level service permissions and policy enforcement must be validated in deployment environment."
+      ]
+    },
+    {
+      "id": "zo-public-skills-source",
+      "surface": "zo-workflows",
+      "claim": "Zo public skills are referenced from https://github.com/zocomputer/skills for Zo-native workflow alignment",
+      "sourceType": "public-repo",
+      "source": "https://github.com/zocomputer/skills",
+      "validatedAt": "2026-02-12",
+      "status": "implemented",
+      "openUnknowns": []
+    }
+  ]
+}
