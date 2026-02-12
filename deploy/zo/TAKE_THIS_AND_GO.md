@@ -1,8 +1,10 @@
 # Take This and Go
 
-## Option 1: Direct from GitHub
+This bundle installs `FailSafe-Qore` on a Zo Linux host with one command. The launcher script pulls or updates the runtime, installs dependencies, builds, installs systemd services, and starts them.
 
-On Zo host:
+Use Option 1 for direct install from GitHub, Option 2 if you already cloned this repo, or Option 3 if you are transferring a packaged bundle. After install, set secrets and model policy in `/etc/failsafe-qore/env`.
+
+## Option 1: Direct from GitHub
 
 ```bash
 sudo bash -c "$(curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/take-this-and-go.sh)"
