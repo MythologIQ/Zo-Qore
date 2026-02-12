@@ -250,6 +250,24 @@ Updater behavior:
 - re-registers services
 - rolls back to previous commit and state snapshot on failure
 
+Optional scheduled auto-update:
+
+```bash
+npm run zo:update:install-cron
+```
+
+Custom schedule example (daily at 03:17 UTC):
+
+```bash
+SCHEDULE="17 3 * * *" npm run zo:update:install-cron
+```
+
+Remove scheduled update:
+
+```bash
+npm run zo:update:remove-cron
+```
+
 Manual Zo service registration equivalent:
 
 ```bash

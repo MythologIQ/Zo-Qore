@@ -109,6 +109,14 @@ npm run zo:update
 
 `zo:update` runs backup, repo fast-forward, verification, service re-registration, and rollback on failure.
 
+Optional scheduler:
+
+```bash
+npm run zo:update:install-cron
+SCHEDULE="17 3 * * *" npm run zo:update:install-cron
+npm run zo:update:remove-cron
+```
+
 ## Option 2: Process Mode (No Service)
 
 ```bash
