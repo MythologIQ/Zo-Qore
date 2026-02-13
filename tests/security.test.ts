@@ -112,7 +112,7 @@ describe('Security Tests', () => {
         '/usr/local/failsafe',
       ];
 
-      const criticalPattern = /^\/(bin|boot|dev|etc|lib|proc|root|run|sbin|srv|sys|usr|var|home)\/?$/;
+      const criticalPattern = /^\/$|^\/(bin|boot|dev|etc|lib|proc|root|run|sbin|srv|sys|usr|var|home)\/?$/;
 
       for (const path of criticalPaths) {
         expect(criticalPattern.test(path)).toBe(true);
@@ -173,11 +173,13 @@ describe('Security Tests', () => {
 
       for (const input of maliciousInputs) {
         const escaped = escapeHtml(input);
-        expect(escaped).not.toContain('<script>');
-        expect(escaped).not.toContain('onerror=');
-        expect(escaped).not.toContain('onload=');
-        expect(escaped).not.toContain('javascript:');
-        expect(escaped).not.toContain('onmouseover=');
+        // Escaping should remove executable HTML boundaries.
+        expect(escaped).not.toContain('<');
+        expect(escaped).not.toContain('>');
+        if (input.includes('<') || input.includes('>')) {
+          expect(escaped).toContain('&lt;');
+          expect(escaped).toContain('&gt;');
+        }
       }
     });
 
@@ -247,13 +249,19 @@ describe('Security Tests', () => {
         'key\nwith\nnewlines',
       ];
 
+      const apiKeyPattern = /^[A-Za-z0-9_-]{8,}$/;
+
       for (const key of validKeys) {
-        expect(key).toBeTruthy();
-        expect(key.length).toBeGreaterThan(0);
+        expect(typeof key).toBe('string');
+        expect(apiKeyPattern.test(key)).toBe(true);
       }
 
       for (const key of invalidKeys) {
-        expect(key).toBeFalsy();
+        if (typeof key !== 'string') {
+          expect(key).toBeFalsy();
+        } else {
+          expect(apiKeyPattern.test(key)).toBe(false);
+        }
       }
     });
   });
@@ -267,9 +275,11 @@ describe('Security Tests', () => {
       const unsafeQuery = "SELECT expires_at FROM replay_protection WHERE actor_id = '" + 'malicious' + "' AND nonce = '" + 'injection' + "'";
 
       expect(safeQuery).toContain('?');
-      expect(safeQuery).not.toContain("''");
-      expect(unsafeQuery).toContain("''");
+      expect(safeQuery).not.toContain('malicious');
+      expect(safeQuery).not.toContain('injection');
       expect(unsafeQuery).toContain('malicious');
+      expect(unsafeQuery).toContain('injection');
+      expect(unsafeQuery).not.toContain('?');
     });
 
     it('should validate table names', () => {
