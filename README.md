@@ -40,7 +40,7 @@ cd FailSafe-Qore
 bash deploy/zo/install-zo-full.sh
 ```
 
-This provisions runtime + UI, security defaults, and service registration.
+This provisions runtime + UI, security defaults, and service registration. If `register_user_service` is not available in your Zo environment, the installer will provide a prompt to copy and paste into your Zo native AI to complete service registration.
 
 ### Public one-line install (download + run)
 
@@ -63,6 +63,7 @@ npm run zo:one-click
 ```
 
 Open:
+
 - `http://127.0.0.1:9380/ui/console`
 - `http://127.0.0.1:9380/ui/monitor`
 
@@ -80,6 +81,7 @@ npm run zo:uninstall:legacy-test
 ```
 
 For step-by-step install troubleshooting:
+
 - `deploy/zo/TAKE_THIS_AND_GO.md`
 
 ## Screenshots
@@ -103,6 +105,7 @@ For step-by-step install troubleshooting:
 FailSafe started as extension-coupled governance logic. `FailSafe-Qore` is the extracted runtime that keeps policy, risk, ledger, and decision contracts independent from IDE hosting concerns.
 
 Repository direction:
+
 - Zo-native design: `implemented` for repository-local scope
 - Zo-native implementation layers in this repository: `implemented`
 - IDE adapter dependency for core runtime: `deferred`
@@ -113,6 +116,7 @@ Architecture source of truth: `docs/plan_qore_zo_architecture.md`
 ## Zo-Qore Intent
 
 Zo-Qore is the Zo-native operating surface for QoreLogic. The intent is straightforward:
+
 - keep governance enforcement visible and auditable
 - keep prompt construction explicit instead of hidden automation
 - keep the runtime contract stable across Zo and local IDE adapter paths
@@ -154,34 +158,39 @@ Design guardrail: Zo-specific behavior stays in adapter layers under `zo/`. Core
 
 ## Repository Layout
 
-| Path | Purpose |
-|---|---|
+| Path                         | Purpose                                                               |
+| ---------------------------- | --------------------------------------------------------------------- |
 | `@mythologiq/qore-contracts` | Shared schemas, runtime interfaces, and action classification package |
-| `policy/` | Policy engine and policy definitions |
-| `risk/` | Evaluation routing, novelty, and cache instrumentation |
-| `ledger/` | Append-only ledger and integrity verification |
-| `runtime/` | Runtime orchestration and local API service |
-| `zo/mcp-proxy/` | MCP governance adapter, forwarding, rate limiting, metrics |
-| `zo/http-proxy/` | Zo HTTP governance adapter for `/zo/ask` |
-| `zo/fallback/` | SSH fallback governance wrapper, identity, watcher pipeline |
-| `deploy/systemd/` | Service templates for runtime and fallback watcher |
-| `tests/` | Unit and integration validation |
-| `docs/` | Phase plans, adversarial reviews, and substantiation artifacts |
+| `policy/`                    | Policy engine and policy definitions                                  |
+| `risk/`                      | Evaluation routing, novelty, and cache instrumentation                |
+| `ledger/`                    | Append-only ledger and integrity verification                         |
+| `runtime/`                   | Runtime orchestration and local API service                           |
+| `zo/mcp-proxy/`              | MCP governance adapter, forwarding, rate limiting, metrics            |
+| `zo/http-proxy/`             | Zo HTTP governance adapter for `/zo/ask`                              |
+| `zo/fallback/`               | SSH fallback governance wrapper, identity, watcher pipeline           |
+| `deploy/systemd/`            | Service templates for runtime and fallback watcher                    |
+| `tests/`                     | Unit and integration validation                                       |
+| `docs/`                      | Phase plans, adversarial reviews, and substantiation artifacts        |
 
 ## Quick Start
 
 1. Install dependencies:
+
 ```bash
 npm ci
 ```
+
 2. Run baseline validation:
+
 ```bash
 npm run typecheck
 npm test
 npm run lint
 npm run build
 ```
+
 3. Run full release gate:
+
 ```bash
 npm run release:gate
 ```
@@ -218,31 +227,37 @@ curl -X POST http://127.0.0.1:7777/evaluate \
 FailSafe-Qore can host a dedicated Zo UI surface. QoreLogic policy, risk, ledger, and runtime contracts remain universal and shared across all UI surfaces.
 
 Adapter continuity:
+
 - Zo-Qore UI: independent product UI track.
 - FailSafe local IDE node: supported adapter path to local IDE workflows.
 - Both surfaces must consume the same runtime contract and decision schema.
 
 1. Start runtime API:
+
 ```bash
 node dist/runtime/service/start.js
 ```
 
 2. Sync canonical UI assets from `MythologIQ/failsafe`:
+
 ```bash
 npm run ui:sync
 ```
 
 3. Start standalone UI in another terminal:
+
 ```bash
 node dist/zo/ui-shell/start.js
 ```
 
 4. Open:
+
 ```text
 http://127.0.0.1:9380
 ```
 
 UI env controls:
+
 - `QORE_UI_HOST` (default `127.0.0.1`)
 - `QORE_UI_PORT` (default `9380`)
 - `QORE_RUNTIME_BASE_URL` (default `http://127.0.0.1:${QORE_API_PORT|7777}`)
@@ -264,11 +279,13 @@ npm run zo:one-click
 By default, `/` serves the full extension UI. For the compact diagnostic shell, use `/?ui=compact`.
 
 Stable UI routes:
+
 - Full console: `/ui/console`
 - Monitor view: `/ui/monitor`
 - Route discovery: `/api/ui/routes`
 
 IDE Web Panel/Sidebar profile:
+
 - Use monitor route in the panel URL: `http://127.0.0.1:9380/ui/monitor`
 - For iframe/webview embedding, set:
   - `QORE_UI_ALLOW_FRAME_EMBED=true`
@@ -284,14 +301,19 @@ npm run zo:stop
 ## Operational Tooling
 
 - Rotate actor keys:
+
 ```bash
 npm run keys:rotate
 ```
+
 - Verify Zo assumption evidence freshness:
+
 ```bash
 npm run assumptions:check
 ```
+
 - Start fallback watcher from built output:
+
 ```bash
 node dist/zo/fallback/start-watcher.js
 ```
@@ -302,11 +324,13 @@ Your existing intent package output area is sufficient if it renders prompt-tran
 Use `runtime/api/PromptTransparencyView.ts` to map ledger payloads (`type: prompt_transparency`) into a stable UI view model.
 
 Model selection behavior for Zo direct mode:
+
 - `manual`: use provided model only.
 - `suggest`: preserve provided model and emit recommendation metadata.
 - `auto`: select model automatically from catalog and attach a warning banner.
 
 Recommendation metadata includes token-efficiency and cost-savings signals:
+
 - estimated input and output tokens
 - estimated selected-model cost
 - baseline-model cost
@@ -340,14 +364,19 @@ bash deploy/zo/install-zo-full.sh
 ```
 
 This installer is Zo-specific and will:
+
 - clone/update repository
 - install dependencies
 - sync full shared UI
 - build runtime and UI host
 - generate missing API/Auth/MFA/Admin secrets
-- register `qore-runtime` and `qore-ui` user services
+- register `qore-runtime` and `qore-ui` user services (if available)
+- **provide Zo Native AI handoff prompt** if `register_user_service` is unavailable
+
+**Note:** Some Zo environments may not have user service registration enabled due to security restrictions or permission settings. The installer provides a prompt that you can copy and paste into your Zo native AI to complete service registration. Alternatively, you can use standalone mode which runs services as background processes (no auto-restart on Zo reboot).
 
 Installer options:
+
 - `--non-interactive` for automation mode
 - `--config <path>` to load predefined values
 - `--write-config <path>` to persist resolved values
@@ -373,6 +402,7 @@ npm run zo:uninstall:legacy-test
 ```
 
 Updater behavior:
+
 - fetches latest `origin/main`
 - snapshots runtime state under `.failsafe/backups`
 - applies fast-forward update
@@ -419,6 +449,7 @@ register_user_service \
 ```
 
 MFA bootstrap:
+
 - Run `npm run ui:mfa:secret` and copy `OTPAuthURL` into your authenticator app (1Password, Authy, Google Authenticator, iOS Passwords).
 - Login flow becomes: Basic Auth (username/password), then TOTP step at `/mfa`.
 - Security admin endpoints:
@@ -429,6 +460,7 @@ MFA bootstrap:
   - `POST /api/admin/mfa/recovery/reset` with `{ "confirm": "RESET_MFA" }` (rotate TOTP secret and revoke all sessions)
 
 Control-plane baseline (`qorectl`):
+
 - `npm run qorectl:doctor`
 - `npm run qorectl:sessions`
 - `npm run qorectl:devices`
@@ -437,6 +469,7 @@ Control-plane baseline (`qorectl`):
 - `QORE_UI_ADMIN_TOKEN` is required for session revocation automation.
 
 Resilience operations:
+
 - `npm run zo:backup` to snapshot ledger/replay/auth installer state under `.failsafe/backups/`
 - `npm run zo:backups` to list available snapshots
 - `npm run zo:restore:dry-run -- --from <backupDir>` to validate restore inputs
@@ -451,6 +484,7 @@ sudo bash deploy/zo/take-this-and-go.sh
 ```
 
 Bootstrap script:
+
 - pulls repository from GitHub
 - installs dependencies
 - builds runtime
@@ -477,6 +511,7 @@ npm run release:artifacts
 ```
 
 Output:
+
 - `dist/release/vX.Y.Z/failsafe-qore-zo-bundle-vX.Y.Z.tgz`
 - `dist/release/vX.Y.Z/SHA256SUMS`
 - `dist/release/vX.Y.Z/TAKE_THIS_AND_GO.md`
@@ -509,20 +544,19 @@ Tag push (`v*`) also triggers GitHub release artifact publishing via `.github/wo
 
 ## Claim-to-Source Map
 
-| Claim | Status | Source |
-|---|---|---|
-| Runtime coordinator exists | `implemented` | `runtime/service/QoreRuntimeService.ts:23` |
-| Local API enforces API key by default | `implemented` | `runtime/service/LocalApiServer.ts:25` |
-| Contract package is externalized and consumed as dependency | `implemented` | `package.json:28` |
-| Zo MCP proxy enforces signed actor context | `implemented` | `zo/mcp-proxy/server.ts:170` |
-| Zo HTTP proxy implements policy preflight for `/zo/ask` | `implemented` | `zo/http-proxy/server.ts:62` |
-| Zo direct adapters enforce model policy before dispatch | `implemented` | `zo/http-proxy/server.ts:317`, `zo/mcp-proxy/server.ts:566` |
-| Prompt transparency events are emitted for build/dispatch stages | `implemented` | `zo/prompt-transparency.ts:1`, `zo/http-proxy/server.ts:342`, `zo/mcp-proxy/server.ts:591` |
-| Replay protection supports SQLite shared strategy | `implemented` | `zo/security/replay-store.ts:70` |
-| Release gate script runs typecheck, lint, test, build, assumptions check | `implemented` | `scripts/release-gate.mjs:4` |
-| CI includes baseline checks and release-readiness workflow | `implemented` | `.github/workflows/ci.yml:1`, `.github/workflows/release-readiness.yml:1` |
+| Claim                                                                    | Status        | Source                                                                                     |
+| ------------------------------------------------------------------------ | ------------- | ------------------------------------------------------------------------------------------ |
+| Runtime coordinator exists                                               | `implemented` | `runtime/service/QoreRuntimeService.ts:23`                                                 |
+| Local API enforces API key by default                                    | `implemented` | `runtime/service/LocalApiServer.ts:25`                                                     |
+| Contract package is externalized and consumed as dependency              | `implemented` | `package.json:28`                                                                          |
+| Zo MCP proxy enforces signed actor context                               | `implemented` | `zo/mcp-proxy/server.ts:170`                                                               |
+| Zo HTTP proxy implements policy preflight for `/zo/ask`                  | `implemented` | `zo/http-proxy/server.ts:62`                                                               |
+| Zo direct adapters enforce model policy before dispatch                  | `implemented` | `zo/http-proxy/server.ts:317`, `zo/mcp-proxy/server.ts:566`                                |
+| Prompt transparency events are emitted for build/dispatch stages         | `implemented` | `zo/prompt-transparency.ts:1`, `zo/http-proxy/server.ts:342`, `zo/mcp-proxy/server.ts:591` |
+| Replay protection supports SQLite shared strategy                        | `implemented` | `zo/security/replay-store.ts:70`                                                           |
+| Release gate script runs typecheck, lint, test, build, assumptions check | `implemented` | `scripts/release-gate.mjs:4`                                                               |
+| CI includes baseline checks and release-readiness workflow               | `implemented` | `.github/workflows/ci.yml:1`, `.github/workflows/release-readiness.yml:1`                  |
 
 ## License
 
 MIT. See `LICENSE`.
-

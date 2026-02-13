@@ -1,6 +1,7 @@
 # Zo Install Guide (Zo-Qore 1.0)
 
 Repository:
+
 - `https://github.com/MythologIQ/failsafe-qore`
 
 This document is the fastest path to a working Zo-Qore installation, with explicit troubleshooting.
@@ -16,6 +17,7 @@ bash deploy/zo/install-zo-full.sh
 ```
 
 What this installer does:
+
 - installs dependencies
 - builds runtime and UI
 - syncs UI assets
@@ -32,6 +34,7 @@ curl -H "x-qore-api-key: $QORE_API_KEY" http://127.0.0.1:7777/health
 ```
 
 Open:
+
 - `https://<your-qore-ui-service>.zocomputer.io/ui/console`
 - `https://<your-qore-ui-service>.zocomputer.io/ui/monitor`
 
@@ -63,18 +66,64 @@ bash deploy/zo/stop-standalone.sh
 
 ## 5) Troubleshooting
 
+### Error: `missing required command: register_user_service`
+
+Cause:
+
+- Zo user service registration is not available in your environment.
+- This can happen due to security restrictions, permission settings, or environment configuration.
+
+Fix:
+
+- The installer now provides a **Zo Native AI handoff prompt** when `register_user_service` is unavailable.
+- Copy the prompt from the installer output and paste it into your Zo native AI.
+- The Zo native AI will complete the service registration for you.
+
+**Steps:**
+
+1. Run the installer:
+
+   ```bash
+   bash deploy/zo/install-zo-full.sh
+   ```
+
+2. When the installer shows the "ZO NATIVE AI SETUP HANDOFF" message, copy the prompt
+
+3. Paste the prompt into your Zo native AI
+
+4. The Zo native AI will register the services and verify they are healthy
+
+**Alternative: Standalone Mode**
+
+If you prefer not to use Zo native AI, you can run services in standalone mode:
+
+```bash
+cd /home/workspace/MythologIQ/FailSafe-Qore
+export QORE_API_KEY="replace-with-strong-secret"
+bash deploy/zo/one-click-standalone.sh
+```
+
+**Note:** In standalone mode, services do NOT auto-restart on Zo reboot. To restart services:
+
+```bash
+bash deploy/zo/one-click-standalone.sh
+```
+
 ### Error: `System has not been booted with systemd as init system`
 
 Cause:
+
 - Zo environment uses non-systemd init.
 
 Fix:
+
 - Do not use systemd bootstrap in Zo.
 - Use `deploy/zo/install-zo-full.sh` or `deploy/zo/one-click-services.sh`.
 
 ### Error: destination path exists and is not empty
 
 Cause:
+
 - install directory already contains files.
 
 Fix:
@@ -89,6 +138,7 @@ bash deploy/zo/install-zo-full.sh
 ### UI route returns `{"error":"NOT_FOUND","message":"Asset not found"}`
 
 Cause:
+
 - UI assets were not synced or stale.
 
 Fix:
@@ -104,35 +154,45 @@ Then restart the UI service.
 ### Runtime unreachable at `127.0.0.1:7777`
 
 Cause:
+
 - runtime service failed or missing API key.
 
 Fix:
+
 1. Confirm `QORE_API_KEY` is set in runtime service env.
 2. Check logs:
+
 ```bash
 service_logs qore-runtime --tail 200
 ```
+
 3. Restart service and retest health.
 
 ### Login works but MFA fails
 
 Cause:
+
 - wrong TOTP secret enrollment or expired code.
 
 Fix:
+
 1. Rotate MFA secret:
+
 ```bash
 npm run ui:mfa:secret
 ```
+
 2. Re-enroll `OTPAuthURL` in authenticator app.
 3. Retry with current 6-digit code.
 
 ### Locked out after repeated auth attempts
 
 Cause:
+
 - auth/MFA lockout thresholds reached.
 
 Fix:
+
 - wait lockout window, or adjust:
   - `QORE_UI_AUTH_MAX_FAILURES`
   - `QORE_UI_AUTH_LOCKOUT_MS`

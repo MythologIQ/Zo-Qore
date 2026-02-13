@@ -450,6 +450,84 @@ print_summary() {
   log "  service_doctor ${UI_LABEL}"
 }
 
+print_zo_ai_handoff() {
+  cat <<'EOF'
+
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                     ZO NATIVE AI SETUP HANDOFF                              ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+The installer has completed all preparation steps. Zo user service registration is not
+available in this environment. Please copy the prompt below and paste it into your
+Zo native AI to complete the service registration.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Copy this prompt to your Zo native AI:
+
+─────────────────────────────────────────────────────────────────────────────────────────────
+
+Complete the FailSafe-Qore Zo service registration for me.
+
+Repository: ${repo_dir}
+Runtime Label: ${RUNTIME_LABEL}
+UI Label: ${UI_LABEL}
+Runtime Port: ${RUNTIME_PORT}
+UI Port: ${UI_PORT}
+
+Required environment variables (already generated):
+- QORE_API_KEY=$(mask_secret "${QORE_API_KEY}")
+- QORE_UI_BASIC_AUTH_USER=${QORE_UI_BASIC_AUTH_USER}
+- QORE_UI_BASIC_AUTH_PASS=$(mask_secret "${QORE_UI_BASIC_AUTH_PASS}")
+- QORE_UI_TOTP_SECRET=$(mask_secret "${QORE_UI_TOTP_SECRET}" 6)
+- QORE_UI_ADMIN_TOKEN=$(mask_secret "${QORE_UI_ADMIN_TOKEN}")
+
+Steps to complete:
+1. Register runtime service with these commands:
+   export SERVICE_LABEL="${RUNTIME_LABEL}"
+   export SERVICE_PORT="${RUNTIME_PORT}"
+   export QORE_API_HOST="${RUNTIME_HOST}"
+   export QORE_API_PORT="${RUNTIME_PORT}"
+   cd "${repo_dir}"
+   bash deploy/zo/register-user-service.sh
+
+2. Register UI service with these commands:
+   export UI_LABEL="${UI_LABEL}"
+   export UI_PORT="${UI_PORT}"
+   export QORE_UI_HOST="${UI_HOST}"
+   export RUNTIME_BASE_URL="http://127.0.0.1:${RUNTIME_PORT}"
+   export QORE_UI_BASIC_AUTH_USER="${QORE_UI_BASIC_AUTH_USER}"
+   export QORE_UI_BASIC_AUTH_PASS="${QORE_UI_BASIC_AUTH_PASS}"
+   export QORE_UI_TOTP_SECRET="${QORE_UI_TOTP_SECRET}"
+   export QORE_UI_ADMIN_TOKEN="${QORE_UI_ADMIN_TOKEN}"
+   cd "${repo_dir}"
+   bash deploy/zo/register-ui-user-service.sh
+
+3. Verify services are healthy:
+   service_doctor ${RUNTIME_LABEL}
+   service_doctor ${UI_LABEL}
+   curl -H "x-qore-api-key: ${QORE_API_KEY}" http://127.0.0.1:${RUNTIME_PORT}/health
+
+4. Print final URLs:
+   echo "Runtime URL: https://${RUNTIME_LABEL}-<zo-host>.zocomputer.io"
+   echo "UI URL: https://${UI_LABEL}-<zo-host>.zocomputer.io/ui/console"
+
+Do not stop until both services are registered and healthy. If any step fails,
+diagnose and remediate automatically. Retry until success.
+
+─────────────────────────────────────────────────────────────────────────────────────────────
+
+After Zo native AI completes the setup, you can access your services at:
+- Runtime: http://${RUNTIME_HOST}:${RUNTIME_PORT}
+- UI: http://${UI_HOST}:${UI_PORT}
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Installation preparation complete. Waiting for Zo native AI to complete service registration...
+
+EOF
+}
+
 main() {
   parse_args "$@"
   load_config_file
@@ -463,7 +541,6 @@ main() {
   require_cmd node
   require_cmd npm
   require_cmd bash
-  require_cmd register_user_service
   require_cmd openssl
 
   interactive_config
@@ -486,24 +563,44 @@ main() {
   generate_missing_secrets
   write_config_file
 
-  export SERVICE_LABEL="${RUNTIME_LABEL}"
-  export SERVICE_PORT="${RUNTIME_PORT}"
-  export QORE_API_HOST="${RUNTIME_HOST}"
-  export QORE_API_PORT="${RUNTIME_PORT}"
+  # Check if Zo user service registration is available
+  if command -v register_user_service >/dev/null 2>&1; then
+    log "Zo user service registration available - registering Zo services"
+    
+    export SERVICE_LABEL="${RUNTIME_LABEL}"
+    export SERVICE_PORT="${RUNTIME_PORT}"
+    export QORE_API_HOST="${RUNTIME_HOST}"
+    export QORE_API_PORT="${RUNTIME_PORT}"
 
-  export UI_LABEL="${UI_LABEL}"
-  export UI_PORT="${UI_PORT}"
-  export QORE_UI_HOST="${UI_HOST}"
-  export RUNTIME_BASE_URL="http://127.0.0.1:${RUNTIME_PORT}"
+    export UI_LABEL="${UI_LABEL}"
+    export UI_PORT="${UI_PORT}"
+    export QORE_UI_HOST="${UI_HOST}"
+    export RUNTIME_BASE_URL="http://127.0.0.1:${RUNTIME_PORT}"
 
-  log "registering runtime service"
-  bash deploy/zo/register-user-service.sh
+    log "registering runtime service"
+    bash deploy/zo/register-user-service.sh
 
-  log "registering ui service (Basic Auth + MFA)"
-  bash deploy/zo/register-ui-user-service.sh
+    log "registering ui service (Basic Auth + MFA)"
+    bash deploy/zo/register-ui-user-service.sh
 
-  wait_for_health
-  print_summary
+    wait_for_health
+    print_summary
+  else
+    log "Zo user service registration not available"
+    log "Installation preparation complete. Service registration requires Zo native AI."
+    print_zo_ai_handoff
+    
+    # Export secrets for Zo native AI to use
+    log ""
+    log "Exported secrets for Zo native AI:"
+    log "export QORE_API_KEY='${QORE_API_KEY}'"
+    log "export QORE_UI_BASIC_AUTH_USER='${QORE_UI_BASIC_AUTH_USER}'"
+    log "export QORE_UI_BASIC_AUTH_PASS='${QORE_UI_BASIC_AUTH_PASS}'"
+    log "export QORE_UI_TOTP_SECRET='${QORE_UI_TOTP_SECRET}'"
+    log "export QORE_UI_ADMIN_TOKEN='${QORE_UI_ADMIN_TOKEN}'"
+    log ""
+    log "Copy the prompt above and paste it into your Zo native AI to complete setup."
+  fi
 }
 
 main "$@"
