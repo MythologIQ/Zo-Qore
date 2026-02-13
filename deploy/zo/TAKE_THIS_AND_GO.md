@@ -1,23 +1,13 @@
-# Take This and Go
+# Zo Install Guide (Zo-Qore 1.0)
 
-This bundle installs `FailSafe-Qore` on a Zo Linux host.
+Repository:
+- `https://github.com/MythologIQ/failsafe-qore`
 
-For Zo workspaces, use Zo user service mode (recommended). Systemd mode is only for non-Zo Linux hosts that run systemd as PID 1.
+This document is the fastest path to a working Zo-Qore installation, with explicit troubleshooting.
 
-## Option 1 (Recommended): Zo User Service
+## 1) Recommended Path: Full Zo Installer
 
-```bash
-git clone https://github.com/MythologIQ/failsafe-qore.git FailSafe-Qore
-cd FailSafe-Qore
-export QORE_UI_BASIC_AUTH_USER="admin"
-export QORE_UI_BASIC_AUTH_PASS="change-this-password"
-eval "$(npm run -s ui:mfa:secret | grep '^QORE_UI_TOTP_SECRET=')"
-bash deploy/zo/one-click-services.sh
-```
-
-`one-click-services.sh` syncs the canonical full UI from `MythologIQ/failsafe` before building and registering services.
-
-## Option 0 (Preferred for handoff): Full Installer File
+Run these commands in Zo terminal:
 
 ```bash
 git clone https://github.com/MythologIQ/failsafe-qore.git FailSafe-Qore
@@ -25,14 +15,27 @@ cd FailSafe-Qore
 bash deploy/zo/install-zo-full.sh
 ```
 
-This performs complete Zo install and service registration with:
-- interactive config wizard
-- full runtime/UI build
-- Basic Auth + MFA + admin-token generation (if not provided)
-- health check
-- optional persisted config file (`.failsafe/zo-installer.env`)
+What this installer does:
+- installs dependencies
+- builds runtime and UI
+- syncs UI assets
+- configures auth, MFA, and admin token
+- registers Zo user services (`qore-runtime`, `qore-ui`)
+- performs health checks
 
-Automation mode:
+## 2) One-Minute Verification
+
+```bash
+service_doctor qore-runtime
+service_doctor qore-ui
+curl -H "x-qore-api-key: $QORE_API_KEY" http://127.0.0.1:7777/health
+```
+
+Open:
+- `https://<your-qore-ui-service>.zocomputer.io/ui/console`
+- `https://<your-qore-ui-service>.zocomputer.io/ui/monitor`
+
+## 3) Non-Interactive Install (Automation)
 
 ```bash
 bash deploy/zo/install-zo-full.sh --non-interactive --config /path/to/zo-installer.env
@@ -44,54 +47,114 @@ Reconfigure existing service labels:
 bash deploy/zo/install-zo-full.sh --force-reconfigure
 ```
 
-Manual equivalent:
+## 4) If You Prefer Process Mode (No Zo Service Registration)
 
 ```bash
-register_user_service \
-  --label "qore-runtime" \
-  --protocol "http" \
-  --local-port 7777 \
-  --workdir "/home/workspace/MythologIQ/FailSafe-Qore" \
-  --entrypoint "node dist/runtime/service/start.js" \
-  --env-vars "QORE_API_HOST=0.0.0.0,QORE_API_PORT=7777"
-
-register_user_service \
-  --label "qore-ui" \
-  --protocol "http" \
-  --local-port 9380 \
-  --workdir "/home/workspace/MythologIQ/FailSafe-Qore" \
-  --entrypoint "node dist/zo/ui-shell/start.js" \
-  --env-vars "QORE_UI_HOST=0.0.0.0,QORE_UI_PORT=9380,QORE_RUNTIME_BASE_URL=http://127.0.0.1:7777,QORE_UI_ASSETS_DIR=/home/workspace/MythologIQ/FailSafe-Qore/zo/ui-shell/shared,QORE_UI_REQUIRE_AUTH=true,QORE_UI_REQUIRE_MFA=true,QORE_UI_BASIC_AUTH_USER=admin,QORE_UI_BASIC_AUTH_PASS=change-this-password,QORE_UI_TOTP_SECRET=replace-with-base32-secret,QORE_UI_ADMIN_TOKEN=replace-with-admin-token"
+cd /home/workspace/MythologIQ/FailSafe-Qore
+export QORE_API_KEY="<your-key>"
+bash deploy/zo/one-click-standalone.sh
 ```
 
-MFA note:
-- Use `npm run ui:mfa:secret` and enroll `OTPAuthURL` in your authenticator app.
-- First load prompts Basic Auth, then redirects to `/mfa` for 6-digit TOTP verification.
-- Optional hardening env vars:
-  - `QORE_UI_ALLOWED_IPS=203.0.113.10,198.51.100.14`
-  - `QORE_UI_TRUST_PROXY_HEADERS=false` (set true only behind trusted proxy)
-  - `QORE_UI_AUTH_MAX_FAILURES=6`, `QORE_UI_AUTH_LOCKOUT_MS=900000`
-  - `QORE_UI_MFA_MAX_FAILURES=6`, `QORE_UI_MFA_LOCKOUT_MS=900000`
-  - `QORE_UI_ADMIN_TOKEN=<hex-token>` for control-plane admin automation
-
-Control-plane commands:
+Stop:
 
 ```bash
-npm run qorectl:doctor
-QORE_UI_ADMIN_TOKEN="<admin-token>" npm run qorectl:sessions
-QORE_UI_ADMIN_TOKEN="<admin-token>" npm run qorectl:devices
-QORE_UI_ADMIN_TOKEN="<admin-token>" npm run qorectl:revoke-all-sessions
-QORE_UI_ADMIN_TOKEN="<admin-token>" npm run qorectl:mfa-reset
+bash deploy/zo/stop-standalone.sh
 ```
 
-Admin endpoints:
-- `GET /api/admin/security`
-- `GET /api/admin/sessions`
-- `GET /api/admin/devices`
-- `POST /api/admin/sessions/revoke` with `all`, `sessionId`, or `deviceId`
-- `POST /api/admin/mfa/recovery/reset` with `confirm=RESET_MFA`
+## 5) Troubleshooting
 
-Resilience commands:
+### Error: `System has not been booted with systemd as init system`
+
+Cause:
+- Zo environment uses non-systemd init.
+
+Fix:
+- Do not use systemd bootstrap in Zo.
+- Use `deploy/zo/install-zo-full.sh` or `deploy/zo/one-click-services.sh`.
+
+### Error: destination path exists and is not empty
+
+Cause:
+- install directory already contains files.
+
+Fix:
+
+```bash
+rm -rf /home/workspace/MythologIQ/FailSafe-Qore
+git clone https://github.com/MythologIQ/failsafe-qore.git FailSafe-Qore
+cd FailSafe-Qore
+bash deploy/zo/install-zo-full.sh
+```
+
+### UI route returns `{"error":"NOT_FOUND","message":"Asset not found"}`
+
+Cause:
+- UI assets were not synced or stale.
+
+Fix:
+
+```bash
+cd /home/workspace/MythologIQ/FailSafe-Qore
+npm run ui:sync
+npm run build
+```
+
+Then restart the UI service.
+
+### Runtime unreachable at `127.0.0.1:7777`
+
+Cause:
+- runtime service failed or missing API key.
+
+Fix:
+1. Confirm `QORE_API_KEY` is set in runtime service env.
+2. Check logs:
+```bash
+service_logs qore-runtime --tail 200
+```
+3. Restart service and retest health.
+
+### Login works but MFA fails
+
+Cause:
+- wrong TOTP secret enrollment or expired code.
+
+Fix:
+1. Rotate MFA secret:
+```bash
+npm run ui:mfa:secret
+```
+2. Re-enroll `OTPAuthURL` in authenticator app.
+3. Retry with current 6-digit code.
+
+### Locked out after repeated auth attempts
+
+Cause:
+- auth/MFA lockout thresholds reached.
+
+Fix:
+- wait lockout window, or adjust:
+  - `QORE_UI_AUTH_MAX_FAILURES`
+  - `QORE_UI_AUTH_LOCKOUT_MS`
+  - `QORE_UI_MFA_MAX_FAILURES`
+  - `QORE_UI_MFA_LOCKOUT_MS`
+
+## 6) Security Hardening (Recommended)
+
+- set strong `QORE_API_KEY`
+- set strong `QORE_UI_BASIC_AUTH_USER` and `QORE_UI_BASIC_AUTH_PASS`
+- require MFA (`QORE_UI_REQUIRE_MFA=true`)
+- configure `QORE_UI_ADMIN_TOKEN`
+- optionally restrict IPs with `QORE_UI_ALLOWED_IPS`
+
+## 7) Update and Rollback-Safe Maintenance
+
+```bash
+npm run zo:update:dry-run
+npm run zo:update
+```
+
+Backups and restore:
 
 ```bash
 npm run zo:backup
@@ -100,78 +163,30 @@ npm run zo:restore:dry-run -- --from /path/to/.failsafe/backups/<timestamp>
 node scripts/zo-resilience.mjs restore --from /path/to/.failsafe/backups/<timestamp> --confirm RESTORE
 ```
 
-Auto-update commands:
+## 8) Agent-Assisted Setup Prompt
 
-```bash
-npm run zo:update:dry-run
-npm run zo:update
-```
+If you want a Zo in-app agent to run setup for you, use:
 
-`zo:update` runs backup, repo fast-forward, verification, service re-registration, and rollback on failure.
+- `deploy/zo/AGENT_SETUP_PROMPT.md`
 
-Optional scheduler:
+## 9) Uninstall and Legacy Test Cleanup
 
-```bash
-npm run zo:update:install-cron
-SCHEDULE="17 3 * * *" npm run zo:update:install-cron
-npm run zo:update:remove-cron
-```
-
-## Option 2: Process Mode (No Service)
+Remove active Zo-Qore services plus current install directory:
 
 ```bash
 cd /home/workspace/MythologIQ/FailSafe-Qore
-export QORE_API_KEY="<your-key>"
-bash deploy/zo/one-click-standalone.sh
+bash deploy/zo/install-zo-full.sh --uninstall
 ```
 
-`one-click-standalone.sh` also syncs the full UI automatically.
-
-Stop:
-
-```bash
-bash deploy/zo/stop-standalone.sh
-```
-
-Standalone UI (process mode):
-
-```bash
-# included in one-click-standalone.sh
-```
-
-## Option 3: Systemd Bootstrap (Non-Zo Linux Only)
-
-Use only when `cat /proc/1/comm` returns `systemd`.
-
-```bash
-sudo bash deploy/zo/take-this-and-go.sh
-```
-
-## Optional: Upload Bundle Flow
-
-From Windows:
-
-```powershell
-npm run zo:bundle
-```
-
-Upload `dist/failsafe-qore-zo-bundle.tgz` to Zo host, extract, then run:
+Also remove first-test bootstrap artifacts (`/opt/failsafe-qore-test*` and `/etc/failsafe-qore-test`):
 
 ```bash
 cd /home/workspace/MythologIQ/FailSafe-Qore
-bash deploy/zo/register-user-service.sh
+bash deploy/zo/install-zo-full.sh --uninstall --cleanup-legacy-test
 ```
 
-## After Install
-
-Set secrets and verify health:
-
-- `QORE_API_KEY`
-
-Then:
+Non-interactive mode:
 
 ```bash
-service_doctor qore-runtime
-curl -H "x-qore-api-key: $QORE_API_KEY" http://127.0.0.1:7777/health
-service_doctor qore-ui
+bash deploy/zo/install-zo-full.sh --non-interactive --uninstall --cleanup-legacy-test
 ```

@@ -1,4 +1,4 @@
-# ZoQore Adversarial Review: Sprint 2
+# Zo-Qore Adversarial Review: Sprint 2
 
 ## Scope
 
@@ -46,3 +46,4 @@ Recommended focus for next sprint:
 1. Backup and restore lifecycle (ledger, replay DB, auth posture snapshot).
 2. Upgrade-safe migration script with preflight and rollback hooks.
 3. Operator runbook automation for incident rotation flows.
+

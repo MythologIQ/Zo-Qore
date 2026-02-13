@@ -80,9 +80,66 @@ describe("QoreUiShellServer", () => {
       const hubRes = await fetch(`${baseUrl}/api/hub`);
       expect(hubRes.status).toBe(200);
       expect(hubRes.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(hubRes.headers.get("x-frame-options")).toBe("DENY");
       const hub = (await hubRes.json()) as { qoreRuntime?: { connected?: boolean; policyVersion?: string } };
       expect(hub.qoreRuntime?.connected).toBe(true);
       expect(hub.qoreRuntime?.policyVersion).toBe("policy-test-v1");
+
+      const monitorRes = await fetch(`${baseUrl}/ui/monitor`);
+      expect(monitorRes.status).toBe(200);
+
+      const consoleRes = await fetch(`${baseUrl}/ui/console`);
+      expect(consoleRes.status).toBe(200);
+      const consoleHtml = await consoleRes.text();
+      expect(consoleHtml.includes('data-route="skills"')).toBe(true);
+      expect(consoleHtml.includes('data-route="library"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-template"')).toBe(true);
+      expect(consoleHtml.includes('<option value="planning">Planning</option>')).toBe(true);
+      expect(consoleHtml.includes('id="intent-model-mode"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-skill-select"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-context-input"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-approve"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-send"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-copy"')).toBe(false);
+      expect(consoleHtml.includes('id="skill-scribe-generate"')).toBe(true);
+      expect(consoleHtml.includes('id="skill-scribe-add-context"')).toBe(true);
+      expect(consoleHtml.includes('id="skill-scribe-context-log"')).toBe(true);
+      expect(consoleHtml.includes('id="skill-scribe-alert"')).toBe(true);
+      expect(consoleHtml.includes("Prompt Pipeline")).toBe(true);
+      expect(consoleHtml.includes("Skill Library")).toBe(true);
+      expect(consoleHtml.includes('data-route="persona"')).toBe(true);
+      expect(consoleHtml.includes('data-route="workflows"')).toBe(true);
+      expect(consoleHtml.includes('data-route="projects"')).toBe(true);
+      expect(consoleHtml.includes("Persona profile management UI is in progress")).toBe(true);
+      expect(consoleHtml.includes("Workflow authoring and sequencing controls are in progress")).toBe(true);
+      expect(consoleHtml.includes("Kanban, Gantt Sheet, and Roadmap sub-tabs are in progress")).toBe(true);
+      expect(consoleHtml.includes("Persona Management UI is planned")).toBe(true);
+      expect(consoleHtml.includes("Add Projects tab with project selector")).toBe(true);
+      expect(consoleHtml.includes("Add dedicated Agent Persona and Workflows tabs")).toBe(true);
+      expect(consoleHtml.includes(">Comms<")).toBe(true);
+      expect(consoleHtml.includes('id="session-user"')).toBe(true);
+      expect(consoleHtml.includes('id="session-logout"')).toBe(true);
+      expect(consoleHtml.includes('id="settings-gear"')).toBe(true);
+      expect(consoleHtml.includes("Open Source Beta")).toBe(true);
+      expect(consoleHtml.includes("Build Zo-Qore With Us")).toBe(true);
+      expect(consoleHtml.includes("Join the Beta on GitHub")).toBe(true);
+      expect(consoleHtml.includes("https://github.com/MythologIQ/failsafe-qore")).toBe(true);
+      expect(consoleHtml.includes('src="/zoqore-side-banner.png"')).toBe(true);
+      expect(consoleHtml.includes("Activity Logs")).toBe(true);
+      expect(consoleHtml.includes('data-route="activity" type="button"')).toBe(false);
+      expect(consoleHtml.includes('data-route="settings" type="button"')).toBe(false);
+      expect(consoleHtml.indexOf('data-route="skills"')).toBeLessThan(
+        consoleHtml.indexOf('data-route="run"'),
+      );
+      expect(consoleHtml.indexOf('data-route="governance"')).toBeLessThan(
+        consoleHtml.indexOf('data-route="library"'),
+      );
+
+      const routesRes = await fetch(`${baseUrl}/api/ui/routes`);
+      expect(routesRes.status).toBe(200);
+      const routes = (await routesRes.json()) as { monitor?: string; console?: string };
+      expect(routes.monitor).toBe("/ui/monitor");
+      expect(routes.console).toBe("/ui/console");
 
       const secRes = await fetch(`${baseUrl}/api/admin/security`);
       expect(secRes.status).toBe(200);
@@ -159,6 +216,52 @@ describe("QoreUiShellServer", () => {
       expect(revoke.status).toBe(200);
       const revokeBody = (await revoke.json()) as { mode?: string };
       expect(revokeBody.mode).toBe("all");
+    });
+  });
+
+  it("supports IDE panel embedding headers when enabled", async () => {
+    await withRuntimeStub(async (runtimeBaseUrl) => {
+      process.env.QORE_UI_ALLOW_FRAME_EMBED = "true";
+      process.env.QORE_UI_FRAME_ANCESTORS = "'self' https://*.vscode-cdn.net vscode-webview:";
+
+      const ui = new QoreUiShellServer({
+        host: "127.0.0.1",
+        port: 0,
+        runtimeBaseUrl,
+        runtimeApiKey: "test-key",
+      });
+      startedServers.push(ui);
+      await ui.start();
+      const uiAddr = ui.getAddress();
+      const baseUrl = `http://127.0.0.1:${uiAddr.port}`;
+
+      const monitorRes = await fetch(`${baseUrl}/ui/monitor`);
+      expect(monitorRes.status).toBe(200);
+      expect(monitorRes.headers.get("x-frame-options")).toBeNull();
+      const csp = String(monitorRes.headers.get("content-security-policy") ?? "");
+      expect(csp.includes("frame-ancestors")).toBe(true);
+      expect(csp.includes("vscode-webview:")).toBe(true);
+    });
+  });
+
+  it("serves monitor and console routes with trailing slash variants", async () => {
+    await withRuntimeStub(async (runtimeBaseUrl) => {
+      const ui = new QoreUiShellServer({
+        host: "127.0.0.1",
+        port: 0,
+        runtimeBaseUrl,
+        runtimeApiKey: "test-key",
+      });
+      startedServers.push(ui);
+      await ui.start();
+      const uiAddr = ui.getAddress();
+      const baseUrl = `http://127.0.0.1:${uiAddr.port}`;
+
+      const monitorSlash = await fetch(`${baseUrl}/ui/monitor/`);
+      expect(monitorSlash.status).toBe(200);
+
+      const consoleSlash = await fetch(`${baseUrl}/ui/console/`);
+      expect(consoleSlash.status).toBe(200);
     });
   });
 });

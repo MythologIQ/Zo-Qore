@@ -17,11 +17,25 @@ QORE_UI_BASIC_AUTH_USER="${QORE_UI_BASIC_AUTH_USER:-admin}"
 
 NON_INTERACTIVE=false
 FORCE_RECONFIGURE=false
+UNINSTALL=false
+CLEANUP_LEGACY_TEST=false
 CONFIG_FILE=""
 WRITE_CONFIG_FILE=""
 
 log() {
   printf '[failsafe-qore-zo-install] %s\n' "$*"
+}
+
+mask_secret() {
+  local value="$1"
+  local keep="${2:-4}"
+  local len="${#value}"
+  if [[ "$len" -le "$keep" ]]; then
+    printf '%s' "$value"
+    return
+  fi
+  local tail="${value: -$keep}"
+  printf '[redacted:%s]' "$tail"
 }
 
 die() {
@@ -45,6 +59,8 @@ Usage:
 Options:
   --non-interactive         Use env/config only, no prompts.
   --force-reconfigure       If service labels already exist, attempt removal then recreate.
+  --uninstall               Remove Zo-Qore services and local install path, then exit.
+  --cleanup-legacy-test     Also remove legacy test bootstrap artifacts (/opt and /etc failsafe-qore-test paths).
   --config <path>           Source configuration env file before install.
   --write-config <path>     Write resolved config to file.
   --help                    Show this help.
@@ -106,6 +122,14 @@ parse_args() {
         FORCE_RECONFIGURE=true
         shift
         ;;
+      --uninstall)
+        UNINSTALL=true
+        shift
+        ;;
+      --cleanup-legacy-test)
+        CLEANUP_LEGACY_TEST=true
+        shift
+        ;;
       --config)
         [[ $# -ge 2 ]] || die "--config requires a file path"
         CONFIG_FILE="$2"
@@ -159,6 +183,90 @@ remove_service_if_supported() {
     return 0
   fi
   return 1
+}
+
+is_protected_path() {
+  local path="$1"
+  case "$path" in
+    ""|"/"|"/home"|"/home/"|"/opt"|"/opt/"|"/etc"|"/etc/"|"/usr"|"/usr/"|"/var"|"/var/"|".")
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+remove_path_if_present() {
+  local path="$1"
+  local label="$2"
+  if [[ -z "$path" ]]; then
+    return
+  fi
+  if is_protected_path "$path"; then
+    log "skipping protected path for ${label}: ${path}"
+    return
+  fi
+  if [[ ! -e "$path" ]]; then
+    return
+  fi
+  rm -rf -- "$path" || log "warning: failed to remove ${label}: ${path}"
+  if [[ ! -e "$path" ]]; then
+    log "removed ${label}: ${path}"
+  fi
+}
+
+stop_standalone_processes() {
+  local pid_file
+  for pid_file in /tmp/qore-runtime.pid /tmp/qore-ui.pid; do
+    if [[ -f "$pid_file" ]]; then
+      local pid
+      pid="$(cat "$pid_file" 2>/dev/null || true)"
+      if [[ -n "$pid" ]] && kill -0 "$pid" >/dev/null 2>&1; then
+        kill "$pid" >/dev/null 2>&1 || true
+      fi
+      rm -f "$pid_file" >/dev/null 2>&1 || true
+    fi
+  done
+}
+
+perform_uninstall() {
+  if [[ "${NON_INTERACTIVE}" == "false" ]]; then
+    confirm_yes_no "Proceed with uninstall for labels ${RUNTIME_LABEL}/${UI_LABEL} and INSTALL_DIR=${INSTALL_DIR}?" false || {
+      log "uninstall cancelled"
+      exit 0
+    }
+  fi
+
+  log "removing Zo user services if present"
+  if service_exists "${RUNTIME_LABEL}"; then
+    remove_service_if_supported "${RUNTIME_LABEL}" || log "warning: could not remove ${RUNTIME_LABEL}; remove manually in Zo UI"
+  fi
+  if service_exists "${UI_LABEL}"; then
+    remove_service_if_supported "${UI_LABEL}" || log "warning: could not remove ${UI_LABEL}; remove manually in Zo UI"
+  fi
+
+  # Legacy labels from early safe bootstrap experiments.
+  local legacy_label
+  for legacy_label in "failsafe-qore-test" "failsafe-fallback-watcher-test" "failsafe-qore-test.service" "failsafe-fallback-watcher-test.service"; do
+    if service_exists "${legacy_label}"; then
+      remove_service_if_supported "${legacy_label}" || true
+    fi
+  done
+
+  stop_standalone_processes
+  remove_path_if_present "/dev/shm/qore-runtime.log" "runtime log"
+  remove_path_if_present "/dev/shm/qore-ui.log" "ui log"
+  remove_path_if_present "${INSTALL_DIR}" "install directory"
+
+  if [[ "${CLEANUP_LEGACY_TEST}" == "true" ]]; then
+    log "cleaning legacy test bootstrap artifacts"
+    remove_path_if_present "/opt/failsafe-qore-test" "legacy test install"
+    remove_path_if_present "/opt/failsafe-qore-test2" "legacy test install"
+    remove_path_if_present "/etc/failsafe-qore-test" "legacy test env directory"
+  fi
+
+  log "uninstall complete"
 }
 
 has_repo() {
@@ -264,20 +372,20 @@ write_config_file() {
   fi
 
   mkdir -p "$(dirname "${WRITE_CONFIG_FILE}")"
-  cat > "${WRITE_CONFIG_FILE}" <<EOF
-REPO_URL='${REPO_URL}'
-BRANCH='${BRANCH}'
-INSTALL_DIR='${INSTALL_DIR}'
-RUNTIME_LABEL='${RUNTIME_LABEL}'
-UI_LABEL='${UI_LABEL}'
-RUNTIME_PORT='${RUNTIME_PORT}'
-UI_PORT='${UI_PORT}'
-QORE_UI_BASIC_AUTH_USER='${QORE_UI_BASIC_AUTH_USER}'
-QORE_API_KEY='${QORE_API_KEY}'
-QORE_UI_BASIC_AUTH_PASS='${QORE_UI_BASIC_AUTH_PASS}'
-QORE_UI_TOTP_SECRET='${QORE_UI_TOTP_SECRET}'
-QORE_UI_ADMIN_TOKEN='${QORE_UI_ADMIN_TOKEN}'
-EOF
+  {
+    printf 'REPO_URL=%q\n' "${REPO_URL}"
+    printf 'BRANCH=%q\n' "${BRANCH}"
+    printf 'INSTALL_DIR=%q\n' "${INSTALL_DIR}"
+    printf 'RUNTIME_LABEL=%q\n' "${RUNTIME_LABEL}"
+    printf 'UI_LABEL=%q\n' "${UI_LABEL}"
+    printf 'RUNTIME_PORT=%q\n' "${RUNTIME_PORT}"
+    printf 'UI_PORT=%q\n' "${UI_PORT}"
+    printf 'QORE_UI_BASIC_AUTH_USER=%q\n' "${QORE_UI_BASIC_AUTH_USER}"
+    printf 'QORE_API_KEY=%q\n' "${QORE_API_KEY}"
+    printf 'QORE_UI_BASIC_AUTH_PASS=%q\n' "${QORE_UI_BASIC_AUTH_PASS}"
+    printf 'QORE_UI_TOTP_SECRET=%q\n' "${QORE_UI_TOTP_SECRET}"
+    printf 'QORE_UI_ADMIN_TOKEN=%q\n' "${QORE_UI_ADMIN_TOKEN}"
+  } > "${WRITE_CONFIG_FILE}"
   chmod 600 "${WRITE_CONFIG_FILE}" || true
   log "wrote config: ${WRITE_CONFIG_FILE}"
 }
@@ -326,15 +434,16 @@ wait_for_health() {
 print_summary() {
   log "installation complete"
   log ""
-  log "credentials (store securely now):"
-  log "QORE_API_KEY=${QORE_API_KEY}"
+  log "credentials configured (sensitive values redacted):"
+  log "QORE_API_KEY=$(mask_secret "${QORE_API_KEY}")"
   log "QORE_UI_BASIC_AUTH_USER=${QORE_UI_BASIC_AUTH_USER}"
-  log "QORE_UI_BASIC_AUTH_PASS=${QORE_UI_BASIC_AUTH_PASS}"
-  log "QORE_UI_TOTP_SECRET=${QORE_UI_TOTP_SECRET}"
-  log "QORE_UI_ADMIN_TOKEN=${QORE_UI_ADMIN_TOKEN}"
+  log "QORE_UI_BASIC_AUTH_PASS=$(mask_secret "${QORE_UI_BASIC_AUTH_PASS}")"
+  log "QORE_UI_TOTP_SECRET=$(mask_secret "${QORE_UI_TOTP_SECRET}" 6)"
+  log "QORE_UI_ADMIN_TOKEN=$(mask_secret "${QORE_UI_ADMIN_TOKEN}")"
   log ""
-  log "MFA enrollment URL:"
-  npm run -s ui:mfa:secret
+  log "MFA enrollment:"
+  log "  run: npm run -s ui:mfa:secret"
+  log "  note: run only if rotating/replacing the existing secret"
   log ""
   log "service checks:"
   log "  service_doctor ${RUNTIME_LABEL}"
@@ -344,6 +453,11 @@ print_summary() {
 main() {
   parse_args "$@"
   load_config_file
+
+  if [[ "${UNINSTALL}" == "true" ]]; then
+    perform_uninstall
+    return
+  fi
 
   require_cmd git
   require_cmd node

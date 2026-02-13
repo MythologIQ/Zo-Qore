@@ -1,4 +1,4 @@
-# ZoQore Adversarial Review: Sprint 4
+# Zo-Qore Adversarial Review: Sprint 4
 
 ## Scope
 
@@ -33,3 +33,4 @@
 - Open `high` findings: `0`
 - Open `medium` findings: `0`
 - Gate decision: `PASS`
+

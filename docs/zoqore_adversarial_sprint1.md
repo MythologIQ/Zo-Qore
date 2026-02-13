@@ -1,4 +1,4 @@
-# ZoQore Adversarial Review: Sprint 1
+# Zo-Qore Adversarial Review: Sprint 1
 
 ## Scope
 
@@ -54,3 +54,4 @@ Final State: `pass`
 3. UI admin endpoints currently rely on token and do not yet include scoped RBAC roles.
 
 These residual risks are scheduled for Sprint 2 security/admin operations track.
+

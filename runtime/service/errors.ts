@@ -6,7 +6,8 @@ export type RuntimeErrorCode =
   | "PAYLOAD_TOO_LARGE"
   | "REPLAY_CONFLICT"
   | "MODEL_REQUIRED"
-  | "MODEL_NOT_ALLOWED";
+  | "MODEL_NOT_ALLOWED"
+  | "RATE_LIMIT_EXCEEDED";
 
 export class RuntimeError extends Error {
   constructor(

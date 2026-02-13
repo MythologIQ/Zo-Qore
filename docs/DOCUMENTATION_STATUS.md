@@ -1,7 +1,7 @@
 # Documentation Status Map
 
 This file tracks high-impact documentation claims with explicit status labels.
-Last reviewed: 2026-02-12.
+Last reviewed: 2026-02-13.
 
 | Claim | Status | Source |
 |---|---|---|
@@ -70,3 +70,9 @@ Last reviewed: 2026-02-12.
 | Distributed nonce replay rejection is tested across proxy instances | implemented | `tests/zo.http.proxy.replay.distributed.test.ts:1` |
 | CI runs typecheck and tests on Node 20 | implemented | `.github/workflows/ci.yml:1` |
 | Zo assumption-control gates are documented and required | implemented | `docs/ZO_ASSUMPTIONS_AND_GATES.md:1` |
+| Comprehensive Zo-Qore walkthrough with troubleshooting appendix exists | implemented | `docs/ZOQORE_WALKTHROUGH.md:1` |
+| Zo-Qore intent and contributor acknowledgement note exists | implemented | `docs/ZOQORE_INTENT.md:1` |
+| Comms flow uses Generate plus approved Send package controls | implemented | `zo/ui-shell/custom/legacy/legacy-index.html:307`, `zo/ui-shell/custom/legacy/legacy-index.html:314` |
+| Skill Scribe supports iterative context accumulation with quality alerts | implemented | `zo/ui-shell/custom/legacy/legacy-index.html:343`, `zo/ui-shell/custom/legacy/main.js:592` |
+| Persona, Workflows, and Projects tabs are present as coming-soon placeholders | implemented | `zo/ui-shell/custom/legacy/legacy-index.html:131`, `zo/ui-shell/custom/legacy/legacy-index.html:132`, `zo/ui-shell/custom/legacy/legacy-index.html:133` |
+

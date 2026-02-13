@@ -20,10 +20,52 @@ require_cmd() {
   fi
 }
 
+# Security: Validate paths to prevent accidental deletion of critical system directories
+validate_install_path() {
+  local path="$1"
+  local path_name="$2"
+  
+  # Check if path is empty
+  if [[ -z "${path}" ]]; then
+    log "ERROR: ${path_name} is empty"
+    exit 1
+  fi
+  
+  # Check if path is absolute
+  if [[ "${path}" != /* ]]; then
+    log "ERROR: ${path_name} must be an absolute path: ${path}"
+    exit 1
+  fi
+  
+  # Check for path traversal attempts
+  if [[ "${path}" == *".."* ]]; then
+    log "ERROR: ${path_name} contains path traversal: ${path}"
+    exit 1
+  fi
+  
+  # Check for suspicious patterns
+  if [[ "${path}" =~ ^/(bin|boot|dev|etc|lib|lib64|proc|root|run|sbin|srv|sys|usr|var)/?$ ]]; then
+    log "ERROR: ${path_name} is a critical system directory: ${path}"
+    exit 1
+  fi
+  
+  # Additional safety: prevent deletion of home directory root
+  if [[ "${path}" == "/home" ]] || [[ "${path}" == "/home/" ]]; then
+    log "ERROR: ${path_name} cannot be /home: ${path}"
+    exit 1
+  fi
+  
+  return 0
+}
+
 if [[ "${EUID}" -ne 0 ]]; then
   log "run as root (sudo)"
   exit 1
 fi
+
+# Security: Validate paths before any operations
+validate_install_path "${INSTALL_DIR}" "INSTALL_DIR"
+validate_install_path "${ENV_DIR}" "ENV_DIR"
 
 require_cmd git
 require_cmd node
@@ -54,6 +96,7 @@ if [[ -d "${INSTALL_DIR}/.git" ]]; then
   git -C "${INSTALL_DIR}" reset --hard "origin/${BRANCH}"
 else
   log "cloning ${REPO_URL} into ${INSTALL_DIR}"
+  # Security: Using validated INSTALL_DIR with :? to prevent empty path
   rm -rf "${INSTALL_DIR:?}/"*
   git clone --branch "${BRANCH}" "${REPO_URL}" "${INSTALL_DIR}"
 fi

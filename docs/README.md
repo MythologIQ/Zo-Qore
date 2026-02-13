@@ -1,12 +1,14 @@
 # Documentation Index
 
-This index tracks the authoritative planning, implementation, and validation artifacts for the Zo-native Qore runtime.
+This index tracks the authoritative planning, implementation, and validation artifacts for the Zo-native Qore runtime and Zo-Qore product surface.
 
 ## Core
 
 - `docs/plan_qore_zo_architecture.md`: Zo-native architecture, phased implementation, and constraints.
 - `docs/ZO_ASSUMPTIONS_AND_GATES.md`: mandatory controls to prevent undocumented Zo assumptions during implementation.
 - `docs/ZO_PUBLIC_SKILLS_REFERENCE.md`: Zo public skills reference policy and boundary rules.
+- `docs/ZOQORE_WALKTHROUGH.md`: comprehensive operator walkthrough with troubleshooting appendix and claim map.
+- `docs/ZOQORE_INTENT.md`: short Zo-Qore project-intent statement and community contributor note.
 - `docs/extraction_map_failsafe_to_qore.md`: what was extracted and how Zo-native implementation will continue in this repository.
 - `docs/extraction_manifest.md`: source-to-target extraction manifest.
 - `docs/BOOTSTRAP_CHECKLIST.md`: day-0 setup and validation checks.
@@ -26,8 +28,11 @@ This index tracks the authoritative planning, implementation, and validation art
 - `docs/phase9_handoff_and_governance_closeout.md`: handoff and governance closeout artifact.
 - `docs/adversarial_review_phase6_phase9.md`: adversarial review for phases 6 through 9.
 - `docs/ZO_ASSUMPTION_EVIDENCE.json`: Zo assumption evidence registry for freshness checks.
-- `docs/zoqore_system_plan.md`: ZoQore system-level execution plan (functional-first track).
-- `docs/zoqore_acceptance_gates.md`: ZoQore stage gates and pass/fail criteria.
+- `docs/META_LEDGER.md`: append-only architecture decision ledger for high-impact governance choices.
+- `docs/LOCAL_IDE_ADAPTER_CONTRACT.md`: stable integration contract for FailSafe local IDE node adapter.
+- `docs/ADAPTER_COMPATIBILITY_CHECKLIST.md`: drift-prevention checklist for divergent UI adapter tracks.
+- `docs/zoqore_system_plan.md`: Zo-Qore system-level execution plan (functional-first track).
+- `docs/zoqore_acceptance_gates.md`: Zo-Qore stage gates and pass/fail criteria.
 - `docs/zoqore_adversarial_sprint1.md`: Sprint 1 adversarial findings, remediations, and pass-state.
 - `docs/zoqore_adversarial_sprint2.md`: Sprint 2 adversarial findings, remediations, and pass-state.
 - `docs/zoqore_adversarial_sprint3.md`: Sprint 3 adversarial findings, remediations, and pass-state.
@@ -39,3 +44,4 @@ Zo-native design is `implemented` for repository-local scope.
 Zo-native implementation layers (MCP proxy, SSH fallback) are `implemented` baseline in this repository.
 Zo HTTP API governance layer is `implemented` baseline in this repository.
 Release-gate and handoff phases (6-9) are `implemented` for local repository scope.
+

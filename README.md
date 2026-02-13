@@ -1,6 +1,7 @@
 # FailSafe-Qore
 
 FailSafe-Qore is MythologIQ's Zo-native governance runtime.
+Current release: `Zo-Qore 1.0.0` (2026-02-13).
 
 [![Node](https://img.shields.io/badge/node-20+-green.svg)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5-blue.svg)](https://www.typescriptlang.org)
@@ -15,8 +16,18 @@ Repository direction:
 - Zo-native design: `implemented` for repository-local scope
 - Zo-native implementation layers in this repository: `implemented`
 - IDE adapter dependency for core runtime: `deferred`
+- UI strategy: `diverging` (Zo-Qore UI maintained as separate track; QoreLogic remains universal)
 
 Architecture source of truth: `docs/plan_qore_zo_architecture.md`
+
+## Zo-Qore Intent
+
+Zo-Qore is the Zo-native operating surface for QoreLogic. The intent is straightforward:
+- keep governance enforcement visible and auditable
+- keep prompt construction explicit instead of hidden automation
+- keep the runtime contract stable across Zo and local IDE adapter paths
+
+If you are testing or contributing, thank you. This is a fully open source community project and your feedback directly improves security, reliability, and usability for everyone.
 
 ## Core Capabilities
 
@@ -114,7 +125,12 @@ curl -X POST http://127.0.0.1:7777/evaluate \
 
 ## Standalone UI (No IDE Required)
 
-FailSafe-Qore serves the full FailSafe extension web UI in standalone mode, so Zo users get the same interface without maintaining a second UI codebase.
+FailSafe-Qore can host a dedicated Zo UI surface. QoreLogic policy, risk, ledger, and runtime contracts remain universal and shared across all UI surfaces.
+
+Adapter continuity:
+- Zo-Qore UI: independent product UI track.
+- FailSafe local IDE node: supported adapter path to local IDE workflows.
+- Both surfaces must consume the same runtime contract and decision schema.
 
 1. Start runtime API:
 ```bash
@@ -156,6 +172,18 @@ npm run zo:one-click
 ```
 
 By default, `/` serves the full extension UI. For the compact diagnostic shell, use `/?ui=compact`.
+
+Stable UI routes:
+- Full console: `/ui/console`
+- Monitor view: `/ui/monitor`
+- Route discovery: `/api/ui/routes`
+
+IDE Web Panel/Sidebar profile:
+- Use monitor route in the panel URL: `http://127.0.0.1:9380/ui/monitor`
+- For iframe/webview embedding, set:
+  - `QORE_UI_ALLOW_FRAME_EMBED=true`
+  - `QORE_UI_FRAME_ANCESTORS="'self' https://*.vscode-cdn.net vscode-webview:"`
+- Default remains secure (`x-frame-options: DENY`) when embed mode is not enabled.
 
 Stop:
 
@@ -240,6 +268,18 @@ Update path (after initial install):
 ```bash
 npm run zo:update:dry-run
 npm run zo:update
+```
+
+Uninstall path:
+
+```bash
+npm run zo:uninstall
+```
+
+Remove legacy first-test bootstrap artifacts as well:
+
+```bash
+npm run zo:uninstall:legacy-test
 ```
 
 Updater behavior:
@@ -336,6 +376,7 @@ npm run zo:bundle
 Then upload `dist/failsafe-qore-zo-bundle.tgz` to Zo and extract under `/opt/failsafe-qore` before running `deploy/zo/bootstrap-zo.sh`.
 
 Quick handoff doc: `deploy/zo/TAKE_THIS_AND_GO.md`.
+Agent-assisted setup prompt: `deploy/zo/AGENT_SETUP_PROMPT.md`.
 
 ## Controlled Release
 
@@ -362,6 +403,8 @@ Tag push (`v*`) also triggers GitHub release artifact publishing via `.github/wo
 ## Documentation Map
 
 - Architecture plan: `docs/plan_qore_zo_architecture.md`
+- Comprehensive walkthrough and appendix: `docs/ZOQORE_WALKTHROUGH.md`
+- Zo-Qore intent and contributor note: `docs/ZOQORE_INTENT.md`
 - Assumption gates: `docs/ZO_ASSUMPTIONS_AND_GATES.md`
 - Zo public skills policy: `docs/ZO_PUBLIC_SKILLS_REFERENCE.md`
 - Documentation status map: `docs/DOCUMENTATION_STATUS.md`
@@ -369,7 +412,10 @@ Tag push (`v*`) also triggers GitHub release artifact publishing via `.github/wo
 - Phase 4 substantiation: `docs/phase4_substantiation.md`
 - Phase 5 substantiation: `docs/phase5_substantiation.md`
 - Phases 6-9 adversarial record: `docs/adversarial_review_phase6_phase9.md`
+- Local IDE adapter contract: `docs/LOCAL_IDE_ADAPTER_CONTRACT.md`
+- Adapter compatibility checklist: `docs/ADAPTER_COMPATIBILITY_CHECKLIST.md`
 - Full docs index: `docs/README.md`
+- Release history: `CHANGELOG.md`
 
 ## Claim-to-Source Map
 
@@ -389,3 +435,4 @@ Tag push (`v*`) also triggers GitHub release artifact publishing via `.github/wo
 ## License
 
 MIT. See `LICENSE`.
+

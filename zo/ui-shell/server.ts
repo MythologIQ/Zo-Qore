@@ -160,6 +160,8 @@ export class QoreUiShellServer {
   private readonly mfaMaxFailures: number;
   private readonly mfaLockoutMs: number;
   private readonly trustProxyHeaders: boolean;
+  private readonly allowFrameEmbedding: boolean;
+  private readonly frameAncestors: string;
   private readonly mfaSessions = new Map<string, MfaSessionRecord>();
   private readonly authFailures = new Map<string, { count: number; lockUntil: number }>();
   private readonly mfaFailures = new Map<string, { count: number; lockUntil: number }>();
@@ -201,6 +203,8 @@ export class QoreUiShellServer {
     this.mfaMaxFailures = Number(process.env.QORE_UI_MFA_MAX_FAILURES ?? "6");
     this.mfaLockoutMs = Number(process.env.QORE_UI_MFA_LOCKOUT_MS ?? "900000");
     this.trustProxyHeaders = String(process.env.QORE_UI_TRUST_PROXY_HEADERS ?? "false").toLowerCase() === "true";
+    this.allowFrameEmbedding = String(process.env.QORE_UI_ALLOW_FRAME_EMBED ?? "false").toLowerCase() === "true";
+    this.frameAncestors = String(process.env.QORE_UI_FRAME_ANCESTORS ?? "'self'").trim() || "'self'";
     const defaultRequireAuth = (options.host ?? "127.0.0.1") === "0.0.0.0";
     const defaultRequireAdminToken = (options.host ?? "127.0.0.1") === "0.0.0.0";
     this.requireUiAuth = String(process.env.QORE_UI_REQUIRE_AUTH ?? (defaultRequireAuth ? "true" : "false")).toLowerCase() === "true";
@@ -527,6 +531,22 @@ export class QoreUiShellServer {
 
     if (method === "GET" && pathname === "/") {
       return this.serveUiEntry(res, url.searchParams.get("ui"));
+    }
+
+    if (method === "GET" && (pathname === "/ui/monitor" || pathname === "/ui/monitor/")) {
+      return this.serveUiEntry(res, "compact");
+    }
+
+    if (method === "GET" && (pathname === "/ui/console" || pathname === "/ui/console/")) {
+      return this.serveUiEntry(res, "full");
+    }
+
+    if (method === "GET" && pathname === "/api/ui/routes") {
+      return this.sendJson(res, 200, {
+        default: "/",
+        monitor: "/ui/monitor",
+        console: "/ui/console",
+      });
     }
 
     if (method !== "GET") {
@@ -1082,11 +1102,18 @@ export class QoreUiShellServer {
 
   private applySecurityHeaders(res: http.ServerResponse): void {
     res.setHeader("x-content-type-options", "nosniff");
-    res.setHeader("x-frame-options", "DENY");
+    if (this.allowFrameEmbedding) {
+      res.removeHeader("x-frame-options");
+    } else {
+      res.setHeader("x-frame-options", "DENY");
+    }
     res.setHeader("referrer-policy", "no-referrer");
     res.setHeader("cache-control", "no-store");
     res.setHeader("permissions-policy", "geolocation=(), microphone=(), camera=()");
-    res.setHeader("content-security-policy", "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:;");
+    res.setHeader(
+      "content-security-policy",
+      `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' ws: wss:; frame-ancestors ${this.frameAncestors};`
+    );
   }
 
   private enforceAuth(req: http.IncomingMessage, res: http.ServerResponse, pathname: string): boolean {

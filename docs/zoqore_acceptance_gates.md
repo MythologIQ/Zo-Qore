@@ -1,8 +1,8 @@
-# ZoQore Acceptance Gates
+# Zo-Qore Acceptance Gates
 
 ## Purpose
 
-Define stage gates for ZoQore execution with explicit fail criteria and evidence requirements.
+Define stage gates for Zo-Qore execution with explicit fail criteria and evidence requirements.
 
 ## Gate 1: Security Baseline
 
@@ -89,3 +89,4 @@ Evidence:
 3. Run `npm run build`.
 4. Execute control-plane commands in dry run and live mode.
 5. Record results and decision in adversarial artifact.
+

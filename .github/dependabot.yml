@@ -1,0 +1,60 @@
+version: 2
+updates:
+  # Enable version updates for npm dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - mythologiq
+    assignees:
+      - mythologiq
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    allow:
+      - dependency-type: direct
+      - dependency-type: indirect
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-patch"]
+        versions: ["0.0.1"]
+
+  # Enable version updates for GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: /
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - mythologiq
+    assignees:
+      - mythologiq
+    commit-message:
+      prefix: "ci(deps)"
+      include: "scope"
+
+# Security audit configuration
+audit:
+  # Enable security alerts for npm dependencies
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    reviewers:
+      - mythologiq
+    assignees:
+      - mythologiq
+    # Check for vulnerabilities with moderate or higher severity
+    level: moderate
+
+# Group related packages together to reduce noise
+groups:
+  # Group all dev dependencies together
+  dev-dependencies:
+    patterns:
+      - "*-dev"
+    exclude-patterns:
+      - "*"

@@ -1,8 +1,8 @@
-# ZoQore System Plan
+# Zo-Qore System Plan
 
 ## Purpose
 
-Define ZoQore as the system-level product layer built on FailSafe-Qore runtime roots.
+Define Zo-Qore as the system-level product layer built on FailSafe-Qore runtime roots.
 
 Status:
 - Product-system planning baseline: `implemented`
@@ -18,12 +18,17 @@ Status:
 - `runtime/`
 - `zo/`
 
-2. Product layer (`ZoQore`) is established as system behavior and operational surfaces:
+2. Product layer (`Zo-Qore`) is established as system behavior and operational surfaces:
 - Control plane (`qorectl`, setup/install flows)
 - Operations console and admin controls
 - Release and migration lifecycle
 
-3. Branding is secondary for this execution track.
+3. UI ownership policy:
+- Zo-Qore UI may evolve as a separately maintained UI track.
+- QoreLogic core (`policy`, `risk`, `ledger`, `runtime`, contracts) remains universal across Zo, extension, and future hosts.
+- UI divergence must not change Qore decision contracts.
+
+4. Branding is secondary for this execution track.
 - Functional correctness, hardening, and operability remain priority.
 
 ## System Objectives
@@ -109,3 +114,4 @@ Status: `planned`
 3. Add operator docs for update dry-run and execution mode. `implemented`
 4. Validate via typecheck/tests/lint/build and script syntax checks. `pending`
 5. Record adversarial findings against updater safety model. `pending`
+
