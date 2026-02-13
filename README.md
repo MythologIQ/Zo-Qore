@@ -1,6 +1,6 @@
 # Zo-Qore
 
-FailSafe-Qore is MythologIQ's Zo-native governance runtime.
+Zo-Qore is MythologIQ's Zo-native governance runtime.
 Current release: `Zo-Qore 1.0.0` (2026-02-13).
 
 ## Here's how you can get started with Zo-Qore.
