@@ -5,7 +5,7 @@ Current release: `Zo-Qore 1.0.0` (2026-02-13).
 
 ## Here's how you can get started with Zo-Qore.
 
-1. Create a Zo account: https://zo.computer
+1. Create a Zo account: https://zo.computer?referrer=frostwulf
 2. Use a paid Zo tier for full hosted setup (runtime + UI requires at least 2 services).
 3. Run the installer:
 
