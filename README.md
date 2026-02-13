@@ -8,6 +8,76 @@ Current release: `Zo-Qore 1.0.0` (2026-02-13).
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Status](https://img.shields.io/badge/status-active-2ea44f)](docs/plan_qore_zo_architecture.md)
 
+## Start Here (Executable Setup)
+
+If you are a new user, use this first.
+
+### Zo install (recommended)
+
+```bash
+git clone https://github.com/MythologIQ/failsafe-qore.git FailSafe-Qore
+cd FailSafe-Qore
+bash deploy/zo/install-zo-full.sh
+```
+
+This provisions runtime + UI, security defaults, and service registration.
+
+### Public one-line install (download + run)
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/install-zo-full.sh | bash
+```
+
+Windows PowerShell:
+
+```powershell
+iwr -useb https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/install-zo-full.sh | bash
+```
+
+### Local run (no Zo service registration)
+
+```bash
+npm ci
+export QORE_API_KEY="replace-with-strong-secret"
+npm run zo:one-click
+```
+
+Open:
+- `http://127.0.0.1:9380/ui/console`
+- `http://127.0.0.1:9380/ui/monitor`
+
+### Update / uninstall
+
+```bash
+npm run zo:update
+npm run zo:uninstall
+```
+
+Need test cleanup from early safe bootstrap:
+
+```bash
+npm run zo:uninstall:legacy-test
+```
+
+For step-by-step install troubleshooting:
+- `deploy/zo/TAKE_THIS_AND_GO.md`
+
+## Screenshots
+
+### Branding
+
+![Zo-Qore Logo](ZoQoreLogo.png)
+![Zo-Qore Poster](ZoQorePoster.png)
+
+### Product Views
+
+![Zo-Qore Home](Marketing/Zo-Qore-Home.PNG)
+![Zo-Qore Run](Marketing/Zo-Qore-Run.png)
+![Zo-Qore Comms](Marketing/Zo-Qore-Comms.png)
+![Zo-Qore Governance](Marketing/Zo-Qore-Governance.png)
+![Zo-Qore Skill Library](Marketing/Zo-Qore-SkillLibrary.png)
+![Zo-Qore Reports](Marketing/Zo-Qore-Reports.png)
+
 ## What This Repository Is
 
 FailSafe started as extension-coupled governance logic. `FailSafe-Qore` is the extracted runtime that keeps policy, risk, ledger, and decision contracts independent from IDE hosting concerns.
