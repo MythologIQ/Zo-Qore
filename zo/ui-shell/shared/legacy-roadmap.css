@@ -596,7 +596,7 @@ h1 {
 
 .home-bottom-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr;
   gap: 10px;
 }
 
@@ -724,6 +724,52 @@ h1 {
 .hub-action-btn:disabled {
   opacity: 0.7;
   cursor: wait;
+}
+
+.hub-action-btn.small {
+  padding: 6px 10px;
+  font-size: 0.68rem;
+}
+
+.session-chat-dock {
+  margin: 2px 0 10px;
+  display: grid;
+  gap: 6px;
+  width: fit-content;
+  max-width: 390px;
+  min-width: 320px;
+}
+
+.session-chat-dock-title {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+}
+
+.session-chat-dock-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.session-chat-id-value {
+  min-width: 0;
+  width: 220px;
+  font-size: 0.74rem;
+  font-family: "Cascadia Mono", "Consolas", monospace;
+  color: var(--text);
+  border: 1px solid color-mix(in srgb, var(--line) 66%, transparent);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--surface) 82%, #051328);
+}
+
+.session-chat-memory {
+  min-width: 0;
+  width: 100%;
+  max-width: 370px;
 }
 
 .hub-action-btn.warn {
@@ -1692,11 +1738,84 @@ summary::-webkit-details-marker {
   text-transform: uppercase;
   opacity: 0.82;
 }
+
+.flow-stage {
+  position: relative;
+  transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+
+.flow-stage::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: 12px;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.flow-stage[data-flow-state="pending"]::before {
+  opacity: 0.6;
+  box-shadow: 0 0 0 1px rgba(255, 199, 77, 0.65), 0 0 22px rgba(255, 193, 7, 0.42), 0 0 34px rgba(255, 193, 7, 0.24);
+  animation: flowPulse 1.2s ease-in-out infinite;
+}
+
+.flow-stage[data-flow-state="ready"]::before {
+  opacity: 0.75;
+  box-shadow: 0 0 0 1px rgba(46, 213, 115, 0.7), 0 0 22px rgba(46, 213, 115, 0.44), 0 0 34px rgba(46, 213, 115, 0.26);
+}
+
+@keyframes flowPulse {
+  0% { opacity: 0.35; }
+  50% { opacity: 0.85; }
+  100% { opacity: 0.35; }
+}
+
+.intent-results-grid {
+  margin-top: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.intent-result-panel {
+  border: 1px solid color-mix(in srgb, var(--line) 68%, var(--primary) 32%);
+  border-radius: 10px;
+  background: #071a34;
+  padding: 8px;
+  box-shadow: inset 0 0 0 1px rgba(122, 165, 255, 0.04);
+}
+
+.intent-result-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.intent-chat-id-row,
+.home-chat-session {
+  margin: 0 0 4px;
+  font-size: 0.66rem;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.home-chat-session {
+  margin-top: 6px;
+}
+
+.intent-package-output {
+  height: 360px;
+  max-height: 360px;
+}
+
 .intent-output {
   margin-top: 6px;
   border: 1px solid color-mix(in srgb, var(--line) 68%, var(--primary) 32%);
   border-radius: 10px;
-  background: color-mix(in srgb, var(--bg) 84%, #09172e);
+  background: #081b38;
   padding: 7px 8px;
   font-size: 0.66rem;
   white-space: pre-wrap;
@@ -1707,6 +1826,74 @@ summary::-webkit-details-marker {
   overflow: auto;
   opacity: 0.92;
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.intent-chat-label {
+  margin: 8px 0 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.intent-chat-output {
+  height: 255px;
+  max-height: 255px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(3, 8, 18, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 30;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.modal-card {
+  width: min(900px, 96vw);
+  max-height: 88vh;
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--line) 68%, var(--primary) 32%);
+  background: color-mix(in srgb, var(--bg) 88%, #071429);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.36);
+}
+
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.intent-chat-log-content {
+  min-height: 300px;
+  max-height: 62vh;
+}
+
+@media (max-width: 1080px) {
+  .intent-results-grid {
+    grid-template-columns: 1fr;
+  }
+  .intent-chat-output {
+    height: 220px;
+    max-height: 220px;
+  }
+  .intent-package-output {
+    height: 280px;
+    max-height: 280px;
+  }
 }
 
 .governance-shell {
@@ -2467,23 +2654,29 @@ summary:focus-visible {
 /* Prompt Pipeline + Skill Library split */
 .prompt-pipeline-shell {
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .prompt-grid {
   display: grid;
-  grid-template-columns: 1.7fr 1fr;
-  gap: 12px;
+  grid-template-columns: minmax(0, 1.85fr) minmax(280px, 1fr);
+  gap: 10px;
 }
 
 .prompt-main {
   display: grid;
-  gap: 10px;
+  gap: 8px;
+  border: 1px solid color-mix(in srgb, var(--line) 70%, var(--primary) 30%);
+  border-radius: 10px;
+  padding: 10px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #08162b), color-mix(in srgb, var(--surface-2) 94%, #071326));
+  box-shadow: inset 0 0 0 1px rgba(120, 160, 255, 0.05);
 }
 
 .prompt-row {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .prompt-row-inline {
@@ -2494,30 +2687,35 @@ summary:focus-visible {
 .intent-select {
   width: 100%;
   border: 1px solid var(--line);
-  border-radius: 8px;
-  background: color-mix(in srgb, var(--surface) 88%, #08162a);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--surface) 90%, #08162a);
   color: var(--text);
-  padding: 8px 10px;
-  font-size: 0.8rem;
+  padding: 7px 9px;
+  font-size: 0.76rem;
 }
 
 .prompt-side {
   border: 1px solid color-mix(in srgb, var(--line) 72%, var(--primary) 28%);
   border-radius: 10px;
-  padding: 10px;
+  padding: 9px;
   background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 90%, #071428), color-mix(in srgb, var(--surface-2) 92%, #091b34));
+  box-shadow: inset 0 0 0 1px rgba(120, 160, 255, 0.04);
+}
+
+.prompt-side h3 {
+  font-weight: 800;
 }
 
 .prompt-insight {
-  font-size: 0.77rem;
+  font-size: 0.72rem;
   color: var(--muted);
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .prompt-practices {
-  font-size: 0.74rem;
-  color: var(--text);
-  line-height: 1.45;
+  font-size: 0.68rem;
+  color: color-mix(in srgb, var(--text) 86%, #b6dcff);
+  line-height: 1.35;
 }
 
 .prompt-practices ul {
@@ -2528,20 +2726,20 @@ summary:focus-visible {
 .prompt-guidance-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: 8px;
 }
 
 .guidance-tile {
   border: 1px solid var(--line);
   border-radius: 10px;
-  padding: 10px;
+  padding: 8px;
   background: color-mix(in srgb, var(--surface) 88%, #08162d);
-  min-height: 96px;
+  min-height: 88px;
 }
 
 .guidance-tile h4 {
   margin: 0 0 8px;
-  font-size: 0.62rem;
+  font-size: 0.58rem;
   text-transform: uppercase;
   letter-spacing: 0.14em;
   color: var(--muted);
@@ -2568,14 +2766,47 @@ summary:focus-visible {
 }
 
 .prompt-wishlist {
-  margin-top: 10px;
+  margin-top: 8px;
   border: 1px solid color-mix(in srgb, var(--warn) 56%, var(--line));
   border-radius: 8px;
-  padding: 8px 10px;
+  padding: 7px 9px;
   background: color-mix(in srgb, var(--warn) 12%, var(--surface));
   color: color-mix(in srgb, var(--text) 88%, #fff4d1);
-  font-size: 0.68rem;
-  line-height: 1.4;
+  font-size: 0.62rem;
+  line-height: 1.35;
+}
+
+.intent-generate-row-left {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  justify-content: flex-start;
+}
+
+.intent-generate-row-left .intent-generate-xl {
+  width: 220px;
+  min-width: 220px;
+  min-height: 42px;
+  border-radius: 8px;
+  box-shadow: 0 0 16px rgba(45, 189, 255, 0.22);
+}
+
+#intent-flow-package {
+  display: grid;
+  grid-template-rows: auto auto 1fr auto auto;
+  align-content: stretch;
+}
+
+#intent-flow-package .intent-action-note {
+  margin-bottom: 6px;
+}
+
+#intent-flow-package .intent-send-row {
+  margin-top: 4px;
+  justify-content: space-between;
+}
+
+.intent-approve-text {
+  display: none;
 }
 
 .skill-scribe-shell {

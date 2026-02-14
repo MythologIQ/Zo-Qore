@@ -6,6 +6,7 @@ type StubElement = {
   value?: string;
   textContent: string;
   innerHTML: string;
+  dataset: Record<string, string>;
   listeners: Record<string, Listener | undefined>;
   addEventListener: (type: string, listener: Listener) => void;
 };
@@ -15,6 +16,7 @@ function stubElement(initialValue = ""): StubElement {
     value: initialValue,
     textContent: "",
     innerHTML: "",
+    dataset: {},
     listeners: {},
     addEventListener(type: string, listener: Listener) {
       this.listeners[type] = listener;
@@ -62,6 +64,10 @@ describe("IntentAssistant", () => {
       modelRecommendation: stubElement(""),
       vendorPractices: stubElement(""),
       output: stubElement(""),
+      chatOutput: stubElement(""),
+      flowPipeline: stubElement(""),
+      flowPackage: stubElement(""),
+      flowChat: stubElement(""),
     };
 
     const assistant = new IntentAssistant({
@@ -102,6 +108,10 @@ describe("IntentAssistant", () => {
       modelRecommendation: stubElement(""),
       vendorPractices: stubElement(""),
       output: stubElement(""),
+      chatOutput: stubElement(""),
+      flowPipeline: stubElement(""),
+      flowPackage: stubElement(""),
+      flowChat: stubElement(""),
     };
 
     const assistant = new IntentAssistant({
@@ -152,11 +162,18 @@ describe("IntentAssistant", () => {
       modelRecommendation: stubElement(""),
       vendorPractices: stubElement(""),
       output: stubElement(""),
+      chatOutput: stubElement(""),
+      flowPipeline: stubElement(""),
+      flowPackage: stubElement(""),
+      flowChat: stubElement(""),
+      chatId: stubElement(""),
+      homeChatId: stubElement(""),
+      chatLogsButton: { ...stubElement(), disabled: true } as StubElement & { disabled: boolean },
     };
 
     const fetchSpy = vi.fn().mockResolvedValue({
       ok: true,
-      json: async () => ({ decision: "ALLOW" }),
+      json: async () => ({ decision: "ALLOW", response: "Implemented with verification." }),
     });
     Object.defineProperty(globalThis, "fetch", {
       value: fetchSpy,
@@ -171,6 +188,9 @@ describe("IntentAssistant", () => {
     });
 
     assistant.generate();
+    expect(elements.flowPipeline.dataset.flowState).toBe("ready");
+    expect(elements.flowPackage.dataset.flowState).toBe("pending");
+    expect(elements.flowChat.dataset.flowState).toBe("idle");
     expect(elements.send.disabled).toBe(true);
     await assistant.send();
     expect(String(elements.output.textContent)).toContain("send_blocked");
@@ -185,5 +205,16 @@ describe("IntentAssistant", () => {
     expect(fetchSpy.mock.calls[0][0]).toBe("/api/qore/evaluate");
     expect(elements.output.textContent).toContain("# sent");
     expect(elements.output.textContent).toContain("decision: ALLOW");
+    expect(elements.chatOutput.textContent).toContain("[assistant] Implemented with verification.");
+    expect(elements.flowPackage.dataset.flowState).toBe("ready");
+    expect(elements.flowChat.dataset.flowState).toBe("ready");
+    expect(elements.chatLogsButton.disabled).toBe(false);
+
+    elements.input.listeners.input?.();
+    expect(elements.flowPipeline.dataset.flowState).toBe("pending");
+    expect(elements.flowPackage.dataset.flowState).toBe("idle");
+    expect(elements.flowChat.dataset.flowState).toBe("idle");
+    expect(elements.chatOutput.textContent).toContain("Assistant responses appear here after send.");
+    expect(elements.chatLogsButton.disabled).toBe(true);
   });
 });

@@ -56,6 +56,14 @@ const VENDOR_PRACTICES = {
   ],
 };
 
+const PHASE_TO_NUMBER = {
+  plan: 1,
+  implement: 2,
+  verify: 3,
+  governance: 4,
+  run: 5,
+};
+
 export class IntentAssistant {
   constructor(options) {
     this.elements = options.elements;
@@ -63,15 +71,346 @@ export class IntentAssistant {
     this.getSelectedSkill = options.getSelectedSkill;
     this.getFallbackSkill = options.getFallbackSkill;
     this.latestPackageText = '';
+    this.chatTurns = [];
+    this.storageKey = 'zoqore.intent.session.v1';
+    this.defaultPackageText = String(this.elements.output?.textContent || 'Package preview appears here after generation.');
+    this.defaultChatText = String(this.elements.chatOutput?.textContent || 'Assistant responses appear here after send.');
+    this.isLoadingSession = false;
+    this.sessionMeta = this.startSession();
 
     this.elements.generate?.addEventListener('click', () => this.generate());
     this.elements.copy?.addEventListener('click', () => this.copy());
     this.elements.send?.addEventListener('click', () => this.send());
     this.elements.approve?.addEventListener('change', () => this.updateSendState());
-    this.elements.template?.addEventListener('change', () => this.applyTemplateDefaults());
+    this.elements.template?.addEventListener('change', () => {
+      this.applyTemplateDefaults();
+      this.resetFlowForInputInteraction();
+    });
+    this.elements.input?.addEventListener('input', () => this.resetFlowForInputInteraction());
+    this.elements.contextInput?.addEventListener('input', () => this.resetFlowForInputInteraction());
+    this.elements.persona?.addEventListener('change', () => this.resetFlowForInputInteraction());
+    this.elements.modelMode?.addEventListener('change', () => this.resetFlowForInputInteraction());
+    this.elements.skillSelect?.addEventListener('change', () => this.resetFlowForInputInteraction());
+    this.elements.chatLogsButton?.addEventListener('click', () => this.openChatLogs());
+    this.elements.chatLogClose?.addEventListener('click', () => this.closeChatLogs());
+    this.elements.chatLogModal?.addEventListener('click', (event) => {
+      if (event.target === this.elements.chatLogModal) this.closeChatLogs();
+    });
+    this.elements.sessionChatNew?.addEventListener('click', () => this.createNewSession(true));
+    this.elements.sessionChatMemory?.addEventListener('change', () => {
+      const next = String(this.elements.sessionChatMemory?.value || '').trim();
+      if (!next) return;
+      this.loadSessionFromMemory(next);
+    });
 
     this.applyTemplateDefaults(true);
+    this.setFlowState('pipeline', 'pending');
+    this.setFlowState('package', 'idle');
+    this.setFlowState('chat', 'idle');
+    this.renderSessionMeta();
+    this.renderSessionMemoryOptions();
+    this.renderChatOutputs();
+    this.renderPackagePreview(this.defaultPackageText);
     this.updateSendState();
+  }
+
+  getStorage() {
+    if (typeof globalThis.localStorage !== 'undefined') return globalThis.localStorage;
+    return {
+      getItem() {
+        return null;
+      },
+      setItem() {},
+    };
+  }
+
+  loadSessionStore() {
+    const storage = this.getStorage();
+    try {
+      const raw = storage.getItem(this.storageKey);
+      const parsed = raw ? JSON.parse(raw) : {};
+      if (parsed && typeof parsed === 'object' && parsed.projects && typeof parsed.projects === 'object') {
+        return parsed;
+      }
+    } catch {}
+    return { projects: {} };
+  }
+
+  saveSessionStore(store) {
+    const storage = this.getStorage();
+    try {
+      storage.setItem(this.storageKey, JSON.stringify(store));
+    } catch {}
+  }
+
+  resolveProjectId() {
+    const storage = this.getStorage();
+    const raw = String(storage.getItem('zoqore.project.id') || 'project01').trim().toLowerCase();
+    const clean = raw.replace(/[^a-z0-9_-]/g, '');
+    return clean || 'project01';
+  }
+
+  resolvePhaseNumber() {
+    const phaseKey = String(this.getPhase?.()?.key || 'plan').toLowerCase();
+    return PHASE_TO_NUMBER[phaseKey] || 1;
+  }
+
+  startSession() {
+    const store = this.loadSessionStore();
+    const projectId = this.resolveProjectId();
+    const existing = store.projects[projectId] || { sessions: {} };
+    const startingPhase = Number(existing.lastPhaseNumber || this.resolvePhaseNumber() || 1);
+    const increment = Number(existing.nextIncrement || 1);
+    const chatId = `${projectId}-phase${startingPhase}-chat${increment}`;
+    const now = new Date().toISOString();
+
+    store.projects[projectId] = {
+      ...existing,
+      nextIncrement: increment + 1,
+      lastPhaseNumber: Number(existing.lastPhaseNumber || startingPhase),
+      sessions: {
+        ...(existing.sessions || {}),
+        [chatId]: {
+          chatId,
+          projectId,
+          startingPhase,
+          increment,
+          createdAt: now,
+          updatedAt: now,
+          packageText: '',
+          chatTurns: [],
+          form: {
+            intent: '',
+            context: '',
+            template: String(this.elements.template?.value || 'fast'),
+            persona: String(this.elements.persona?.value || 'systems'),
+            modelMode: String(this.elements.modelMode?.value || 'auto'),
+            skillKey: String(this.elements.skillSelect?.value || ''),
+          },
+        },
+      },
+    };
+    this.saveSessionStore(store);
+
+    return { projectId, startingPhase, increment, chatId };
+  }
+
+  markSessionProgress() {
+    const store = this.loadSessionStore();
+    const projectId = this.sessionMeta.projectId;
+    const current = store.projects[projectId] || { sessions: {} };
+    store.projects[projectId] = {
+      ...current,
+      nextIncrement: Number(current.nextIncrement || this.sessionMeta.increment + 1),
+      lastPhaseNumber: this.resolvePhaseNumber(),
+      sessions: current.sessions || {},
+    };
+    this.saveSessionStore(store);
+  }
+
+  renderSessionMeta() {
+    const text = this.sessionMeta?.chatId || 'pending';
+    if (this.elements.chatId) this.elements.chatId.textContent = text;
+    if (this.elements.sessionChatId) this.elements.sessionChatId.textContent = text;
+  }
+
+  renderSessionMemoryOptions() {
+    const select = this.elements.sessionChatMemory;
+    if (!select) return;
+    const store = this.loadSessionStore();
+    const projectId = this.resolveProjectId();
+    const project = store.projects[projectId] || {};
+    const sessions = Object.values(project.sessions || {});
+    sessions.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+
+    const options = ['<option value="">Zo Memory</option>'];
+    for (const item of sessions) {
+      const label = `${item.chatId}${item.updatedAt ? ` (${String(item.updatedAt).slice(0, 16).replace('T', ' ')})` : ''}`;
+      options.push(`<option value="${escapeHtml(item.chatId)}">${escapeHtml(label)}</option>`);
+    }
+    select.innerHTML = options.join('');
+    if (this.sessionMeta?.chatId) {
+      select.value = this.sessionMeta.chatId;
+    }
+  }
+
+  captureFormState() {
+    return {
+      intent: String(this.elements.input?.value || ''),
+      context: String(this.elements.contextInput?.value || ''),
+      template: String(this.elements.template?.value || 'fast'),
+      persona: String(this.elements.persona?.value || 'systems'),
+      modelMode: String(this.elements.modelMode?.value || 'auto'),
+      skillKey: String(this.elements.skillSelect?.value || ''),
+    };
+  }
+
+  persistCurrentSession() {
+    if (!this.sessionMeta?.chatId) return;
+    const store = this.loadSessionStore();
+    const projectId = this.sessionMeta.projectId;
+    const project = store.projects[projectId] || { sessions: {} };
+    const existing = project.sessions?.[this.sessionMeta.chatId] || {};
+    project.sessions = project.sessions || {};
+    project.sessions[this.sessionMeta.chatId] = {
+      ...existing,
+      chatId: this.sessionMeta.chatId,
+      projectId,
+      startingPhase: this.sessionMeta.startingPhase,
+      increment: this.sessionMeta.increment,
+      createdAt: existing.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      packageText: String(this.latestPackageText || ''),
+      chatTurns: Array.isArray(this.chatTurns) ? this.chatTurns : [],
+      form: this.captureFormState(),
+    };
+    store.projects[projectId] = {
+      ...project,
+      nextIncrement: Number(project.nextIncrement || this.sessionMeta.increment + 1),
+      lastPhaseNumber: Number(project.lastPhaseNumber || this.sessionMeta.startingPhase),
+    };
+    this.saveSessionStore(store);
+    this.renderSessionMemoryOptions();
+  }
+
+  loadSessionFromMemory(chatId) {
+    const store = this.loadSessionStore();
+    const projectId = this.resolveProjectId();
+    const project = store.projects[projectId] || {};
+    const record = project.sessions?.[chatId];
+    if (!record) return;
+
+    this.isLoadingSession = true;
+    this.sessionMeta = {
+      projectId,
+      chatId: String(record.chatId || chatId),
+      startingPhase: Number(record.startingPhase || 1),
+      increment: Number(record.increment || 1),
+    };
+
+    const form = record.form || {};
+    if (this.elements.template) this.elements.template.value = String(form.template || this.elements.template.value || 'fast');
+    if (this.elements.persona) this.elements.persona.value = String(form.persona || this.elements.persona.value || 'systems');
+    if (this.elements.modelMode) this.elements.modelMode.value = String(form.modelMode || this.elements.modelMode.value || 'auto');
+    if (this.elements.skillSelect && typeof form.skillKey !== 'undefined') this.elements.skillSelect.value = String(form.skillKey || '');
+    if (this.elements.input) this.elements.input.value = String(form.intent || '');
+    if (this.elements.contextInput) this.elements.contextInput.value = String(form.context || '');
+
+    this.latestPackageText = String(record.packageText || '');
+    this.chatTurns = Array.isArray(record.chatTurns) ? record.chatTurns : [];
+    if (this.elements.approve) this.elements.approve.checked = false;
+
+    if (this.latestPackageText) {
+      this.setFlowState('pipeline', 'ready');
+      this.setFlowState('package', this.chatTurns.length > 0 ? 'ready' : 'pending');
+      this.setFlowState('chat', this.chatTurns.length > 0 ? 'ready' : 'idle');
+      this.renderPackagePreview(this.latestPackageText);
+    } else {
+      this.setFlowState('pipeline', 'pending');
+      this.setFlowState('package', 'idle');
+      this.setFlowState('chat', 'idle');
+      this.renderPackagePreview(this.defaultPackageText);
+    }
+    this.renderSessionMeta();
+    this.renderSessionMemoryOptions();
+    this.renderChatOutputs();
+    this.updateSendState();
+    this.isLoadingSession = false;
+  }
+
+  createNewSession(resetInputs = false) {
+    this.latestPackageText = '';
+    this.chatTurns = [];
+    this.sessionMeta = this.startSession();
+    if (this.elements.approve) this.elements.approve.checked = false;
+    if (resetInputs) {
+      if (this.elements.input) this.elements.input.value = '';
+      if (this.elements.contextInput) this.elements.contextInput.value = '';
+      this.applyTemplateDefaults(true);
+    }
+    this.setFlowState('pipeline', 'pending');
+    this.setFlowState('package', 'idle');
+    this.setFlowState('chat', 'idle');
+    this.renderSessionMeta();
+    this.renderSessionMemoryOptions();
+    this.renderPackagePreview(this.defaultPackageText);
+    this.renderChatOutputs();
+    this.updateSendState();
+  }
+
+  setFlowState(stage, state) {
+    const map = {
+      pipeline: this.elements.flowPipeline,
+      package: this.elements.flowPackage,
+      chat: this.elements.flowChat,
+    };
+    const target = map[stage];
+    if (target) target.dataset.flowState = state;
+  }
+
+  renderPackagePreview(text) {
+    if (!this.elements.output) return;
+    this.elements.output.textContent = String(text || this.defaultPackageText);
+  }
+
+  renderChatOutputs() {
+    const transcript = this.chatTurns.length
+      ? this.chatTurns.map((turn) => `[${turn.role}] ${turn.text}`).join('\n\n')
+      : this.defaultChatText;
+    if (this.elements.chatOutput) this.elements.chatOutput.textContent = transcript;
+
+    const fullLog = this.chatTurns.length
+      ? this.chatTurns
+          .map((turn) => `${turn.at} | ${turn.role}\n${turn.text}`)
+          .join('\n\n------------------------------\n\n')
+      : 'No chat responses for this session yet.';
+    if (this.elements.chatLogContent) this.elements.chatLogContent.textContent = fullLog;
+    if (this.elements.chatLogsButton) this.elements.chatLogsButton.disabled = this.chatTurns.length === 0;
+  }
+
+  appendChat(role, text) {
+    const value = String(text || '').trim();
+    if (!value) return;
+    this.chatTurns.push({ role, text: value, at: new Date().toISOString() });
+    this.renderChatOutputs();
+    this.persistCurrentSession();
+  }
+
+  openChatLogs() {
+    if (!this.elements.chatLogModal) return;
+    this.renderChatOutputs();
+    this.elements.chatLogModal.classList.remove('hidden');
+  }
+
+  closeChatLogs() {
+    this.elements.chatLogModal?.classList.add('hidden');
+  }
+
+  resetFlowForInputInteraction() {
+    if (this.isLoadingSession) return;
+    const hasWork = Boolean(String(this.latestPackageText || '').trim()) || this.chatTurns.length > 0;
+    if (!hasWork) return;
+    this.createNewSession(false);
+  }
+
+  extractAssistantReply(result) {
+    const directKeys = ['responseText', 'response', 'output', 'answer', 'message', 'content'];
+    for (const key of directKeys) {
+      const value = result?.[key];
+      if (typeof value === 'string' && value.trim()) return value.trim();
+    }
+
+    const choicesContent = result?.choices?.[0]?.message?.content;
+    if (typeof choicesContent === 'string' && choicesContent.trim()) return choicesContent.trim();
+
+    const nestedContent = result?.result?.content || result?.result?.output || result?.data?.content;
+    if (typeof nestedContent === 'string' && nestedContent.trim()) return nestedContent.trim();
+
+    try {
+      return JSON.stringify(result, null, 2);
+    } catch {
+      return String(result ?? '');
+    }
   }
 
   applyTemplateDefaults(initial = false) {
@@ -131,7 +470,7 @@ export class IntentAssistant {
   generate() {
     const intent = String(this.elements.input?.value || '').trim();
     if (!intent) {
-      this.elements.output.textContent = 'Enter intent first. Prompt package generation is non-executing.';
+      this.renderPackagePreview('Enter intent first. Prompt package generation is non-executing.');
       return;
     }
 
@@ -191,18 +530,22 @@ export class IntentAssistant {
     ].join('\n');
 
     this.latestPackageText = packageText;
-    this.elements.output.textContent = packageText;
+    this.renderPackagePreview(packageText);
+    this.setFlowState('pipeline', 'ready');
+    this.setFlowState('package', 'pending');
+    this.setFlowState('chat', 'idle');
+    this.persistCurrentSession();
     this.updateSendState();
   }
 
   async copy() {
-    const text = this.elements.output.textContent || '';
+    const text = this.elements.output?.textContent || '';
     if (!text.trim()) return;
     try {
       await navigator.clipboard.writeText(text);
-      this.elements.output.textContent = `${text}\n\n# copied`;
+      this.renderPackagePreview(`${text}\n\n# copied`);
     } catch {
-      this.elements.output.textContent = `${text}\n\n# copy_failed`;
+      this.renderPackagePreview(`${text}\n\n# copy_failed`);
     }
   }
 
@@ -216,12 +559,12 @@ export class IntentAssistant {
   async send() {
     const approved = Boolean(this.elements.approve?.checked);
     if (!approved) {
-      this.elements.output.textContent = `${this.latestPackageText || this.elements.output.textContent}\n\n# send_blocked: approve package first`;
+      this.renderPackagePreview(`${this.latestPackageText || this.elements.output?.textContent}\n\n# send_blocked: approve package first`);
       this.updateSendState();
       return;
     }
     if (!String(this.latestPackageText || '').trim()) {
-      this.elements.output.textContent = 'Generate a package before sending.';
+      this.renderPackagePreview('Generate a package before sending.');
       this.updateSendState();
       return;
     }
@@ -235,6 +578,9 @@ export class IntentAssistant {
     };
 
     try {
+      const intent = String(this.elements.input?.value || '').trim();
+      this.appendChat('you', intent || 'Prompt package sent for evaluation.');
+      this.setFlowState('chat', 'pending');
       const response = await fetch('/api/qore/evaluate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
@@ -244,9 +590,19 @@ export class IntentAssistant {
       if (!response.ok) {
         throw new Error(result?.error || result?.message || `send failed (${response.status})`);
       }
-      this.elements.output.textContent = `${this.latestPackageText}\n\n# sent\n# decision: ${String(result?.decision || 'UNKNOWN')}`;
+      const assistantReply = this.extractAssistantReply(result);
+      this.appendChat('assistant', assistantReply);
+      this.renderPackagePreview(`${this.latestPackageText}\n\n# sent\n# decision: ${String(result?.decision || 'UNKNOWN')}`);
+      this.setFlowState('package', 'ready');
+      this.setFlowState('chat', 'ready');
+      this.markSessionProgress();
+      this.persistCurrentSession();
     } catch (error) {
-      this.elements.output.textContent = `${this.latestPackageText}\n\n# send_failed: ${String(error)}`;
+      this.appendChat('system', `send_failed: ${String(error)}`);
+      this.renderPackagePreview(`${this.latestPackageText}\n\n# send_failed: ${String(error)}`);
+      this.setFlowState('package', 'ready');
+      this.setFlowState('chat', 'ready');
+      this.persistCurrentSession();
     }
     this.updateSendState();
   }

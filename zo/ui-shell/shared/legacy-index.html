@@ -171,6 +171,17 @@
       <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
 
       <section id="panel-home" class="panel route-panel active-panel overview-panel" data-route="home">
+        <div class="session-chat-dock card">
+          <div class="session-chat-dock-title">Session/Chat ID</div>
+          <div class="session-chat-dock-row">
+            <span id="session-chat-id" class="session-chat-id-value">pending</span>
+            <button id="session-chat-new" class="hub-action-btn primary small" type="button">New Chat</button>
+          </div>
+          <label class="visually-hidden" for="session-chat-memory">Zo Memory</label>
+          <select id="session-chat-memory" class="intent-select session-chat-memory" aria-label="Select chat from Zo memory">
+            <option value="">Zo Memory</option>
+          </select>
+        </div>
         <div class="panel-headline">
           <div class="command-badge">Command Center Active</div>
           <h2>System Overview</h2>
@@ -181,10 +192,6 @@
           <div class="home-left">
             <article class="card home-stream-card" id="home-operational"></article>
             <div class="home-bottom-grid">
-              <article class="card home-manual-card">
-                <h3>Manual Ingest Control</h3>
-                <button class="hub-action-btn" type="button" data-route-jump="library">Open Skill Library</button>
-              </article>
               <article class="card home-resource-card" id="home-resource"></article>
             </div>
           </div>
@@ -284,7 +291,7 @@
               </div>
             </div>
 
-            <aside class="prompt-side card">
+            <aside id="intent-flow-pipeline" class="prompt-side card flow-stage" data-flow-state="pending">
               <h3>Pipeline Guidance</h3>
               <div class="prompt-guidance-grid">
                 <article class="guidance-tile tile-context">
@@ -310,18 +317,32 @@
             </aside>
           </div>
 
-          <div class="intent-actions intent-actions-right">
-            <button id="intent-generate" class="hub-action-btn primary intent-generate-xl" type="button">Generate Package</button>
+          <div class="intent-results-grid">
+            <section id="intent-flow-chat" class="flow-stage intent-result-panel" data-flow-state="idle">
+              <div class="intent-result-head">
+                <h4 class="intent-chat-label">Chat OUTPUT</h4>
+                <button id="intent-chat-logs" class="hub-action-btn ghost small" type="button" disabled>Chat Logs</button>
+              </div>
+              <div class="intent-chat-id-row">Session/Chat ID: <span id="intent-chat-id">pending</span></div>
+              <pre id="intent-chat-output" class="intent-output intent-chat-output">Assistant responses appear here after send.</pre>
+            </section>
+
+            <section id="intent-flow-package" class="flow-stage intent-result-panel" data-flow-state="idle">
+              <h4 class="intent-chat-label">Prompt Preview</h4>
+              <p class="intent-action-note">Package generation is deterministic and non-executing. It prepares a high-fidelity prompt package for the selected model profile.</p>
+              <pre id="intent-output" class="intent-output intent-package-output">Package preview appears here after generation.</pre>
+              <div class="intent-actions intent-generate-row-left">
+                <button id="intent-generate" class="hub-action-btn primary intent-generate-xl" type="button">Generate Package</button>
+              </div>
+              <div class="intent-send-row">
+                <label class="intent-approve-toggle" for="intent-approve">
+                  <input id="intent-approve" type="checkbox">
+                  <span class="intent-approve-text">Approve package for send</span>
+                </label>
+                <button id="intent-send" class="hub-action-btn primary" type="button" disabled>Send Package</button>
+              </div>
+            </section>
           </div>
-          <div class="intent-send-row">
-            <label class="intent-approve-toggle" for="intent-approve">
-              <input id="intent-approve" type="checkbox">
-              Approve package for send
-            </label>
-            <button id="intent-send" class="hub-action-btn primary" type="button" disabled>Send Package</button>
-          </div>
-          <p class="intent-action-note">Package generation is deterministic and non-executing. It prepares a high-fidelity prompt package for the selected model profile.</p>
-          <pre id="intent-output" class="intent-output">Package preview appears here after generation.</pre>
         </section>
       </section>
 
@@ -544,6 +565,16 @@
     <footer id="footer">
       <span>Zo-Qore is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided "as is" without warranty of any kind.</span>
     </footer>
+  </div>
+
+  <div id="intent-chat-log-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="intent-chat-log-title">
+    <section class="modal-card">
+      <header class="modal-head">
+        <h3 id="intent-chat-log-title">Current Session Chat Logs</h3>
+        <button id="intent-chat-log-close" class="hub-action-btn ghost small" type="button">Close</button>
+      </header>
+      <pre id="intent-chat-log-content" class="intent-output intent-chat-log-content">No chat responses for this session yet.</pre>
+    </section>
   </div>
 
   <script type="module" src="legacy/main.js?v=4"></script>

@@ -100,6 +100,13 @@ describe("QoreUiShellServer", () => {
       expect(consoleHtml.includes('id="intent-context-input"')).toBe(true);
       expect(consoleHtml.includes('id="intent-approve"')).toBe(true);
       expect(consoleHtml.includes('id="intent-send"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-chat-output"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-chat-logs"')).toBe(true);
+      expect(consoleHtml.includes('id="intent-chat-log-modal"')).toBe(true);
+      expect(consoleHtml.includes('id="session-chat-id"')).toBe(true);
+      expect(consoleHtml.includes('id="session-chat-new"')).toBe(true);
+      expect(consoleHtml.includes('id="session-chat-memory"')).toBe(true);
+      expect(consoleHtml.includes("Open Skill Library")).toBe(false);
       expect(consoleHtml.includes('id="intent-copy"')).toBe(false);
       expect(consoleHtml.includes('id="skill-scribe-generate"')).toBe(true);
       expect(consoleHtml.includes('id="skill-scribe-add-context"')).toBe(true);
