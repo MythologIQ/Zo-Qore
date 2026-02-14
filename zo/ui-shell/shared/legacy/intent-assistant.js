@@ -70,10 +70,10 @@ export class IntentAssistant {
     this.getPhase = options.getPhase;
     this.getSelectedSkill = options.getSelectedSkill;
     this.getFallbackSkill = options.getFallbackSkill;
-    this.latestPackageText = '';
+    this.latestPromptText = '';
     this.chatTurns = [];
     this.storageKey = 'zoqore.intent.session.v1';
-    this.defaultPackageText = String(this.elements.output?.textContent || 'Package preview appears here after generation.');
+    this.defaultPromptText = '';
     this.defaultChatText = String(this.elements.chatOutput?.textContent || 'Assistant responses appear here after send.');
     this.isLoadingSession = false;
     this.sessionMeta = this.startSession();
@@ -81,7 +81,7 @@ export class IntentAssistant {
     this.elements.generate?.addEventListener('click', () => this.generate());
     this.elements.copy?.addEventListener('click', () => this.copy());
     this.elements.send?.addEventListener('click', () => this.send());
-    this.elements.approve?.addEventListener('change', () => this.updateSendState());
+    this.elements.output?.addEventListener('input', () => this.updateSendState());
     this.elements.template?.addEventListener('change', () => {
       this.applyTemplateDefaults();
       this.resetFlowForInputInteraction();
@@ -110,7 +110,7 @@ export class IntentAssistant {
     this.renderSessionMeta();
     this.renderSessionMemoryOptions();
     this.renderChatOutputs();
-    this.renderPackagePreview(this.defaultPackageText);
+    this.renderPromptStaging(this.defaultPromptText);
     this.updateSendState();
   }
 
@@ -177,7 +177,7 @@ export class IntentAssistant {
           increment,
           createdAt: now,
           updatedAt: now,
-          packageText: '',
+          promptText: '',
           chatTurns: [],
           form: {
             intent: '',
@@ -260,7 +260,7 @@ export class IntentAssistant {
       increment: this.sessionMeta.increment,
       createdAt: existing.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      packageText: String(this.latestPackageText || ''),
+      promptText: String(this.latestPromptText || ''),
       chatTurns: Array.isArray(this.chatTurns) ? this.chatTurns : [],
       form: this.captureFormState(),
     };
@@ -296,20 +296,20 @@ export class IntentAssistant {
     if (this.elements.input) this.elements.input.value = String(form.intent || '');
     if (this.elements.contextInput) this.elements.contextInput.value = String(form.context || '');
 
-    this.latestPackageText = String(record.packageText || '');
+    this.latestPromptText = String(record.promptText || '');
     this.chatTurns = Array.isArray(record.chatTurns) ? record.chatTurns : [];
     if (this.elements.approve) this.elements.approve.checked = false;
 
-    if (this.latestPackageText) {
+    if (this.latestPromptText) {
       this.setFlowState('pipeline', 'ready');
       this.setFlowState('package', this.chatTurns.length > 0 ? 'ready' : 'pending');
       this.setFlowState('chat', this.chatTurns.length > 0 ? 'ready' : 'idle');
-      this.renderPackagePreview(this.latestPackageText);
+      this.renderPromptStaging(this.latestPromptText);
     } else {
       this.setFlowState('pipeline', 'pending');
       this.setFlowState('package', 'idle');
       this.setFlowState('chat', 'idle');
-      this.renderPackagePreview(this.defaultPackageText);
+      this.renderPromptStaging(this.defaultPromptText);
     }
     this.renderSessionMeta();
     this.renderSessionMemoryOptions();
@@ -319,7 +319,7 @@ export class IntentAssistant {
   }
 
   createNewSession(resetInputs = false) {
-    this.latestPackageText = '';
+    this.latestPromptText = '';
     this.chatTurns = [];
     this.sessionMeta = this.startSession();
     if (this.elements.approve) this.elements.approve.checked = false;
@@ -333,7 +333,7 @@ export class IntentAssistant {
     this.setFlowState('chat', 'idle');
     this.renderSessionMeta();
     this.renderSessionMemoryOptions();
-    this.renderPackagePreview(this.defaultPackageText);
+    this.renderPromptStaging(this.defaultPromptText);
     this.renderChatOutputs();
     this.updateSendState();
   }
@@ -348,9 +348,9 @@ export class IntentAssistant {
     if (target) target.dataset.flowState = state;
   }
 
-  renderPackagePreview(text) {
+  renderPromptStaging(text) {
     if (!this.elements.output) return;
-    this.elements.output.textContent = String(text || this.defaultPackageText);
+    this.elements.output.value = String(text || this.defaultPromptText);
   }
 
   renderChatOutputs() {
@@ -388,7 +388,7 @@ export class IntentAssistant {
 
   resetFlowForInputInteraction() {
     if (this.isLoadingSession) return;
-    const hasWork = Boolean(String(this.latestPackageText || '').trim()) || this.chatTurns.length > 0;
+    const hasWork = Boolean(String(this.latestPromptText || '').trim()) || this.chatTurns.length > 0;
     if (!hasWork) return;
     this.createNewSession(false);
   }
@@ -470,7 +470,7 @@ export class IntentAssistant {
   generate() {
     const intent = String(this.elements.input?.value || '').trim();
     if (!intent) {
-      this.renderPackagePreview('Enter intent first. Prompt package generation is non-executing.');
+      this.renderPromptStaging('Enter intent first.');
       return;
     }
 
@@ -498,8 +498,8 @@ export class IntentAssistant {
         .join('')}</ul>`;
     }
 
-    const packageText = [
-      '# prompt-package (no execution)',
+    const promptText = [
+      '# generated-prompt',
       'prompt_pipeline:',
       `  intent: "${intent.replace(/"/g, "'")}"`,
       `  context: "${context.replace(/"/g, "'")}"`,
@@ -529,8 +529,8 @@ export class IntentAssistant {
       '    - "Run tests/verification and summarize residual risk"',
     ].join('\n');
 
-    this.latestPackageText = packageText;
-    this.renderPackagePreview(packageText);
+    this.latestPromptText = promptText;
+    this.renderPromptStaging(promptText);
     this.setFlowState('pipeline', 'ready');
     this.setFlowState('package', 'pending');
     this.setFlowState('chat', 'idle');
@@ -539,67 +539,89 @@ export class IntentAssistant {
   }
 
   async copy() {
-    const text = this.elements.output?.textContent || '';
+    const text = this.elements.output?.value || '';
     if (!text.trim()) return;
     try {
       await navigator.clipboard.writeText(text);
-      this.renderPackagePreview(`${text}\n\n# copied`);
     } catch {
-      this.renderPackagePreview(`${text}\n\n# copy_failed`);
+      // Copy failed silently
     }
   }
 
   updateSendState() {
     if (!this.elements.send) return;
-    const approved = Boolean(this.elements.approve?.checked);
-    const hasPackage = Boolean(String(this.latestPackageText || '').trim());
-    this.elements.send.disabled = !(approved && hasPackage);
+    const hasPrompt = Boolean(String(this.elements.output?.value || '').trim());
+    this.elements.send.disabled = !hasPrompt;
   }
 
   async send() {
-    const approved = Boolean(this.elements.approve?.checked);
-    if (!approved) {
-      this.renderPackagePreview(`${this.latestPackageText || this.elements.output?.textContent}\n\n# send_blocked: approve package first`);
-      this.updateSendState();
-      return;
-    }
-    if (!String(this.latestPackageText || '').trim()) {
-      this.renderPackagePreview('Generate a package before sending.');
+    const promptText = String(this.elements.output?.value || '').trim();
+    if (!promptText) {
       this.updateSendState();
       return;
     }
 
-    const payload = {
-      requestId: `prompt-package-${Date.now()}`,
+    const governancePayload = {
+      requestId: `prompt-${Date.now()}`,
       actorId: 'did:myth:zoqore:operator',
-      action: 'prompt.package.send',
-      targetPath: 'repo://comms/prompt-package',
-      prompt: this.latestPackageText,
+      action: 'prompt.send',
+      targetPath: 'repo://comms/prompt',
+      content: promptText,
     };
 
     try {
       const intent = String(this.elements.input?.value || '').trim();
-      this.appendChat('you', intent || 'Prompt package sent for evaluation.');
+      this.appendChat('you', intent || promptText.slice(0, 100) + (promptText.length > 100 ? '...' : ''));
       this.setFlowState('chat', 'pending');
-      const response = await fetch('/api/qore/evaluate', {
+
+      // Step 1: Governance evaluation
+      const evalResponse = await fetch('/api/qore/evaluate', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(governancePayload),
       });
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result?.error || result?.message || `send failed (${response.status})`);
+      const evalResult = await evalResponse.json();
+      if (!evalResponse.ok) {
+        throw new Error(evalResult?.error || evalResult?.message || `governance check failed (${evalResponse.status})`);
       }
-      const assistantReply = this.extractAssistantReply(result);
+
+      const decision = String(evalResult?.decision || 'UNKNOWN');
+      if (decision === 'DENY') {
+        this.appendChat('system', `Governance blocked: ${decision}. ${evalResult?.reasons?.join(', ') || 'No reason provided.'}`);
+        this.setFlowState('chat', 'ready');
+        this.persistCurrentSession();
+        return;
+      }
+
+      if (decision === 'ESCALATE') {
+        this.appendChat('system', `Governance escalated: ${evalResult?.requiredActions?.join(', ') || 'Review required.'}`);
+        this.setFlowState('chat', 'ready');
+        this.persistCurrentSession();
+        return;
+      }
+
+      // Step 2: Forward to Zo (decision ALLOW)
+      const zoPayload = {
+        prompt: promptText,
+      };
+      const zoResponse = await fetch('/api/zo/ask', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(zoPayload),
+      });
+      const zoResult = await zoResponse.json();
+      if (!zoResponse.ok) {
+        throw new Error(zoResult?.error || zoResult?.message || `Zo request failed (${zoResponse.status})`);
+      }
+
+      const assistantReply = this.extractAssistantReply(zoResult);
       this.appendChat('assistant', assistantReply);
-      this.renderPackagePreview(`${this.latestPackageText}\n\n# sent\n# decision: ${String(result?.decision || 'UNKNOWN')}`);
       this.setFlowState('package', 'ready');
       this.setFlowState('chat', 'ready');
       this.markSessionProgress();
       this.persistCurrentSession();
     } catch (error) {
       this.appendChat('system', `send_failed: ${String(error)}`);
-      this.renderPackagePreview(`${this.latestPackageText}\n\n# send_failed: ${String(error)}`);
       this.setFlowState('package', 'ready');
       this.setFlowState('chat', 'ready');
       this.persistCurrentSession();

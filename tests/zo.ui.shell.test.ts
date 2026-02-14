@@ -98,7 +98,6 @@ describe("QoreUiShellServer", () => {
       expect(consoleHtml.includes('id="intent-model-mode"')).toBe(true);
       expect(consoleHtml.includes('id="intent-skill-select"')).toBe(true);
       expect(consoleHtml.includes('id="intent-context-input"')).toBe(true);
-      expect(consoleHtml.includes('id="intent-approve"')).toBe(true);
       expect(consoleHtml.includes('id="intent-send"')).toBe(true);
       expect(consoleHtml.includes('id="intent-chat-output"')).toBe(true);
       expect(consoleHtml.includes('id="intent-chat-logs"')).toBe(true);

@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run typecheck:*)",
+      "Bash(timeout:*)",
+      "Bash(timeout /t 8 /nobreak)",
+      "Bash(npx tsc:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run lint)",
+      "Bash(npm test:*)",
+      "Bash(npm run verify:all:*)",
+      "Bash(dir:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npm run build:*)",
+      "Bash(node -e:*)",
+      "Bash(ls -la \"g:\\\\MythologIQ\\\\FailSafe-Qore\\\\.agent\\\\scripts\"\" 2>&1 || dir \"g:MythologIQFailSafe-Qore.agentscripts\"\")",
+      "Bash(wc:*)"
+    ]
+  }
+}

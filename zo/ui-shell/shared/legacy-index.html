@@ -5,8 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Zo-Qore Command Center</title>
   <link rel="icon" type="image/png" href="/favicon.png">
-  <link rel="stylesheet" href="legacy-roadmap.css?v=12">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="legacy-roadmap.css?v=101">
+  <link rel="stylesheet" href="void.css?v=1">
+  <link rel="stylesheet" href="reveal.css?v=1">
+  <link rel="stylesheet" href="constellation.css?v=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@500;700;800&display=swap">
 </head>
 <body>
     <nav class="zoqore-view-toggle" aria-label="View switch">
@@ -202,35 +205,106 @@
         </section>
       </section>
 
-      <section id="panel-run" class="panel route-panel run-panel" data-route="run">
-        <div class="panel-headline">
-          <h2>Current Deployment</h2>
-          <p class="panel-subline">Execution telemetry and mission control for active intent operations.</p>
+      <section id="panel-run" class="panel route-panel run-panel-redesign" data-route="run">
+        <!-- Panic Stop Zone - Top Center Prominent -->
+        <div class="run-panic-zone">
+          <button id="panic-stop-main" class="panic-stop-btn" type="button">
+            <span class="panic-icon">&#9724;</span>
+            <span class="panic-label">Panic Stop</span>
+          </button>
         </div>
-        <div class="run-layout">
-          <div class="run-main">
-            <div id="sprint-info" class="run-card"></div>
-            <div class="run-card">
-              <h3>Mission Console</h3>
-              <div id="roadmap-svg" class="roadmap-container"></div>
+
+        <div class="run-redesign-layout">
+          <!-- Left Sidebar with Circular Gauge at top -->
+          <aside class="run-sidebar">
+            <!-- Circular Phases Gauge - Top of sidebar -->
+            <div class="circular-phases-container sidebar-gauge">
+              <svg id="circular-phases-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="arc-gradient-active" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:var(--primary)"/>
+                    <stop offset="100%" style="stop-color:var(--accent)"/>
+                  </linearGradient>
+                  <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="glow-arc" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <!-- Center Debug Indicator -->
+                <g id="debug-indicator-center">
+                  <circle cx="150" cy="150" r="42" class="debug-indicator-bg"/>
+                  <circle cx="150" cy="150" r="36" class="debug-indicator-inner debug-idle" id="debug-indicator-fill"/>
+                  <text x="150" y="155" class="debug-indicator-text" id="debug-indicator-label">DEBUG</text>
+                </g>
+                <!-- Phase Arc Tracks (background) - 4 phases -->
+                <g id="phase-arcs-tracks">
+                  <path id="arc-track-plan" class="phase-arc-track" d=""/>
+                  <path id="arc-track-audit" class="phase-arc-track" d=""/>
+                  <path id="arc-track-implement" class="phase-arc-track" d=""/>
+                  <path id="arc-track-substantiate" class="phase-arc-track" d=""/>
+                </g>
+                <!-- Phase Arc Fills (progress) - 4 phases -->
+                <g id="phase-arcs-fills">
+                  <path id="arc-fill-plan" class="phase-arc-fill phase-plan" d=""/>
+                  <path id="arc-fill-audit" class="phase-arc-fill phase-audit" d=""/>
+                  <path id="arc-fill-implement" class="phase-arc-fill phase-implement" d=""/>
+                  <path id="arc-fill-substantiate" class="phase-arc-fill phase-substantiate" d=""/>
+                </g>
+                <!-- Phase Labels (populated by JS) -->
+                <g id="phase-labels-group"></g>
+              </svg>
             </div>
-            <div class="run-card">
-              <h3>Deployment Phases</h3>
-              <div id="phase-grid" class="phase-grid"></div>
+
+            <div class="run-sidebar-section">
+              <h3>Deployment</h3>
+              <div id="run-deployment-info" class="deployment-info-compact"></div>
             </div>
-            <div class="run-card">
+            <div class="run-sidebar-section">
+              <h3>Recent Actions</h3>
+              <div id="run-recent-actions" class="recent-actions-compact"></div>
+            </div>
+            <div class="run-sidebar-section">
+              <h3>Performance</h3>
+              <div id="run-performance" class="performance-compact"></div>
+            </div>
+            <div class="run-sidebar-section run-blockers-section">
               <h3>Blockers</h3>
-              <div id="blockers" class="blockers-panel"></div>
+              <div id="run-blockers" class="blockers-panel-compact"></div>
+            </div>
+            <div id="action-feedback" class="action-feedback">No recent actions.</div>
+          </aside>
+
+          <!-- Main Area - Phase Visualization Window -->
+          <div class="run-main-area">
+            <div class="visualization-window">
+              <div class="visualization-header">
+                <h3 id="viz-phase-title">Plan Phase</h3>
+                <span id="viz-phase-badge" class="viz-phase-badge">ACTIVE</span>
+              </div>
+              <div class="visualization-viewport">
+                <svg id="phase-visualization-svg" viewBox="0 0 800 400" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <marker id="viz-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                      <path d="M0,0 L0,8 L8,4 z" class="viz-arrow-head"/>
+                    </marker>
+                    <symbol id="sym-file-node" viewBox="0 0 40 50">
+                      <rect class="file-node-bg" x="2" y="2" width="36" height="46" rx="3"/>
+                      <path class="file-node-fold" d="M28,2 L38,12 L28,12 Z"/>
+                    </symbol>
+                  </defs>
+                  <g id="viz-background-layer"></g>
+                  <g id="viz-connections-layer"></g>
+                  <g id="viz-nodes-layer"></g>
+                  <g id="viz-annotations-layer"></g>
+                </svg>
+              </div>
+              <div id="viz-legend" class="visualization-legend"></div>
             </div>
           </div>
-          <aside class="run-side">
-            <div id="hub-actions" class="hub-actions run-side-actions"></div>
-            <div id="action-feedback" class="action-feedback">No recent command actions.</div>
-            <div class="run-card">
-              <h3>Performance Telemetry</h3>
-              <div id="workspace-health" class="details-body"></div>
-            </div>
-          </aside>
         </div>
       </section>
 
@@ -256,12 +330,12 @@
 
               <div class="prompt-row">
                 <label class="intent-label" for="intent-input">Intent</label>
-                <textarea id="intent-input" class="intent-input" rows="4" placeholder="What should be achieved? Define outcome and constraints."></textarea>
+                <textarea id="intent-input" class="intent-input" rows="2" placeholder="What should be achieved? Define outcome and constraints."></textarea>
               </div>
 
               <div class="prompt-row">
                 <label class="intent-label" for="intent-context-input">Context</label>
-                <textarea id="intent-context-input" class="intent-input" rows="4" placeholder="Repository details, dependencies, deadlines, constraints, and acceptance criteria."></textarea>
+                <textarea id="intent-context-input" class="intent-input" rows="2" placeholder="Repository details, dependencies, deadlines, constraints, and acceptance criteria."></textarea>
               </div>
 
               <div class="prompt-row prompt-row-inline">
@@ -333,13 +407,7 @@
               <pre id="intent-output" class="intent-output intent-package-output">Package preview appears here after generation.</pre>
               <div class="intent-actions intent-generate-row-left">
                 <button id="intent-generate" class="hub-action-btn primary intent-generate-xl" type="button">Generate Package</button>
-              </div>
-              <div class="intent-send-row">
-                <label class="intent-approve-toggle" for="intent-approve">
-                  <input id="intent-approve" type="checkbox">
-                  <span class="intent-approve-text">Approve package for send</span>
-                </label>
-                <button id="intent-send" class="hub-action-btn primary" type="button" disabled>Send Package</button>
+                <button id="intent-send" class="hub-action-btn primary" type="button">Send Package</button>
               </div>
             </section>
           </div>
@@ -468,8 +536,86 @@
           <h2>Projects</h2>
           <p class="panel-subline">Project-level planning and tracking surfaces for delivery execution.</p>
         </div>
+
+        <section class="card void-card">
+          <header class="card-head">
+            <span class="eyebrow">The Void</span>
+            <div class="void-mode-toggle">
+              <button class="void-mode-btn active" type="button" data-mode="genesis">Genesis</button>
+              <button class="void-mode-btn" type="button" data-mode="living">Living</button>
+            </div>
+          </header>
+
+          <div id="void-container" class="void-container" data-mode="genesis">
+            <div class="void-input-area">
+              <span class="void-thought-count">0 thoughts</span>
+              <textarea
+                class="void-textarea"
+                placeholder="Shout into the void..."
+                rows="4"
+              ></textarea>
+              <div class="void-prompt">
+                <span class="void-prompt-text"></span>
+                <button class="void-prompt-dismiss" type="button" aria-label="Dismiss">&times;</button>
+              </div>
+            </div>
+
+            <div class="void-offer">
+              <div class="void-offer-text">
+                Structure is emerging from your thoughts. Ready to see it?
+              </div>
+              <button class="void-offer-decline void-offer-btn" type="button">Keep going</button>
+              <button class="void-offer-accept void-offer-btn" type="button">Show me</button>
+            </div>
+
+            <div class="void-genesis-indicator">
+              <span class="void-genesis-dot"></span>
+              <span>Silent processing active</span>
+            </div>
+            <div class="void-living-indicator">
+              <span class="void-genesis-dot"></span>
+              <span>Connected view active</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Reveal Section -->
+        <section id="reveal-container" class="reveal-container">
+          <header class="card-head">
+            <span class="eyebrow">Organization</span>
+          </header>
+
+          <div class="reveal-canvas"></div>
+
+          <div class="reveal-outliers" style="display: none;"></div>
+
+          <div class="reveal-actions">
+            <button class="reveal-btn reveal-btn-cancel" type="button" onclick="ZoReveal.cancel()">
+              Go back
+            </button>
+            <button class="reveal-btn reveal-btn-confirm" type="button" onclick="ZoReveal.confirm()">
+              Confirm organization
+            </button>
+          </div>
+        </section>
+
+        <!-- Constellation Section -->
+        <section id="constellation-container" class="constellation-container">
+          <header class="card-head">
+            <span class="eyebrow">Constellation</span>
+          </header>
+
+          <div class="constellation-toggle">
+            <button class="constellation-toggle-btn active" data-view="hierarchical" type="button">Tree View</button>
+            <button class="constellation-toggle-btn" data-view="spatial" type="button">Spatial View</button>
+          </div>
+
+          <div class="constellation-tree"></div>
+          <canvas class="constellation-canvas" style="display: none;"></canvas>
+        </section>
+
         <section class="card coming-soon-card">
-          <h3>Coming Soon</h3>
+          <h3>Project Management</h3>
           <p>Project selection, Kanban, Gantt Sheet, and Roadmap sub-tabs are in progress and will be added here.</p>
         </section>
       </section>
@@ -577,7 +723,12 @@
     </section>
   </div>
 
-  <script type="module" src="legacy/main.js?v=4"></script>
+  <script src="void.js?v=1"></script>
+  <script src="reveal.js?v=1"></script>
+  <script src="reveal-drag.js?v=1"></script>
+  <script src="constellation-tree.js?v=1"></script>
+  <script src="constellation-spatial.js?v=1"></script>
+  <script type="module" src="legacy/main.js?v=101"></script>
 </body>
 </html>
 

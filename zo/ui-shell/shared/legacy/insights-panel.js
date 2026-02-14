@@ -157,7 +157,6 @@ export class InsightsPanel {
           <div class="metric-row"><span>Plan</span><strong>${escapeHtml(planId)}</strong></div>
           <div class="metric-row"><span>Progress</span><strong>${progress}%</strong></div>
         </div>
-        <button class="hub-action-btn primary" type="button" data-route-jump="skills" style="margin-top:10px">Open Skills</button>
       `;
     }
 
@@ -335,5 +334,86 @@ export class InsightsPanel {
       </div>
       <div class="metric-list">${history}</div>
     `;
+  }
+
+  /**
+   * Extract debug visualization state from hub state
+   * @param {Object} state - Full application state
+   * @returns {Object} Debug state for DebugTracePanel
+   */
+  extractDebugState(state) {
+    const hub = state.hub || {};
+    const activePlan = hub.activePlan || { phases: [], blockers: [] };
+    const phases = activePlan.phases || [];
+    const events = state.events || [];
+    const sentinelStatus = hub.sentinelStatus || {};
+
+    // Determine execution state based on hub status
+    let executionState = 'idle';
+    const currentPhase = phases.find(p => p.status === 'in_progress' || p.status === 'active');
+    const hasBlockers = (activePlan.blockers || []).filter(b => !b.resolvedAt).length > 0;
+    const hasErrors = (hub.recentVerdicts || []).some(v =>
+      ['BLOCK', 'ESCALATE', 'QUARANTINE'].includes(String(v.decision || '').toUpperCase())
+    );
+
+    if (hasErrors) {
+      executionState = 'error';
+    } else if (hasBlockers) {
+      executionState = 'paused';
+    } else if (currentPhase) {
+      executionState = sentinelStatus.running ? 'running' : 'stepping';
+    }
+
+    // Build call stack from phases (simulated stack frames)
+    const callStack = phases
+      .filter(p => p.status === 'in_progress' || p.status === 'active' || p.status === 'completed')
+      .slice(0, 4)
+      .map((p, idx) => ({
+        functionName: p.title || `Phase ${idx + 1}`,
+        location: `plan:${activePlan.id || 'active'}:${p.id || idx}`,
+        hasBreakpoint: hasBlockers && idx === 0
+      }));
+
+    // Build active modules from phases
+    const activeModules = phases.slice(0, 5).map((p, idx) => ({
+      id: p.id || `phase-${idx}`,
+      label: (p.title || '').slice(0, 10),
+      state: p.status === 'in_progress' || p.status === 'active' ? 'active' : 'idle'
+    }));
+
+    // Build data flows between consecutive modules
+    const dataFlows = [];
+    for (let i = 0; i < activeModules.length - 1; i++) {
+      const fromPhase = phases[i];
+      const toPhase = phases[i + 1];
+      const isActive = fromPhase?.status === 'completed' && (toPhase?.status === 'in_progress' || toPhase?.status === 'active');
+      dataFlows.push({ from: i, to: i + 1, active: isActive });
+    }
+
+    // Extract debug-relevant events
+    const debugEvents = events
+      .filter(e => e.type && ['checkpoint', 'verdict', 'phase', 'blocker', 'error'].some(t => e.type.toLowerCase().includes(t)))
+      .slice(-12)
+      .map(e => {
+        let eventType = 'step';
+        const typeLower = (e.type || '').toLowerCase();
+        if (typeLower.includes('error') || typeLower.includes('block')) eventType = 'error';
+        else if (typeLower.includes('blocker') || typeLower.includes('warn')) eventType = 'breakpoint';
+        else if (typeLower.includes('complete') || typeLower.includes('pass')) eventType = 'complete';
+
+        return {
+          type: eventType,
+          timestamp: e.timestamp || e.time || new Date().toISOString(),
+          detail: e.payload?.message || e.payload?.result || e.type || 'Event'
+        };
+      });
+
+    return {
+      executionState,
+      callStack,
+      activeModules,
+      dataFlows,
+      events: debugEvents
+    };
   }
 }

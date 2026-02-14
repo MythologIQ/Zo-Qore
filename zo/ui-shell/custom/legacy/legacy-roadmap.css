@@ -1833,13 +1833,13 @@ summary::-webkit-details-marker {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text);
   font-weight: 900;
 }
 
 .intent-chat-output {
-  height: 255px;
-  max-height: 255px;
+  height: 360px;
+  max-height: 360px;
 }
 
 .modal-overlay {
@@ -1887,8 +1887,8 @@ summary::-webkit-details-marker {
     grid-template-columns: 1fr;
   }
   .intent-chat-output {
-    height: 220px;
-    max-height: 220px;
+    height: 300px;
+    max-height: 300px;
   }
   .intent-package-output {
     height: 280px;
@@ -2798,15 +2798,6 @@ summary:focus-visible {
 
 #intent-flow-package .intent-action-note {
   margin-bottom: 6px;
-}
-
-#intent-flow-package .intent-send-row {
-  margin-top: 4px;
-  justify-content: space-between;
-}
-
-.intent-approve-text {
-  display: none;
 }
 
 .skill-scribe-shell {

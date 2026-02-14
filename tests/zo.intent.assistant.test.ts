@@ -87,9 +87,9 @@ describe("IntentAssistant", () => {
     expect(elements.taskNature.textContent).toContain("security-audit");
     expect(elements.modelRecommendation.textContent).toContain("zo-reasoning-1");
     expect(elements.vendorPractices.innerHTML).toContain("Vendor Prompting Practices");
-    expect(elements.output.textContent).toContain("prompt_pipeline:");
-    expect(elements.output.textContent).toContain('recommended: "zo-reasoning-1"');
-    expect(elements.output.textContent).toContain('template_deck: "analysis"');
+    expect(elements.output.value).toContain("prompt_pipeline:");
+    expect(elements.output.value).toContain('recommended: "zo-reasoning-1"');
+    expect(elements.output.value).toContain('template_deck: "analysis"');
   });
 
   it("returns guidance for empty intent and handles clipboard copy states", async () => {
@@ -122,36 +122,37 @@ describe("IntentAssistant", () => {
     });
 
     assistant.generate();
-    expect(elements.output.textContent).toContain("Enter intent first");
+    expect(elements.output.value).toContain("Enter intent first");
 
-    elements.output.textContent = "copy me";
+    elements.output.value = "copy me";
     const clipboard = { writeText: vi.fn().mockResolvedValue(undefined) };
     Object.defineProperty(globalThis, "navigator", {
       value: { clipboard },
       configurable: true,
     });
     await assistant.copy();
+    // Copy now silently succeeds without modifying output
     expect(clipboard.writeText).toHaveBeenCalledWith("copy me");
-    expect(elements.output.textContent).toContain("# copied");
+    expect(elements.output.value).toBe("copy me");
 
     const failingClipboard = { writeText: vi.fn().mockRejectedValue(new Error("blocked")) };
     Object.defineProperty(globalThis, "navigator", {
       value: { clipboard: failingClipboard },
       configurable: true,
     });
-    elements.output.textContent = "copy me again";
+    elements.output.value = "copy me again";
     await assistant.copy();
-    expect(elements.output.textContent).toContain("# copy_failed");
+    // Copy now silently fails without modifying output
+    expect(elements.output.value).toBe("copy me again");
   });
 
-  it("requires approval before send and dispatches through qore evaluate when approved", async () => {
+  it("dispatches through qore evaluate and forwards to zo when allowed", async () => {
     const modulePath = "../zo/ui-shell/shared/legacy/" + "intent-assistant.js";
     const { IntentAssistant } = await import(modulePath);
     const elements = {
       generate: stubElement(),
       copy: stubElement(),
       send: { ...stubElement(), disabled: true } as StubElement & { disabled: boolean },
-      approve: { ...stubElement(), checked: false } as StubElement & { checked: boolean },
       template: stubElement("planning"),
       contextInput: stubElement("Architecture constraints and policy boundaries."),
       persona: stubElement("systems"),
@@ -171,9 +172,22 @@ describe("IntentAssistant", () => {
       chatLogsButton: { ...stubElement(), disabled: true } as StubElement & { disabled: boolean },
     };
 
-    const fetchSpy = vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ decision: "ALLOW", response: "Implemented with verification." }),
+    let callCount = 0;
+    const fetchSpy = vi.fn().mockImplementation((url: string) => {
+      callCount++;
+      if (url === "/api/qore/evaluate") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ decision: "ALLOW" }),
+        });
+      }
+      if (url === "/api/zo/ask") {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ response: "Implemented with verification." }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: async () => ({}) });
     });
     Object.defineProperty(globalThis, "fetch", {
       value: fetchSpy,
@@ -187,29 +201,31 @@ describe("IntentAssistant", () => {
       getFallbackSkill: () => null,
     });
 
+    // Before generate, send is disabled (no output)
+    expect(elements.send.disabled).toBe(true);
+
     assistant.generate();
     expect(elements.flowPipeline.dataset.flowState).toBe("ready");
     expect(elements.flowPackage.dataset.flowState).toBe("pending");
     expect(elements.flowChat.dataset.flowState).toBe("idle");
-    expect(elements.send.disabled).toBe(true);
-    await assistant.send();
-    expect(String(elements.output.textContent)).toContain("send_blocked");
-    expect(fetchSpy).toHaveBeenCalledTimes(0);
 
-    elements.approve.checked = true;
-    assistant.updateSendState();
+    // After generate, send is enabled (output has content)
     expect(elements.send.disabled).toBe(false);
+
     await assistant.send();
 
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    // Verify governance was called first, then Zo
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(fetchSpy.mock.calls[0][0]).toBe("/api/qore/evaluate");
-    expect(elements.output.textContent).toContain("# sent");
-    expect(elements.output.textContent).toContain("decision: ALLOW");
+    expect(fetchSpy.mock.calls[1][0]).toBe("/api/zo/ask");
+
+    // Verify chat output shows assistant response
     expect(elements.chatOutput.textContent).toContain("[assistant] Implemented with verification.");
     expect(elements.flowPackage.dataset.flowState).toBe("ready");
     expect(elements.flowChat.dataset.flowState).toBe("ready");
     expect(elements.chatLogsButton.disabled).toBe(false);
 
+    // Input change resets flow states
     elements.input.listeners.input?.();
     expect(elements.flowPipeline.dataset.flowState).toBe("pending");
     expect(elements.flowPackage.dataset.flowState).toBe("idle");

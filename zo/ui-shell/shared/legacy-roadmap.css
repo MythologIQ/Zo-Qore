@@ -407,7 +407,7 @@ h1 {
 }
 
 .panel-headline {
-  margin-bottom: 12px;
+  margin-bottom: 6px;
   text-align: left;
 }
 
@@ -1491,6 +1491,7 @@ summary::-webkit-details-marker {
   color: var(--muted);
   line-height: 1.45;
   display: -webkit-box;
+  line-clamp: 2;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -1774,15 +1775,15 @@ summary::-webkit-details-marker {
 .intent-results-grid {
   margin-top: 0;
   display: grid;
-  grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr);
-  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  gap: 6px;
 }
 
 .intent-result-panel {
   border: 1px solid color-mix(in srgb, var(--line) 68%, var(--primary) 32%);
   border-radius: 10px;
   background: #071a34;
-  padding: 8px;
+  padding: 6px;
   box-shadow: inset 0 0 0 1px rgba(122, 165, 255, 0.04);
 }
 
@@ -1807,8 +1808,7 @@ summary::-webkit-details-marker {
 }
 
 .intent-package-output {
-  height: 360px;
-  max-height: 360px;
+  min-height: 120px;
 }
 
 .intent-output {
@@ -1833,13 +1833,13 @@ summary::-webkit-details-marker {
   font-size: 0.72rem;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text);
   font-weight: 900;
 }
 
 .intent-chat-output {
-  height: 255px;
-  max-height: 255px;
+  height: 220px;
+  max-height: 220px;
 }
 
 .modal-overlay {
@@ -1891,8 +1891,7 @@ summary::-webkit-details-marker {
     max-height: 220px;
   }
   .intent-package-output {
-    height: 280px;
-    max-height: 280px;
+    min-height: 100px;
   }
 }
 
@@ -2654,21 +2653,21 @@ summary:focus-visible {
 /* Prompt Pipeline + Skill Library split */
 .prompt-pipeline-shell {
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .prompt-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.85fr) minmax(280px, 1fr);
-  gap: 10px;
+  gap: 6px;
 }
 
 .prompt-main {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   border: 1px solid color-mix(in srgb, var(--line) 70%, var(--primary) 30%);
   border-radius: 10px;
-  padding: 10px;
+  padding: 8px;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--surface) 92%, #08162b), color-mix(in srgb, var(--surface-2) 94%, #071326));
   box-shadow: inset 0 0 0 1px rgba(120, 160, 255, 0.05);
@@ -2791,9 +2790,18 @@ summary:focus-visible {
 }
 
 #intent-flow-package {
-  display: grid;
-  grid-template-rows: auto auto 1fr auto auto;
-  align-content: stretch;
+  display: flex;
+  flex-direction: column;
+}
+
+#intent-flow-package .intent-package-output {
+  flex: 1;
+  max-height: none;
+  height: auto;
+}
+
+#intent-flow-package .intent-generate-row-left {
+  margin-top: auto;
 }
 
 #intent-flow-package .intent-action-note {
@@ -2871,5 +2879,1111 @@ summary:focus-visible {
   }
   .skill-scribe-grid {
     grid-template-columns: 1fr;
+  }
+}
+
+/* Debug Trace Visualization */
+.debug-trace-card {
+  border-color: color-mix(in srgb, var(--primary) 48%, var(--line));
+}
+
+.debug-trace-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.debug-trace-header h3 {
+  margin: 0;
+}
+
+.debug-state-badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: color-mix(in srgb, var(--muted) 20%, transparent);
+  color: var(--muted);
+  border: 1px solid color-mix(in srgb, var(--muted) 40%, transparent);
+}
+
+.debug-state-badge[data-state="stepping"] {
+  background: color-mix(in srgb, var(--primary) 18%, transparent);
+  color: var(--primary);
+  border-color: color-mix(in srgb, var(--primary) 52%, transparent);
+  animation: debugBadgePulse 1.5s ease-in-out infinite;
+}
+
+.debug-state-badge[data-state="paused"] {
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--warn);
+  border-color: color-mix(in srgb, var(--warn) 52%, transparent);
+}
+
+.debug-state-badge[data-state="running"] {
+  background: color-mix(in srgb, var(--good) 18%, transparent);
+  color: var(--good);
+  border-color: color-mix(in srgb, var(--good) 52%, transparent);
+}
+
+.debug-state-badge[data-state="error"] {
+  background: color-mix(in srgb, var(--bad) 18%, transparent);
+  color: var(--bad);
+  border-color: color-mix(in srgb, var(--bad) 52%, transparent);
+}
+
+.debug-trace-viewport {
+  border: 1px solid color-mix(in srgb, var(--line) 70%, var(--primary) 30%);
+  border-radius: 10px;
+  background: linear-gradient(180deg, #071428, #05101f);
+  padding: 6px;
+  overflow: hidden;
+}
+
+#debug-trace-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 140px;
+}
+
+/* SVG Element Styles */
+.module-bg {
+  fill: color-mix(in srgb, var(--surface) 90%, #091938);
+  stroke: var(--primary);
+  stroke-width: 1.5;
+}
+
+.module-bg.active {
+  fill: color-mix(in srgb, var(--primary) 18%, var(--surface));
+  animation: debugNodePulse 2s ease-in-out infinite;
+}
+
+.module-port {
+  fill: var(--primary);
+  opacity: 0.7;
+}
+
+.module-label {
+  fill: var(--text);
+  font-size: 9px;
+  font-family: inherit;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.breakpoint-ring {
+  stroke: var(--warn);
+}
+
+.breakpoint-fill {
+  fill: var(--warn);
+}
+
+.breakpoint-active .breakpoint-fill {
+  animation: debugBreakpointGlow 0.8s ease-in-out infinite;
+}
+
+.variable-bg {
+  fill: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  stroke: var(--accent);
+  stroke-width: 1;
+}
+
+.variable-divider {
+  stroke: var(--accent);
+  stroke-width: 0.5;
+  opacity: 0.6;
+}
+
+.variable-text {
+  fill: var(--text);
+  font-size: 7px;
+  font-family: monospace;
+}
+
+.flow-path {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.flow-path.active {
+  opacity: 1;
+  stroke-dasharray: 8 4;
+  animation: debugFlowMove 0.8s linear infinite;
+}
+
+.flow-arrow-head {
+  fill: var(--primary);
+}
+
+.stack-frame {
+  fill: color-mix(in srgb, var(--surface) 92%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+  rx: 4;
+}
+
+.stack-frame.current {
+  fill: color-mix(in srgb, var(--good) 18%, var(--surface));
+  stroke: var(--good);
+  animation: debugStackFlash 0.4s ease-out;
+}
+
+.stack-frame.has-breakpoint {
+  stroke: var(--warn);
+  stroke-width: 1.5;
+}
+
+.stack-label {
+  fill: var(--text);
+  font-size: 8px;
+  font-family: inherit;
+}
+
+.stack-location {
+  fill: var(--muted);
+  font-size: 6px;
+  font-family: monospace;
+}
+
+.timeline-axis {
+  stroke: var(--line);
+  stroke-width: 1;
+  opacity: 0.6;
+}
+
+.timeline-label {
+  fill: var(--muted);
+  font-size: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.timeline-marker {
+  fill: var(--primary);
+  r: 4;
+}
+
+.timeline-marker.event-warn {
+  fill: var(--warn);
+}
+
+.timeline-marker.event-error {
+  fill: var(--bad);
+}
+
+.timeline-marker.event-success {
+  fill: var(--good);
+}
+
+.debug-event-log {
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 90%, #071326);
+  padding: 6px 8px;
+  font-size: 0.66rem;
+  color: var(--muted);
+  max-height: 80px;
+  overflow: auto;
+  line-height: 1.4;
+}
+
+.debug-event-entry {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 40%, transparent);
+}
+
+.debug-event-entry:last-child {
+  border-bottom: none;
+}
+
+.debug-event-time {
+  color: var(--muted);
+  font-family: monospace;
+  font-size: 0.62rem;
+  flex-shrink: 0;
+}
+
+.debug-event-type {
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  flex-shrink: 0;
+}
+
+.debug-event-type.type-step { color: var(--primary); }
+.debug-event-type.type-breakpoint { color: var(--warn); }
+.debug-event-type.type-error { color: var(--bad); }
+.debug-event-type.type-complete { color: var(--good); }
+
+.debug-event-detail {
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Debug Animations */
+@keyframes debugNodePulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(61, 125, 255, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(61, 125, 255, 0.6));
+  }
+}
+
+@keyframes debugFlowMove {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -12;
+  }
+}
+
+@keyframes debugStackFlash {
+  0% {
+    fill: color-mix(in srgb, var(--good) 50%, var(--surface));
+  }
+  100% {
+    fill: color-mix(in srgb, var(--good) 18%, var(--surface));
+  }
+}
+
+@keyframes debugBreakpointGlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes debugBadgePulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+/* ===========================================
+   Run Page Redesign - Circular Phases & Visualization
+   =========================================== */
+
+/* Panic Stop Zone */
+.run-panic-zone {
+  display: flex;
+  justify-content: center;
+  padding: 14px 0 10px;
+}
+
+.panic-stop-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border: 3px solid color-mix(in srgb, var(--bad) 70%, var(--line));
+  border-radius: 12px;
+  padding: 12px 28px;
+  background: linear-gradient(135deg, var(--bad), color-mix(in srgb, var(--bad) 70%, #2a0000));
+  color: #fff;
+  font-size: 0.92rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+  box-shadow:
+    0 0 20px color-mix(in srgb, var(--bad) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  transition: box-shadow 0.3s, transform 0.15s;
+}
+
+.panic-stop-btn:hover {
+  box-shadow: 0 0 36px color-mix(in srgb, var(--bad) 60%, transparent);
+  transform: scale(1.03);
+}
+
+.panic-stop-btn:active {
+  transform: scale(0.98);
+}
+
+.panic-icon {
+  font-size: 1.1rem;
+}
+
+/* Run Page Redesign Layout */
+.run-panel-redesign.active-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.run-redesign-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 14px;
+  align-items: start;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Compressed Sidebar */
+.run-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.run-sidebar-section {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 40%, var(--surface));
+  padding: 10px;
+}
+
+.run-sidebar-section h3 {
+  margin: 0 0 8px;
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: var(--muted);
+}
+
+.run-blockers-section {
+  flex: 1;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+/* Sidebar Metrics */
+.sidebar-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 0.68rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 30%, transparent);
+}
+
+.sidebar-metric:last-child {
+  border-bottom: none;
+}
+
+.sidebar-metric span {
+  color: var(--muted);
+}
+
+.sidebar-metric strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.no-blockers,
+.no-actions {
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+/* Recent Actions */
+.recent-actions-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.action-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 0.6rem;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--surface) 60%, #071326);
+  border-left: 2px solid var(--primary);
+}
+
+.action-time {
+  color: var(--muted);
+  font-family: 'Orbitron', monospace;
+  font-size: 0.54rem;
+}
+
+.action-type {
+  color: var(--accent);
+  font-weight: 700;
+  font-size: 0.56rem;
+  text-transform: uppercase;
+}
+
+.action-detail {
+  color: var(--text);
+  font-size: 0.56rem;
+  opacity: 0.8;
+}
+
+.blocker-item {
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  border-radius: 6px;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
+}
+
+.blocker-item:last-child {
+  margin-bottom: 0;
+}
+
+.blocker-item.blocker-error {
+  border-color: color-mix(in srgb, var(--bad) 50%, var(--line));
+  background: color-mix(in srgb, var(--bad) 10%, var(--surface));
+}
+
+.blocker-item .blocker-title {
+  display: block;
+  font-size: 0.66rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.blocker-item .blocker-reason {
+  display: block;
+  color: var(--muted);
+  font-size: 0.58rem;
+  margin-top: 2px;
+}
+
+.blockers-panel-compact {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.blocker-item-compact {
+  border: 1px solid color-mix(in srgb, var(--bad) 40%, var(--line));
+  border-radius: 6px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--bad) 8%, var(--surface));
+}
+
+.blocker-item-compact .blocker-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.blocker-item-compact .blocker-reason {
+  color: var(--muted);
+  font-size: 0.6rem;
+  margin-top: 2px;
+}
+
+.run-sidebar .action-feedback {
+  font-size: 0.62rem;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--surface) 60%, #071326);
+}
+
+/* Main Area */
+.run-main-area {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  height: 100%;
+}
+
+/* Circular Phases Container */
+.circular-phases-container {
+  display: flex;
+  justify-content: center;
+  padding: 8px;
+}
+
+/* Sidebar gauge - smaller to fit in sidebar */
+.circular-phases-container.sidebar-gauge {
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface-2) 40%, var(--surface));
+}
+
+.sidebar-gauge #circular-phases-svg {
+  width: 220px;
+  height: 220px;
+}
+
+#circular-phases-svg {
+  width: 260px;
+  height: 260px;
+}
+
+/* Phase Arc Tracks */
+.phase-arc-track {
+  fill: none;
+  stroke: color-mix(in srgb, var(--line) 50%, transparent);
+  stroke-width: 32;
+  stroke-linecap: butt !important; /* Flat ends */
+}
+
+/* Phase Arc Fills */
+.phase-arc-fill {
+  fill: none;
+  stroke-width: 32;
+  stroke-linecap: butt !important; /* Flat ends */
+  transition: stroke-dashoffset 0.5s ease-out;
+}
+
+.phase-arc-fill.phase-plan { stroke: var(--primary); }
+.phase-arc-fill.phase-audit { stroke: #a78bfa; }
+.phase-arc-fill.phase-implement { stroke: var(--accent); }
+.phase-arc-fill.phase-debug { stroke: var(--warn); }
+.phase-arc-fill.phase-substantiate { stroke: var(--good); }
+
+/* REMOVED HAZE/GLOW */
+.phase-arc-fill.active {
+  /* No filter */
+  opacity: 1;
+}
+
+/* Phase Labels */
+.phase-label {
+  fill: var(--muted);
+  font-size: 10px;
+  font-weight: 400 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.phase-label.active,
+.phase-label-active {
+  fill: var(--text);
+  font-weight: 400 !important;
+}
+
+/* Debug Indicator (Center Circle) */
+.debug-indicator-bg {
+  fill: color-mix(in srgb, var(--surface) 90%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.debug-indicator-inner {
+  fill: color-mix(in srgb, var(--surface) 80%, #071326);
+  stroke: var(--line);
+  stroke-width: 2.5;
+  transition: fill 0.3s, stroke 0.3s;
+}
+
+.debug-indicator-inner.debug-idle {
+  fill: color-mix(in srgb, var(--surface) 80%, #071326);
+  stroke: var(--line);
+}
+
+.debug-indicator-inner.debug-active {
+  fill: color-mix(in srgb, var(--bad) 35%, var(--surface));
+  stroke: var(--bad);
+  /* Removed glow filter */
+}
+
+.debug-indicator-inner.debug-active.has-blockers {
+  fill: color-mix(in srgb, var(--bad) 50%, var(--surface));
+  stroke: var(--bad);
+}
+
+.debug-indicator-text {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 400 !important; /* Forced thin */
+  text-anchor: middle;
+  dominant-baseline: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.debug-indicator-text.debug-idle { fill: var(--muted); }
+.debug-indicator-text.debug-active { fill: var(--text); }
+
+/* Implement Phase - Module Interconnections */
+.viz-module-box {
+  fill: color-mix(in srgb, var(--surface) 88%, #0a2248);
+  stroke: var(--primary);
+  stroke-width: 2;
+  rx: 6;
+}
+
+.viz-module-box.active {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+  /* Removed haze/shadow */
+}
+
+@keyframes moduleActivePulse {
+  0%, 100% { filter: drop-shadow(0 0 3px var(--accent)); }
+  50% { filter: drop-shadow(0 0 10px var(--accent)); }
+}
+
+.viz-data-flow {
+  fill: none;
+  stroke: var(--primary);
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 0.5;
+}
+
+.viz-data-flow.active {
+  opacity: 1;
+  stroke: var(--accent);
+  stroke-dasharray: 8 4;
+  animation: dataFlowMove 0.8s linear infinite;
+}
+
+@keyframes dataFlowMove {
+  to { stroke-dashoffset: -12; }
+}
+
+/* Debug Phase - Stack Frames */
+.viz-stack-frame {
+  fill: color-mix(in srgb, var(--surface) 92%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+  rx: 4;
+}
+
+.viz-stack-frame.current {
+  fill: color-mix(in srgb, var(--good) 18%, var(--surface));
+  stroke: var(--good);
+  stroke-width: 2;
+}
+
+.viz-stack-frame.has-breakpoint {
+  stroke: var(--warn);
+  stroke-width: 2;
+}
+
+.viz-breakpoint-marker {
+  fill: var(--bad);
+  animation: breakpointPulse 1s ease-in-out infinite;
+}
+
+@keyframes breakpointPulse {
+  0%, 100% { r: 5; opacity: 1; }
+  50% { r: 7; opacity: 0.7; }
+}
+
+.viz-execution-line {
+  stroke: var(--warn);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 3;
+  animation: executionTrace 0.6s linear infinite;
+}
+
+@keyframes executionTrace {
+  to { stroke-dashoffset: -9; }
+}
+
+/* Substantiate Phase - Comparison */
+.viz-comparison-column {
+  fill: color-mix(in srgb, var(--surface) 95%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+  rx: 8;
+}
+
+.viz-comparison-header {
+  fill: var(--muted);
+  font-size: 12px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  text-anchor: middle;
+}
+
+.viz-check-item {
+  fill: color-mix(in srgb, var(--surface) 90%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+  rx: 4;
+}
+
+.viz-check-item.matched {
+  stroke: var(--good);
+}
+
+.viz-check-item.mismatched {
+  stroke: var(--bad);
+}
+
+.viz-checkmark {
+  fill: none;
+  stroke: var(--good);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ======= Additional Visualization Classes ======= */
+
+/* Common */
+.viz-annotation {
+  fill: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Plan Phase - File Grid */
+.viz-file-bg {
+  fill: color-mix(in srgb, var(--surface) 90%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.viz-file-touched .viz-file-bg {
+  fill: color-mix(in srgb, var(--accent) 15%, var(--surface));
+  stroke: var(--accent);
+}
+
+.viz-file-icon {
+  fill: var(--muted);
+  font-size: 14px;
+}
+
+.viz-file-type {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.viz-touched-indicator {
+  fill: var(--accent);
+}
+
+/* Audit Phase - Policy Verification */
+.viz-policy-bg {
+  fill: color-mix(in srgb, var(--surface) 85%, #0a2248);
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.viz-policy-ring {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+}
+
+.viz-policy-pass .viz-policy-ring {
+  stroke: var(--good);
+}
+
+.viz-policy-checking .viz-policy-ring {
+  stroke: var(--warn);
+  animation: policyCheckPulse 1s ease-in-out infinite;
+}
+
+@keyframes policyCheckPulse {
+  0%, 100% { stroke-width: 2; opacity: 1; }
+  50% { stroke-width: 4; opacity: 0.7; }
+}
+
+.viz-policy-icon {
+  fill: var(--text);
+  font-size: 18px;
+  text-anchor: middle;
+}
+
+.viz-policy-label {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  text-anchor: middle;
+  text-transform: uppercase;
+}
+
+.viz-policy-status {
+  fill: var(--muted);
+  font-size: 10px;
+  text-anchor: middle;
+}
+
+.viz-policy-flow {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.viz-flow-active {
+  stroke: var(--good);
+}
+
+.viz-flow-pending {
+  stroke-dasharray: 4 4;
+}
+
+.viz-particle {
+  fill: var(--accent);
+  animation: particleFloat 1.5s ease-in-out infinite;
+}
+
+.viz-particle.p1 { animation-delay: 0s; }
+.viz-particle.p2 { animation-delay: 0.3s; }
+.viz-particle.p3 { animation-delay: 0.6s; }
+.viz-particle.p4 { animation-delay: 0.9s; }
+
+@keyframes particleFloat {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.3); }
+}
+
+.viz-progress-track {
+  fill: color-mix(in srgb, var(--line) 30%, transparent);
+}
+
+.viz-progress-fill {
+  fill: var(--accent);
+}
+
+/* Implement Phase - Module Interconnections */
+.viz-module-bg {
+  fill: color-mix(in srgb, var(--surface) 88%, #0a2248);
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.viz-module-active .viz-module-bg {
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.viz-module-progress {
+  fill: color-mix(in srgb, var(--primary) 25%, transparent);
+}
+
+.viz-module-label {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  text-anchor: middle;
+}
+
+.viz-module-progress-text {
+  fill: var(--muted);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.viz-module-pulse {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: 2;
+  animation: modulePulse 1.5s ease-in-out infinite;
+}
+
+@keyframes modulePulse {
+  0%, 100% { opacity: 0; stroke-width: 2; }
+  50% { opacity: 0.6; stroke-width: 4; }
+}
+
+.viz-dataflow-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.viz-dataflow-active .viz-dataflow-line {
+  stroke: var(--accent);
+  stroke-dasharray: 6 4;
+  animation: flowDash 0.6s linear infinite;
+}
+
+@keyframes flowDash {
+  to { stroke-dashoffset: -10; }
+}
+
+.viz-dataflow-dot {
+  fill: var(--accent);
+}
+
+.viz-impl-bg-grid {
+  fill: color-mix(in srgb, var(--surface) 50%, #050d1a);
+  stroke: var(--line);
+  stroke-width: 0.5;
+  stroke-dasharray: 2 2;
+}
+
+/* Debug Phase - Stack & Inspector */
+.viz-stack-bg {
+  fill: color-mix(in srgb, var(--surface) 92%, #0a1d38);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.viz-stack-current .viz-stack-bg {
+  fill: color-mix(in srgb, var(--primary) 15%, var(--surface));
+  stroke: var(--primary);
+  stroke-width: 2;
+}
+
+.viz-stack-blocked .viz-stack-bg {
+  stroke: var(--warn);
+}
+
+.viz-stack-fn {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.viz-stack-loc {
+  fill: var(--muted);
+  font-size: 11px;
+  font-family: monospace;
+}
+
+.viz-breakpoint {
+  fill: var(--bad);
+}
+
+.viz-timeline-track {
+  stroke: var(--line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.viz-timeline-marker {
+  fill: var(--muted);
+}
+
+.viz-timeline-marker.viz-event-error { fill: var(--bad); }
+.viz-timeline-marker.viz-event-warn { fill: var(--warn); }
+.viz-timeline-marker.viz-event-success { fill: var(--good); }
+.viz-timeline-marker.viz-event-info { fill: var(--primary); }
+
+.viz-inspector-bg {
+  fill: color-mix(in srgb, var(--surface) 95%, #050d1a);
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.viz-inspector-title {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.viz-inspector-divider {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+
+.viz-inspector-label {
+  fill: var(--muted);
+  font-size: 13px;
+}
+
+.viz-inspector-value {
+  fill: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.viz-value-warn {
+  fill: var(--warn);
+}
+
+/* Substantiate Phase - Comparison Grid */
+.viz-header-bg {
+  fill: color-mix(in srgb, var(--primary) 12%, var(--surface));
+}
+
+.viz-header-text {
+  fill: var(--text);
+  font-size: 14px;
+  font-weight: 400;
+  text-anchor: middle;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.viz-row-bg {
+  fill: color-mix(in srgb, var(--surface) 90%, #0a1d38);
+}
+
+.viz-match-pass .viz-row-bg {
+  fill: color-mix(in srgb, var(--good) 8%, var(--surface));
+}
+
+.viz-row-text {
+  fill: var(--text);
+  font-size: 13px;
+}
+
+.viz-row-type {
+  fill: var(--muted);
+  font-size: 11px;
+}
+
+.viz-row-status {
+  fill: var(--good);
+  font-size: 12px;
+  text-anchor: middle;
+}
+
+.viz-match-pending .viz-row-status {
+  fill: var(--muted);
+}
+
+.viz-match-line {
+  stroke: var(--line);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.viz-match-pass .viz-match-line {
+  stroke: var(--good);
+  stroke-dasharray: none;
+}
+
+.viz-summary-text {
+  fill: var(--text);
+  font-size: 14px;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .run-redesign-layout {
+    grid-template-columns: 1fr;
+  }
+  .run-sidebar {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  .run-sidebar-section {
+    flex: 1;
+    min-width: 180px;
+  }
+  .run-blockers-section {
+    max-height: 160px;
+  }
+  #circular-phases-svg {
+    width: 220px;
+    height: 220px;
   }
 }

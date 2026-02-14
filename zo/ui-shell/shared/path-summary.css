@@ -1,0 +1,135 @@
+/* Path Summary Styles */
+
+.path-summary {
+  padding: 16px;
+  background: #FAFAFA;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.path-summary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.path-summary-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+.path-summary-meta {
+  font-size: 12px;
+  color: #666;
+}
+
+.path-summary-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.path-summary-btn {
+  padding: 6px 12px;
+  border: 1px solid #ddd;
+  background: white;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.path-summary-btn:hover {
+  background: #f5f5f5;
+}
+
+.path-summary-btn-primary {
+  background: #4A90D9;
+  color: white;
+  border-color: #4A90D9;
+}
+
+.path-summary-btn-primary:hover {
+  background: #3A80C9;
+}
+
+.path-phases {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.phase-card {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: white;
+  border: 1px solid #e0e0e0;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.phase-card:hover {
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.phase-card.critical {
+  border-left: 3px solid #D32F2F;
+}
+
+.phase-number {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #4A90D9;
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 600;
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.phase-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.phase-name {
+  font-weight: 500;
+  color: #1a1a1a;
+  margin-bottom: 2px;
+}
+
+.phase-dates {
+  font-size: 12px;
+  color: #666;
+}
+
+.phase-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: #666;
+}
+
+.phase-risk-badge {
+  background: #FFEBEE;
+  color: #D32F2F;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 11px;
+}
+
+.path-empty {
+  text-align: center;
+  padding: 32px;
+  color: #666;
+}
+
+.path-empty-btn {
+  margin-top: 12px;
+}
