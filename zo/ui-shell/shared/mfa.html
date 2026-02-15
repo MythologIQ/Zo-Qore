@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FailSafe-Qore | Login</title>
+    <title>FailSafe-Qore | Two-Factor Authentication</title>
     <style>
         * { box-sizing: border-box; }
 
@@ -80,6 +80,14 @@
             border-color: #5a8ed0;
         }
 
+        input.otp-input {
+            letter-spacing: 8px;
+            text-align: center;
+            font-size: 20px;
+            font-weight: 600;
+            padding: 14px 12px;
+        }
+
         button {
             width: 100%;
             border-radius: 8px;
@@ -152,22 +160,17 @@
     <div class="container">
         <div class="card">
             <div class="header">
-                <h1>FailSafe-Qore</h1>
-                <p>Sign in to continue</p>
+                <h1>Two-Factor Authentication</h1>
+                <p>Enter the code from your authenticator app</p>
             </div>
 
-            <form id="loginForm">
+            <form id="mfaForm">
                 <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" autocomplete="username" autofocus required>
+                    <label for="otp">Authentication Code</label>
+                    <input type="text" id="otp" class="otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" autofocus required>
                 </div>
 
-                <div class="input-group">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" autocomplete="current-password" required>
-                </div>
-
-                <button type="submit" id="loginBtn">Sign In</button>
+                <button type="submit" id="mfaBtn">Verify</button>
             </form>
 
             <div id="errorMessage" class="error-message"></div>
@@ -175,52 +178,60 @@
             <div class="status">
                 <div class="status-item">
                     <div class="status-dot active"></div>
-                    Online
+                    Authenticated
                 </div>
                 <div class="status-item">
                     <div class="status-dot"></div>
-                    Auth Required
+                    MFA Required
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const loginForm = document.getElementById('loginForm');
-        const usernameInput = document.getElementById('username');
-        const passwordInput = document.getElementById('password');
-        const loginBtn = document.getElementById('loginBtn');
+        const mfaForm = document.getElementById('mfaForm');
+        const otpInput = document.getElementById('otp');
+        const mfaBtn = document.getElementById('mfaBtn');
         const errorMessage = document.getElementById('errorMessage');
 
-        loginForm.addEventListener('submit', handleLogin);
+        mfaForm.addEventListener('submit', handleMfa);
 
-        async function handleLogin(e) {
+        // Auto-format OTP - digits only
+        otpInput.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 6) val = val.slice(0, 6);
+            e.target.value = val;
+        });
+
+        async function handleMfa(e) {
             e.preventDefault();
-            const username = usernameInput.value.trim();
-            const password = passwordInput.value;
-
-            if (!username || !password) return;
+            const code = otpInput.value.replace(/\s/g, '');
+            if (code.length < 6) {
+                showError('Code must be 6 digits');
+                return;
+            }
 
             setLoading(true);
 
             try {
-                const res = await fetch('/api/auth/login', {
+                const res = await fetch('/mfa/verify', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
+                    body: JSON.stringify({ code })
                 });
 
                 const data = await res.json();
 
                 if (res.ok) {
-                    const redirect = new URLSearchParams(window.location.search).get('next') || '/';
-                    window.location.href = redirect;
+                    window.location.href = '/';
                 } else {
-                    showError(data.message || 'Access Denied');
+                    showError(data.message || 'Verification failed');
                     setLoading(false);
+                    otpInput.value = '';
+                    otpInput.focus();
                 }
             } catch (err) {
-                showError('Connection Refused');
+                showError('Connection error');
                 setLoading(false);
             }
         }
@@ -235,11 +246,11 @@
 
         function setLoading(isLoading) {
             if (isLoading) {
-                loginBtn.disabled = true;
-                loginBtn.innerText = 'Signing in...';
+                mfaBtn.disabled = true;
+                mfaBtn.innerText = 'Verifying...';
             } else {
-                loginBtn.disabled = false;
-                loginBtn.innerText = 'Sign In';
+                mfaBtn.disabled = false;
+                mfaBtn.innerText = 'Verify';
             }
         }
     </script>

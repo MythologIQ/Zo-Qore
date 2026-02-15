@@ -1,6 +1,6 @@
 {
   "name": "@mythologiq/failsafe-qore",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Standalone Qore governance runtime for FailSafe",
   "license": "MIT",
   "private": false,

@@ -4,6 +4,8 @@ import * as http from "http";
 import * as crypto from "crypto";
 import { WebSocketServer, type WebSocket } from "ws";
 import { RuntimeError } from "../../runtime/service/errors";
+import { getSecretStore } from "../../runtime/support/SecureSecretStore";
+import { getUpdateManager } from "./update-manager";
 import {
   encodeBase32,
   generateSessionToken,
@@ -184,8 +186,8 @@ export class QoreUiShellServer {
   private readonly requireUiAuth: boolean;
   private readonly requireUiMfa: boolean;
   private readonly requireAdminToken: boolean;
-  private readonly uiAuthUser: string;
-  private readonly uiAuthPass: string;
+  private uiAuthUser: string;
+  private uiAuthPass: string;
   private readonly uiAdminToken: string;
   private uiTotpSecret: string;
   private readonly uiSessionSecret: string;
@@ -275,10 +277,13 @@ export class QoreUiShellServer {
 
   constructor(private readonly options: QoreUiShellOptions) {
     this.assetsDir = this.resolveAssetsDir(options.assetsDir);
-    this.uiAuthUser = String(process.env.QORE_UI_BASIC_AUTH_USER ?? "");
-    this.uiAuthPass = String(process.env.QORE_UI_BASIC_AUTH_PASS ?? "");
-    this.uiAdminToken = String(process.env.QORE_UI_ADMIN_TOKEN ?? "").trim();
-    this.uiTotpSecret = String(process.env.QORE_UI_TOTP_SECRET ?? "").trim();
+
+    // Load secrets from SecureSecretStore (reads ~/.config/failsafe-qore/secrets.env)
+    const secrets = getSecretStore().getAllSecrets();
+    this.uiAuthUser = String(secrets.QORE_UI_BASIC_AUTH_USER ?? "");
+    this.uiAuthPass = String(secrets.QORE_UI_BASIC_AUTH_PASS ?? "");
+    this.uiAdminToken = String(secrets.QORE_UI_ADMIN_TOKEN ?? "").trim();
+    this.uiTotpSecret = String(secrets.QORE_UI_TOTP_SECRET ?? "").trim();
     this.uiSessionSecret =
       String(process.env.QORE_UI_SESSION_SECRET ?? "").trim() ||
       crypto.randomBytes(32).toString("hex");
@@ -313,11 +318,10 @@ export class QoreUiShellServer {
         process.env.QORE_UI_REQUIRE_AUTH ??
           (defaultRequireAuth ? "true" : "false"),
       ).toLowerCase() === "true";
+    // MFA is always opt-in - user must explicitly enable via env var
     this.requireUiMfa =
-      String(
-        process.env.QORE_UI_REQUIRE_MFA ??
-          (defaultRequireAuth ? "true" : "false"),
-      ).toLowerCase() === "true";
+      String(process.env.QORE_UI_REQUIRE_MFA ?? "false").toLowerCase() ===
+      "true";
     this.requireAdminToken =
       String(
         process.env.QORE_UI_REQUIRE_ADMIN_TOKEN ??
@@ -423,6 +427,14 @@ export class QoreUiShellServer {
 
     if (method === "GET" && pathname === "/login") {
       return this.serveLoginPage(req, res);
+    }
+
+    if (method === "GET" && pathname === "/settings") {
+      return this.serveSettingsPage(req, res);
+    }
+
+    if (method === "GET" && pathname === "/updates") {
+      return this.serveUpdatesPage(req, res);
     }
 
     if (method === "POST" && pathname === "/api/auth/login") {
@@ -673,6 +685,220 @@ export class QoreUiShellServer {
         secret: nextSecret,
         otpAuthUrl,
         revokedSessions,
+      });
+    }
+
+    // Settings API - get current settings state
+    if (method === "GET" && pathname === "/api/settings") {
+      return this.sendJson(res, 200, {
+        hasCredentials: Boolean(this.uiAuthUser && this.uiAuthPass),
+        username: this.uiAuthUser || null,
+        mfaEnabled: this.requireUiMfa,
+        mfaConfigured: Boolean(this.uiTotpSecret),
+        configPath: getSecretStore().getUserConfigDir(),
+      });
+    }
+
+    // Settings API - update credentials
+    if (method === "POST" && pathname === "/api/settings/credentials") {
+      const body = (await this.readBody(req)) as {
+        username?: string;
+        password?: string;
+        currentPassword?: string;
+      };
+
+      // If credentials already exist, require current password
+      if (this.uiAuthPass && body?.currentPassword !== this.uiAuthPass) {
+        return this.sendJson(res, 401, {
+          error: "INVALID_CURRENT_PASSWORD",
+          message: "Current password is incorrect",
+        });
+      }
+
+      const newUser = String(body?.username ?? "").trim();
+      const newPass = String(body?.password ?? "");
+
+      if (!newUser || !newPass) {
+        return this.sendJson(res, 400, {
+          error: "INVALID_INPUT",
+          message: "Username and password are required",
+        });
+      }
+
+      if (newPass.length < 8) {
+        return this.sendJson(res, 400, {
+          error: "WEAK_PASSWORD",
+          message: "Password must be at least 8 characters",
+        });
+      }
+
+      // Save to SecureSecretStore
+      const store = getSecretStore();
+      const secrets = store.getAllSecrets();
+      secrets.QORE_UI_BASIC_AUTH_USER = newUser;
+      secrets.QORE_UI_BASIC_AUTH_PASS = newPass;
+      store.writeSecrets(secrets);
+
+      // Update in-memory values
+      this.uiAuthUser = newUser;
+      this.uiAuthPass = newPass;
+
+      // Revoke all sessions so user must re-auth
+      this.authSessions.clear();
+
+      return this.sendJson(res, 200, {
+        ok: true,
+        message: "Credentials updated successfully",
+        configPath: store.getUserConfigDir(),
+      });
+    }
+
+    // Settings API - enable MFA
+    if (method === "POST" && pathname === "/api/settings/mfa/enable") {
+      const body = (await this.readBody(req)) as {
+        account?: string;
+        issuer?: string;
+      };
+
+      // Generate new TOTP secret
+      const newSecret = encodeBase32(crypto.randomBytes(20));
+      const account = String(body?.account ?? "failsafe-admin");
+      const issuer = String(body?.issuer ?? "FailSafe-Qore");
+      const otpAuthUrl = this.buildOtpAuthUrl(newSecret, account, issuer);
+
+      // Save to SecureSecretStore
+      const store = getSecretStore();
+      const secrets = store.getAllSecrets();
+      secrets.QORE_UI_TOTP_SECRET = newSecret;
+      store.writeSecrets(secrets);
+
+      // Update in-memory value
+      this.uiTotpSecret = newSecret;
+
+      return this.sendJson(res, 200, {
+        ok: true,
+        secret: newSecret,
+        otpAuthUrl,
+        message: "Scan the QR code with your authenticator app, then set QORE_UI_REQUIRE_MFA=true to enable",
+      });
+    }
+
+    // Settings API - disable MFA
+    if (method === "POST" && pathname === "/api/settings/mfa/disable") {
+      const body = (await this.readBody(req)) as { code?: string };
+
+      // Verify MFA code before disabling
+      if (this.uiTotpSecret && this.requireUiMfa) {
+        const code = String(body?.code ?? "");
+        if (!verifyTotpCode(code, this.uiTotpSecret)) {
+          return this.sendJson(res, 401, {
+            error: "INVALID_CODE",
+            message: "Invalid MFA code",
+          });
+        }
+      }
+
+      // Clear TOTP secret
+      const store = getSecretStore();
+      const secrets = store.getAllSecrets();
+      delete secrets.QORE_UI_TOTP_SECRET;
+      store.writeSecrets(secrets);
+
+      // Update in-memory value
+      this.uiTotpSecret = "";
+
+      // Clear MFA sessions
+      this.mfaSessions.clear();
+
+      return this.sendJson(res, 200, {
+        ok: true,
+        message: "MFA has been disabled",
+      });
+    }
+
+    // Updates API - get current version and update status
+    if (method === "GET" && pathname === "/api/updates") {
+      const mgr = getUpdateManager();
+      const lastCheck = mgr.getLastCheckResult();
+      const autoCheck = mgr.getAutoCheckSettings();
+      return this.sendJson(res, 200, {
+        currentVersion: mgr.getCurrentVersion(),
+        lastCheck,
+        autoCheck,
+        canRollback: mgr.canRollback(),
+        rollbackVersions: mgr.getRollbackVersions(),
+      });
+    }
+
+    // Updates API - check for updates
+    if (method === "POST" && pathname === "/api/updates/check") {
+      const mgr = getUpdateManager();
+      const result = await mgr.checkForUpdates();
+      return this.sendJson(res, 200, result);
+    }
+
+    // Updates API - get update history
+    if (method === "GET" && pathname === "/api/updates/history") {
+      const mgr = getUpdateManager();
+      return this.sendJson(res, 200, {
+        history: mgr.getHistory(),
+        backupDir: mgr.getBackupDir(),
+      });
+    }
+
+    // Updates API - update auto-check settings
+    if (method === "POST" && pathname === "/api/updates/settings") {
+      const body = (await this.readBody(req)) as {
+        autoCheckEnabled?: boolean;
+        autoCheckIntervalMs?: number;
+      };
+      const mgr = getUpdateManager();
+      mgr.setAutoCheckSettings(
+        body.autoCheckEnabled ?? true,
+        body.autoCheckIntervalMs,
+      );
+      return this.sendJson(res, 200, {
+        ok: true,
+        settings: mgr.getAutoCheckSettings(),
+      });
+    }
+
+    // Updates API - create backup before update
+    if (method === "POST" && pathname === "/api/updates/backup") {
+      const mgr = getUpdateManager();
+      const backupPath = await mgr.createBackup();
+      return this.sendJson(res, 200, {
+        ok: true,
+        backupPath,
+        version: mgr.getCurrentVersion(),
+      });
+    }
+
+    // Updates API - record that an update was installed
+    if (method === "POST" && pathname === "/api/updates/record") {
+      const body = (await this.readBody(req)) as {
+        version: string;
+        installedBy?: string;
+        releaseNotes?: string;
+      };
+
+      if (!body.version) {
+        return this.sendJson(res, 400, {
+          error: "VERSION_REQUIRED",
+          message: "Version is required",
+        });
+      }
+
+      const mgr = getUpdateManager();
+      mgr.recordUpdate(
+        body.version,
+        body.installedBy || "ui",
+        body.releaseNotes,
+      );
+
+      return this.sendJson(res, 200, {
+        ok: true,
+        recorded: body.version,
       });
     }
 
@@ -1746,6 +1972,502 @@ export class QoreUiShellServer {
     res.end(
       '<!doctype html><html><head><title>Login</title></head><body><h1>Login Required</h1><form action="/api/auth/login" method="post"><input name="username" placeholder="User"><input name="password" type="password" placeholder="Pass"><button>Login</button></form></body></html>',
     );
+  }
+
+  private serveSettingsPage(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): void {
+    // Require authentication for settings page
+    if (
+      !this.isAuthorized(req.headers.authorization) &&
+      !this.isCookieAuthorized(req.headers.cookie)
+    ) {
+      res.statusCode = 302;
+      res.setHeader("location", "/login?next=/settings");
+      res.end();
+      return;
+    }
+
+    if (this.hasUiAsset("settings.html")) {
+      this.serveFile(res, "settings.html");
+      return;
+    }
+
+    // Fallback inline settings page
+    res.statusCode = 200;
+    this.applySecurityHeaders(res);
+    res.setHeader("content-type", "text/html; charset=utf-8");
+    res.end(this.getSettingsPageHtml());
+  }
+
+  private getSettingsPageHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FailSafe-Qore | Settings</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; color: #e7efff; background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%); min-height: 100vh; padding: 16px; }
+.container { max-width: 600px; margin: 0 auto; }
+h1 { margin: 0 0 8px; font-size: 24px; }
+.subtitle { color: #a9bad7; margin: 0 0 24px; }
+.card { background: #13223a; border: 1px solid #2f4a70; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.card h2 { margin: 0 0 16px; font-size: 18px; }
+.input-group { display: grid; gap: 6px; margin-bottom: 16px; }
+.input-group label { font-size: 13px; color: #c7d8f5; }
+input { width: 100%; border-radius: 8px; border: 1px solid #35537b; background: #0f1b30; color: #e7efff; padding: 10px 12px; font: inherit; font-size: 14px; outline: none; }
+input:focus { border-color: #5a8ed0; }
+button { border-radius: 8px; border: 1px solid #35537b; background: #1c3f72; color: #e7efff; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-danger { background: #7a2f3f; border-color: #a04050; }
+.message { padding: 10px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
+.message.success { background: #1a3f2a; border: 1px solid #2f7050; color: #7de6a8; }
+.message.error { background: #3f1a2a; border: 1px solid #a04050; color: #ff8a9a; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; background: #102643; border: 1px solid #3b5a84; }
+.status-badge.enabled { color: #7de6a8; }
+.status-badge.disabled { color: #a9bad7; }
+.back-link { display: inline-block; margin-bottom: 16px; color: #5a8ed0; text-decoration: none; font-size: 14px; }
+.back-link:hover { text-decoration: underline; }
+.mfa-secret { font-family: monospace; background: #0f1b30; padding: 12px; border-radius: 8px; word-break: break-all; margin: 12px 0; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/" class="back-link">&larr; Back to Console</a>
+<h1>Settings</h1>
+<p class="subtitle">Manage your authentication and security settings</p>
+
+<div class="card">
+<h2>Credentials</h2>
+<div id="credentials-status"></div>
+<form id="credentials-form">
+<div class="input-group" id="current-pass-group" style="display:none;">
+<label for="currentPassword">Current Password</label>
+<input type="password" id="currentPassword" autocomplete="current-password">
+</div>
+<div class="input-group">
+<label for="username">Username</label>
+<input type="text" id="username" autocomplete="username" required>
+</div>
+<div class="input-group">
+<label for="password">New Password</label>
+<input type="password" id="password" autocomplete="new-password" minlength="8" required>
+</div>
+<div class="input-group">
+<label for="confirmPassword">Confirm Password</label>
+<input type="password" id="confirmPassword" autocomplete="new-password" required>
+</div>
+<button type="submit" id="save-creds-btn">Save Credentials</button>
+</form>
+<div id="credentials-message"></div>
+</div>
+
+<div class="card">
+<h2>Two-Factor Authentication (MFA)</h2>
+<div id="mfa-status"></div>
+<div id="mfa-actions"></div>
+<div id="mfa-secret-display" style="display:none;">
+<p>Scan this secret with your authenticator app:</p>
+<div class="mfa-secret" id="mfa-secret-value"></div>
+<p style="color:#a9bad7;font-size:13px;">After scanning, set the environment variable <code>QORE_UI_REQUIRE_MFA=true</code> and restart the server to enable MFA enforcement.</p>
+</div>
+<div id="mfa-message"></div>
+</div>
+
+<div class="card">
+<h2>Configuration Location</h2>
+<p style="color:#a9bad7;font-size:13px;">Secrets are stored in:</p>
+<div class="mfa-secret" id="config-path">Loading...</div>
+</div>
+</div>
+
+<script>
+async function loadSettings() {
+const res = await fetch('/api/settings');
+const data = await res.json();
+
+document.getElementById('config-path').textContent = data.configPath + '/secrets.env';
+
+const credStatus = document.getElementById('credentials-status');
+const currentPassGroup = document.getElementById('current-pass-group');
+if (data.hasCredentials) {
+credStatus.innerHTML = '<span class="status-badge enabled">Configured</span>';
+document.getElementById('username').value = data.username || '';
+currentPassGroup.style.display = 'block';
+} else {
+credStatus.innerHTML = '<span class="status-badge disabled">Not configured</span>';
+}
+
+const mfaStatus = document.getElementById('mfa-status');
+const mfaActions = document.getElementById('mfa-actions');
+if (data.mfaConfigured) {
+mfaStatus.innerHTML = '<span class="status-badge ' + (data.mfaEnabled ? 'enabled' : 'disabled') + '">' + (data.mfaEnabled ? 'Enabled' : 'Configured but not enforced') + '</span>';
+mfaActions.innerHTML = '<button type="button" class="btn-danger" onclick="disableMfa()">Remove MFA</button>';
+} else {
+mfaStatus.innerHTML = '<span class="status-badge disabled">Not configured</span>';
+mfaActions.innerHTML = '<button type="button" onclick="enableMfa()">Setup MFA</button>';
+}
+}
+
+document.getElementById('credentials-form').addEventListener('submit', async (e) => {
+e.preventDefault();
+const msg = document.getElementById('credentials-message');
+const pass = document.getElementById('password').value;
+const confirm = document.getElementById('confirmPassword').value;
+
+if (pass !== confirm) {
+msg.innerHTML = '<div class="message error">Passwords do not match</div>';
+return;
+}
+
+const body = {
+username: document.getElementById('username').value,
+password: pass,
+currentPassword: document.getElementById('currentPassword').value || undefined
+};
+
+const res = await fetch('/api/settings/credentials', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify(body)
+});
+const data = await res.json();
+
+if (res.ok) {
+msg.innerHTML = '<div class="message success">' + data.message + '</div>';
+setTimeout(() => location.href = '/login', 1500);
+} else {
+msg.innerHTML = '<div class="message error">' + (data.message || 'Failed to update') + '</div>';
+}
+});
+
+async function enableMfa() {
+const res = await fetch('/api/settings/mfa/enable', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({})
+});
+const data = await res.json();
+const msg = document.getElementById('mfa-message');
+
+if (res.ok) {
+document.getElementById('mfa-secret-display').style.display = 'block';
+document.getElementById('mfa-secret-value').textContent = data.secret;
+msg.innerHTML = '<div class="message success">MFA secret generated</div>';
+loadSettings();
+} else {
+msg.innerHTML = '<div class="message error">' + (data.message || 'Failed') + '</div>';
+}
+}
+
+async function disableMfa() {
+if (!confirm('Are you sure you want to disable MFA?')) return;
+const code = prompt('Enter your current MFA code to confirm:');
+if (!code) return;
+
+const res = await fetch('/api/settings/mfa/disable', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ code })
+});
+const data = await res.json();
+const msg = document.getElementById('mfa-message');
+
+if (res.ok) {
+document.getElementById('mfa-secret-display').style.display = 'none';
+msg.innerHTML = '<div class="message success">' + data.message + '</div>';
+loadSettings();
+} else {
+msg.innerHTML = '<div class="message error">' + (data.message || 'Failed') + '</div>';
+}
+}
+
+loadSettings();
+</script>
+</body>
+</html>`;
+  }
+
+  private serveUpdatesPage(
+    req: http.IncomingMessage,
+    res: http.ServerResponse,
+  ): void {
+    // Require authentication for updates page
+    if (
+      !this.isAuthorized(req.headers.authorization) &&
+      !this.isCookieAuthorized(req.headers.cookie)
+    ) {
+      res.statusCode = 302;
+      res.setHeader("location", "/login?next=/updates");
+      res.end();
+      return;
+    }
+
+    if (this.hasUiAsset("updates.html")) {
+      this.serveFile(res, "updates.html");
+      return;
+    }
+
+    res.statusCode = 200;
+    this.applySecurityHeaders(res);
+    res.setHeader("content-type", "text/html; charset=utf-8");
+    res.end(this.getUpdatesPageHtml());
+  }
+
+  private getUpdatesPageHtml(): string {
+    return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FailSafe-Qore | Updates</title>
+<style>
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Segoe UI", Tahoma, sans-serif; color: #e7efff; background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%); min-height: 100vh; padding: 16px; }
+.container { max-width: 700px; margin: 0 auto; }
+h1 { margin: 0 0 8px; font-size: 24px; }
+.subtitle { color: #a9bad7; margin: 0 0 24px; }
+.card { background: #13223a; border: 1px solid #2f4a70; border-radius: 12px; padding: 24px; margin-bottom: 16px; }
+.card h2 { margin: 0 0 16px; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+button { border-radius: 8px; border: 1px solid #35537b; background: #1c3f72; color: #e7efff; padding: 10px 16px; font: inherit; font-weight: 600; cursor: pointer; }
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn-sm { padding: 6px 12px; font-size: 13px; }
+.btn-success { background: #1a5f3a; border-color: #2f8050; }
+.btn-danger { background: #7a2f3f; border-color: #a04050; }
+.message { padding: 10px; border-radius: 8px; margin-top: 12px; font-size: 13px; }
+.message.success { background: #1a3f2a; border: 1px solid #2f7050; color: #7de6a8; }
+.message.error { background: #3f1a2a; border: 1px solid #a04050; color: #ff8a9a; }
+.message.info { background: #1a2f4a; border: 1px solid #3b5a84; color: #7db8e8; }
+.status-badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px; font-size: 12px; background: #102643; border: 1px solid #3b5a84; }
+.status-badge.current { color: #7de6a8; }
+.status-badge.available { color: #f0c674; }
+.back-link { display: inline-block; margin-bottom: 16px; color: #5a8ed0; text-decoration: none; font-size: 14px; }
+.back-link:hover { text-decoration: underline; }
+.version-display { font-family: monospace; font-size: 18px; color: #7de6a8; }
+.info-text { color: #a9bad7; font-size: 13px; margin: 8px 0; }
+.update-list { list-style: none; padding: 0; margin: 16px 0 0; }
+.update-item { background: #0f1b30; border: 1px solid #2f4a70; border-radius: 8px; padding: 14px; margin-bottom: 10px; }
+.update-item h3 { margin: 0 0 6px; font-size: 15px; display: flex; justify-content: space-between; align-items: center; }
+.update-item .notes { font-size: 13px; color: #a9bad7; margin: 8px 0 0; white-space: pre-wrap; max-height: 100px; overflow: auto; }
+.update-item .meta { font-size: 12px; color: #7a8fa8; margin-top: 8px; }
+.history-item { background: #0f1b30; border: 1px solid #29415f; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.history-item .version { font-family: monospace; color: #7de6a8; }
+.history-item .date { font-size: 12px; color: #7a8fa8; }
+.toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.toggle { position: relative; width: 44px; height: 24px; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; cursor: pointer; inset: 0; background: #29415f; border-radius: 24px; transition: 0.2s; }
+.toggle-slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #e7efff; border-radius: 50%; transition: 0.2s; }
+.toggle input:checked + .toggle-slider { background: #2f8050; }
+.toggle input:checked + .toggle-slider::before { transform: translateX(20px); }
+.actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 12px; }
+</style>
+</head>
+<body>
+<div class="container">
+<a href="/" class="back-link">&larr; Back to Console</a>
+<h1>Updates</h1>
+<p class="subtitle">Manage application updates and version history</p>
+
+<div class="card">
+<h2>Current Version</h2>
+<div class="version-display" id="current-version">Loading...</div>
+<p class="info-text" id="last-check">Last checked: Never</p>
+<div class="actions">
+<button onclick="checkUpdates()" id="check-btn">Check for Updates</button>
+<button onclick="createBackup()" class="btn-sm">Create Backup</button>
+</div>
+<div id="update-message"></div>
+</div>
+
+<div class="card" id="updates-card" style="display:none;">
+<h2>Available Updates <span class="status-badge available" id="update-count"></span></h2>
+<ul class="update-list" id="update-list"></ul>
+</div>
+
+<div class="card">
+<h2>Auto-Check Settings</h2>
+<div class="toggle-row">
+<span>Automatically check for updates</span>
+<label class="toggle">
+<input type="checkbox" id="auto-check-toggle" onchange="updateAutoCheck()">
+<span class="toggle-slider"></span>
+</label>
+</div>
+<p class="info-text">When enabled, checks for updates every 24 hours.</p>
+</div>
+
+<div class="card" id="rollback-card" style="display:none;">
+<h2>Rollback</h2>
+<p class="info-text">Restore to a previous version if needed.</p>
+<div id="rollback-versions"></div>
+</div>
+
+<div class="card">
+<h2>Update History</h2>
+<div id="history-list">
+<p class="info-text">No update history yet.</p>
+</div>
+</div>
+</div>
+
+<script>
+async function loadStatus() {
+const res = await fetch('/api/updates');
+const data = await res.json();
+
+document.getElementById('current-version').textContent = 'v' + data.currentVersion;
+document.getElementById('auto-check-toggle').checked = data.autoCheck?.enabled ?? true;
+
+if (data.lastCheck?.lastChecked) {
+document.getElementById('last-check').textContent = 'Last checked: ' + new Date(data.lastCheck.lastChecked).toLocaleString();
+}
+
+if (data.lastCheck?.updateAvailable) {
+showUpdates(data.lastCheck);
+}
+
+if (data.canRollback && data.rollbackVersions?.length > 0) {
+document.getElementById('rollback-card').style.display = 'block';
+const html = data.rollbackVersions.map(v =>
+'<button class="btn-sm btn-danger" onclick="rollback(\\'' + v + '\\')">Rollback to v' + v + '</button>'
+).join(' ');
+document.getElementById('rollback-versions').innerHTML = html;
+}
+
+loadHistory();
+}
+
+async function loadHistory() {
+const res = await fetch('/api/updates/history');
+const data = await res.json();
+const list = document.getElementById('history-list');
+
+if (data.history?.length > 0) {
+list.innerHTML = data.history.map(h =>
+'<div class="history-item"><span class="version">v' + h.version + '</span> <span class="date">' + new Date(h.installedAt).toLocaleString() + '</span></div>'
+).join('');
+}
+}
+
+async function checkUpdates() {
+const btn = document.getElementById('check-btn');
+const msg = document.getElementById('update-message');
+btn.disabled = true;
+btn.textContent = 'Checking...';
+msg.innerHTML = '';
+
+try {
+const res = await fetch('/api/updates/check', { method: 'POST' });
+const data = await res.json();
+
+document.getElementById('last-check').textContent = 'Last checked: ' + new Date(data.lastChecked).toLocaleString();
+
+if (data.error) {
+msg.innerHTML = '<div class="message error">' + data.error + '</div>';
+} else if (data.updateAvailable) {
+msg.innerHTML = '<div class="message success">Updates available!</div>';
+showUpdates(data);
+} else {
+msg.innerHTML = '<div class="message info">You are on the latest version.</div>';
+}
+} catch (err) {
+msg.innerHTML = '<div class="message error">Failed to check for updates</div>';
+}
+
+btn.disabled = false;
+btn.textContent = 'Check for Updates';
+}
+
+function showUpdates(data) {
+if (!data.updates || data.updates.length === 0) return;
+
+const card = document.getElementById('updates-card');
+const list = document.getElementById('update-list');
+const count = document.getElementById('update-count');
+
+card.style.display = 'block';
+count.textContent = data.updates.length + ' available';
+
+list.innerHTML = data.updates.map(u => {
+const date = u.releaseDate ? new Date(u.releaseDate).toLocaleDateString() : '';
+return '<li class="update-item"><h3><span>v' + u.version + '</span>' +
+'<button class="btn-sm btn-success" onclick="installUpdate(\\'' + u.version + '\\')">Install</button></h3>' +
+(u.releaseNotes ? '<div class="notes">' + escapeHtml(u.releaseNotes) + '</div>' : '') +
+'<div class="meta">Released: ' + date + (u.size ? ' | Size: ' + formatBytes(u.size) : '') + '</div></li>';
+}).join('');
+}
+
+function escapeHtml(text) {
+const div = document.createElement('div');
+div.textContent = text;
+return div.innerHTML;
+}
+
+function formatBytes(bytes) {
+if (bytes < 1024) return bytes + ' B';
+if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+}
+
+async function installUpdate(version) {
+if (!confirm('Install update v' + version + '? A backup will be created first.')) return;
+
+const msg = document.getElementById('update-message');
+msg.innerHTML = '<div class="message info">Creating backup...</div>';
+
+// Create backup first
+await fetch('/api/updates/backup', { method: 'POST' });
+
+msg.innerHTML = '<div class="message info">Installing update... This may take a moment.</div>';
+
+// Record the update (actual installation would use git pull or package download)
+await fetch('/api/updates/record', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ version, installedBy: 'ui' })
+});
+
+msg.innerHTML = '<div class="message success">Update recorded. Run the update script to complete installation:<br><code>npm run zo:update</code></div>';
+loadStatus();
+}
+
+async function createBackup() {
+const msg = document.getElementById('update-message');
+const res = await fetch('/api/updates/backup', { method: 'POST' });
+const data = await res.json();
+if (res.ok) {
+msg.innerHTML = '<div class="message success">Backup created for v' + data.version + '</div>';
+loadStatus();
+} else {
+msg.innerHTML = '<div class="message error">Failed to create backup</div>';
+}
+}
+
+async function updateAutoCheck() {
+const enabled = document.getElementById('auto-check-toggle').checked;
+await fetch('/api/updates/settings', {
+method: 'POST',
+headers: { 'Content-Type': 'application/json' },
+body: JSON.stringify({ autoCheckEnabled: enabled })
+});
+}
+
+async function rollback(version) {
+if (!confirm('Rollback to v' + version + '? Current changes may be lost.')) return;
+const msg = document.getElementById('update-message');
+msg.innerHTML = '<div class="message info">Rollback instructions:<br><code>git checkout v' + version + '</code><br>or restore from backup</div>';
+}
+
+loadStatus();
+</script>
+</body>
+</html>`;
   }
 
   private async handleAuthLogin(
