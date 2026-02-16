@@ -452,8 +452,7 @@ export class QoreUiShellServer {
     if (method === "GET" && pathname === "/health") {
       const runtime = await this.fetchRuntimeSnapshot();
       return this.sendJson(res, 200, {
-        ready:
-          this.hasUiAsset("index.html") || this.hasUiAsset("legacy-index.html"),
+        ready: this.hasUiAsset("index.html"),
         assetsDir: this.assetsDir,
         runtime,
       });
@@ -779,7 +778,8 @@ export class QoreUiShellServer {
         ok: true,
         secret: newSecret,
         otpAuthUrl,
-        message: "Scan the QR code with your authenticator app, then set QORE_UI_REQUIRE_MFA=true to enable",
+        message:
+          "Scan the QR code with your authenticator app, then set QORE_UI_REQUIRE_MFA=true to enable",
       });
     }
 
@@ -949,19 +949,28 @@ export class QoreUiShellServer {
     // Prompt-specific governance evaluation endpoint
     if (method === "POST" && pathname === "/api/prompt/evaluate") {
       const body = await this.readBody(req);
-      const promptPayload = body as { prompt?: string; projectId?: string; actorId?: string };
+      const promptPayload = body as {
+        prompt?: string;
+        projectId?: string;
+        actorId?: string;
+      };
       const prompt = String(promptPayload?.prompt || "").trim();
       const projectId = String(promptPayload?.projectId || "default");
       const actorId = String(promptPayload?.actorId || "unknown");
 
       if (!prompt) {
-        return this.sendJson(res, 400, { error: "prompt_required", detail: "Prompt text is required" });
+        return this.sendJson(res, 400, {
+          error: "prompt_required",
+          detail: "Prompt text is required",
+        });
       }
 
       // Import scanners dynamically to avoid startup cost
       try {
-        const { scanForInjection, scanForJailbreak, scanForSensitiveData } = await import("../prompt-governance/scanners.js");
-        const { countTokens } = await import("../prompt-governance/tokenizer.js");
+        const { scanForInjection, scanForJailbreak, scanForSensitiveData } =
+          await import("../prompt-governance/scanners.js");
+        const { countTokens } =
+          await import("../prompt-governance/tokenizer.js");
 
         // Run all governance scans
         const injectionResult = scanForInjection(prompt, "standard");
@@ -976,19 +985,25 @@ export class QoreUiShellServer {
 
         if (injectionResult.detected && injectionResult.score > 0.7) {
           decision = "DENY";
-          reasons.push(`Injection detected: ${injectionResult.reason || "suspicious patterns"}`);
+          reasons.push(
+            `Injection detected: ${injectionResult.reason || "suspicious patterns"}`,
+          );
           gatesTriggered.push("injection");
         }
 
         if (jailbreakResult.detected) {
           decision = "DENY";
-          reasons.push(`Jailbreak pattern: ${jailbreakResult.matches.slice(0, 3).join(", ")}`);
+          reasons.push(
+            `Jailbreak pattern: ${jailbreakResult.matches.slice(0, 3).join(", ")}`,
+          );
           gatesTriggered.push("jailbreak");
         }
 
         if (sensitiveResult.detected && sensitiveResult.types.length > 0) {
           if (decision === "ALLOW") decision = "WARN";
-          reasons.push(`Sensitive data detected: ${sensitiveResult.types.join(", ")}`);
+          reasons.push(
+            `Sensitive data detected: ${sensitiveResult.types.join(", ")}`,
+          );
           gatesTriggered.push("pii");
         }
 
@@ -996,12 +1011,17 @@ export class QoreUiShellServer {
         const maxTokens = 32000;
         if (tokenCount > maxTokens) {
           decision = "DENY";
-          reasons.push(`Token count ${tokenCount} exceeds limit of ${maxTokens}`);
+          reasons.push(
+            `Token count ${tokenCount} exceeds limit of ${maxTokens}`,
+          );
           gatesTriggered.push("budget");
         }
 
         // Create audit entry hash
-        const promptHash = crypto.createHash("sha256").update(prompt).digest("hex");
+        const promptHash = crypto
+          .createHash("sha256")
+          .update(prompt)
+          .digest("hex");
 
         return this.sendJson(res, 200, {
           decision,
@@ -1016,8 +1036,12 @@ export class QoreUiShellServer {
           actorId,
         });
       } catch (scanError) {
-        const errorMessage = scanError instanceof Error ? scanError.message : String(scanError);
-        return this.sendJson(res, 500, { error: "scan_failed", detail: errorMessage });
+        const errorMessage =
+          scanError instanceof Error ? scanError.message : String(scanError);
+        return this.sendJson(res, 500, {
+          error: "scan_failed",
+          detail: errorMessage,
+        });
       }
     }
 
@@ -1028,11 +1052,15 @@ export class QoreUiShellServer {
       const text = String(embeddingPayload?.text || "").trim();
 
       if (!text) {
-        return this.sendJson(res, 400, { error: "text_required", detail: "Text is required for embedding generation" });
+        return this.sendJson(res, 400, {
+          error: "text_required",
+          detail: "Text is required for embedding generation",
+        });
       }
 
       try {
-        const { LocalEmbeddingService } = await import("../embeddings/local-service.js");
+        const { LocalEmbeddingService } =
+          await import("../embeddings/local-service.js");
         const service = new LocalEmbeddingService();
         const result = await service.embed(text);
         return this.sendJson(res, 200, {
@@ -1043,34 +1071,55 @@ export class QoreUiShellServer {
           computedAt: result.computedAt,
         });
       } catch (embeddingError) {
-        const errorMessage = embeddingError instanceof Error ? embeddingError.message : String(embeddingError);
-        return this.sendJson(res, 500, { error: "embedding_failed", detail: errorMessage });
+        const errorMessage =
+          embeddingError instanceof Error
+            ? embeddingError.message
+            : String(embeddingError);
+        return this.sendJson(res, 500, {
+          error: "embedding_failed",
+          detail: errorMessage,
+        });
       }
     }
 
     // Similarity search endpoint
     if (method === "POST" && pathname === "/api/embeddings/similar") {
       const body = await this.readBody(req);
-      const similarPayload = body as { vector?: number[]; k?: number; projectId?: string };
+      const similarPayload = body as {
+        vector?: number[];
+        k?: number;
+        projectId?: string;
+      };
       const vector = similarPayload?.vector;
       const k = Number(similarPayload?.k ?? 10);
       const projectId = similarPayload?.projectId;
 
       if (!Array.isArray(vector) || vector.length === 0) {
-        return this.sendJson(res, 400, { error: "vector_required", detail: "Vector array is required" });
+        return this.sendJson(res, 400, {
+          error: "vector_required",
+          detail: "Vector array is required",
+        });
       }
 
       try {
-        const { createDuckDBClient } = await import("../storage/duckdb-client.js");
-        const { EmbeddingSimilaritySearch } = await import("../embeddings/similarity.js");
+        const { createDuckDBClient } =
+          await import("../storage/duckdb-client.js");
+        const { EmbeddingSimilaritySearch } =
+          await import("../embeddings/similarity.js");
         const client = await createDuckDBClient({ dbPath: ":memory:" });
         const search = new EmbeddingSimilaritySearch(client);
         const results = await search.findSimilar(vector, k, { projectId });
         await client.close();
         return this.sendJson(res, 200, { results });
       } catch (searchError) {
-        const errorMessage = searchError instanceof Error ? searchError.message : String(searchError);
-        return this.sendJson(res, 500, { error: "search_failed", detail: errorMessage });
+        const errorMessage =
+          searchError instanceof Error
+            ? searchError.message
+            : String(searchError);
+        return this.sendJson(res, 500, {
+          error: "search_failed",
+          detail: errorMessage,
+        });
       }
     }
 
@@ -1144,7 +1193,11 @@ export class QoreUiShellServer {
       const revealPayload = body as { sessionId?: string };
       const sessionId = String(revealPayload?.sessionId || "");
       // Transition session to revealing state
-      return this.sendJson(res, 200, { ok: true, sessionId, state: "revealing" });
+      return this.sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        state: "revealing",
+      });
     }
 
     if (method === "POST" && pathname === "/api/void/decline-offer") {
@@ -1152,7 +1205,11 @@ export class QoreUiShellServer {
       const declinePayload = body as { sessionId?: string };
       const sessionId = String(declinePayload?.sessionId || "");
       // Return to capturing state
-      return this.sendJson(res, 200, { ok: true, sessionId, state: "capturing" });
+      return this.sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        state: "capturing",
+      });
     }
 
     if (method === "POST" && pathname === "/api/void/mode") {
@@ -1181,9 +1238,16 @@ export class QoreUiShellServer {
       });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/reveal\/[^/]+\/confirm$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/reveal\/[^/]+\/confirm$/)
+    ) {
       const sessionId = pathname.split("/")[3];
-      return this.sendJson(res, 200, { ok: true, sessionId, state: "confirmed" });
+      return this.sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        state: "confirmed",
+      });
     }
 
     if (method === "POST" && pathname.match(/^\/api\/reveal\/[^/]+\/cancel$/)) {
@@ -1191,20 +1255,43 @@ export class QoreUiShellServer {
       return this.sendJson(res, 200, { ok: true, sessionId });
     }
 
-    if (method === "PATCH" && pathname.match(/^\/api\/reveal\/[^/]+\/cluster\/[^/]+$/)) {
+    if (
+      method === "PATCH" &&
+      pathname.match(/^\/api\/reveal\/[^/]+\/cluster\/[^/]+$/)
+    ) {
       const parts = pathname.split("/");
       const sessionId = parts[3];
       const clusterId = parts[5];
       const body = await this.readBody(req);
-      const { name, position } = body as { name?: string; position?: { x: number; y: number } };
-      return this.sendJson(res, 200, { ok: true, sessionId, clusterId, name, position });
+      const { name, position } = body as {
+        name?: string;
+        position?: { x: number; y: number };
+      };
+      return this.sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        clusterId,
+        name,
+        position,
+      });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/reveal\/[^/]+\/move-thought$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/reveal\/[^/]+\/move-thought$/)
+    ) {
       const sessionId = pathname.split("/")[3];
       const body = await this.readBody(req);
-      const { thoughtId, toClusterId } = body as { thoughtId: string; toClusterId: string };
-      return this.sendJson(res, 200, { ok: true, sessionId, thoughtId, toClusterId });
+      const { thoughtId, toClusterId } = body as {
+        thoughtId: string;
+        toClusterId: string;
+      };
+      return this.sendJson(res, 200, {
+        ok: true,
+        sessionId,
+        thoughtId,
+        toClusterId,
+      });
     }
 
     // Constellation UI endpoints
@@ -1222,21 +1309,38 @@ export class QoreUiShellServer {
       });
     }
 
-    if (method === "PATCH" && pathname.match(/^\/api\/constellation\/[^/]+\/view$/)) {
+    if (
+      method === "PATCH" &&
+      pathname.match(/^\/api\/constellation\/[^/]+\/view$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const body = await this.readBody(req);
       const { view } = body as { view: string };
       return this.sendJson(res, 200, { ok: true, projectId, view });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/constellation\/[^/]+\/merge$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/constellation\/[^/]+\/merge$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const body = await this.readBody(req);
-      const { sourceId, targetId } = body as { sourceId: string; targetId: string };
-      return this.sendJson(res, 200, { ok: true, projectId, sourceId, targetId });
+      const { sourceId, targetId } = body as {
+        sourceId: string;
+        targetId: string;
+      };
+      return this.sendJson(res, 200, {
+        ok: true,
+        projectId,
+        sourceId,
+        targetId,
+      });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/constellation\/[^/]+\/connection$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/constellation\/[^/]+\/connection$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const body = await this.readBody(req);
       const { fromId, toId } = body as { fromId: string; toId: string };
@@ -1262,15 +1366,30 @@ export class QoreUiShellServer {
       return this.sendJson(res, 200, { ok: true, projectId, autoSchedule });
     }
 
-    if (method === "PATCH" && pathname.match(/^\/api\/path\/[^/]+\/phase\/[^/]+$/)) {
+    if (
+      method === "PATCH" &&
+      pathname.match(/^\/api\/path\/[^/]+\/phase\/[^/]+$/)
+    ) {
       const parts = pathname.split("/");
       const projectId = parts[3];
       const phaseId = parts[5];
-      const body = await this.readBody(req) as { startDate?: string; endDate?: string };
-      return this.sendJson(res, 200, { ok: true, projectId, phaseId, startDate: body.startDate, endDate: body.endDate });
+      const body = (await this.readBody(req)) as {
+        startDate?: string;
+        endDate?: string;
+      };
+      return this.sendJson(res, 200, {
+        ok: true,
+        projectId,
+        phaseId,
+        startDate: body.startDate,
+        endDate: body.endDate,
+      });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/path\/[^/]+\/dependency$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/path\/[^/]+\/dependency$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const body = await this.readBody(req);
       const { fromId, toId } = body as { fromId: string; toId: string };
@@ -1294,7 +1413,7 @@ export class QoreUiShellServer {
 
     if (method === "POST" && pathname.match(/^\/api\/risk\/[^/]+$/)) {
       const projectId = pathname.split("/")[3];
-      const body = await this.readBody(req) as {
+      const body = (await this.readBody(req)) as {
         description: string;
         likelihood: string;
         impact: string;
@@ -1314,23 +1433,39 @@ export class QoreUiShellServer {
       const parts = pathname.split("/");
       const projectId = parts[3];
       const riskId = parts[4];
-      const body = await this.readBody(req) as { status?: string };
-      return this.sendJson(res, 200, { ok: true, projectId, riskId, status: body.status });
+      const body = (await this.readBody(req)) as { status?: string };
+      return this.sendJson(res, 200, {
+        ok: true,
+        projectId,
+        riskId,
+        status: body.status,
+      });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/risk\/[^/]+\/[^/]+\/guardrail$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/risk\/[^/]+\/[^/]+\/guardrail$/)
+    ) {
       const parts = pathname.split("/");
       const projectId = parts[3];
       const riskId = parts[4];
       const guardrailId = `guard-${Date.now()}`;
-      return this.sendJson(res, 200, { ok: true, projectId, riskId, guardrailId });
+      return this.sendJson(res, 200, {
+        ok: true,
+        projectId,
+        riskId,
+        guardrailId,
+      });
     }
 
     // ========================================================================
     // Autonomy API Endpoints
     // ========================================================================
 
-    if (method === "GET" && pathname.match(/^\/api\/autonomy\/[^/]+\/readiness$/)) {
+    if (
+      method === "GET" &&
+      pathname.match(/^\/api\/autonomy\/[^/]+\/readiness$/)
+    ) {
       const projectId = pathname.split("/")[3];
       return this.sendJson(res, 200, {
         projectId,
@@ -1341,7 +1476,10 @@ export class QoreUiShellServer {
       });
     }
 
-    if (method === "POST" && pathname.match(/^\/api\/autonomy\/[^/]+\/start$/)) {
+    if (
+      method === "POST" &&
+      pathname.match(/^\/api\/autonomy\/[^/]+\/start$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const executionId = `exec-${Date.now()}`;
       return this.sendJson(res, 200, { ok: true, projectId, executionId });
@@ -1351,7 +1489,10 @@ export class QoreUiShellServer {
     // Navigation State API Endpoint
     // ========================================================================
 
-    if (method === "GET" && pathname.match(/^\/api\/project\/[^/]+\/nav-state$/)) {
+    if (
+      method === "GET" &&
+      pathname.match(/^\/api\/project\/[^/]+\/nav-state$/)
+    ) {
       const projectId = pathname.split("/")[3];
       const routes = {
         void: { hasData: true, count: 0 },
@@ -1394,9 +1535,17 @@ export class QoreUiShellServer {
     }
 
     if (method === "POST" && pathname === "/api/zo/ask") {
-      const zoBaseUrl = this.options.zoApiBaseUrl || process.env.ZO_API_BASE_URL || "https://api.zo.computer";
+      const zoBaseUrl =
+        this.options.zoApiBaseUrl ||
+        process.env.ZO_API_BASE_URL ||
+        "https://api.zo.computer";
       const body = await this.readBody(req);
-      const zoResult = await this.fetchExternalJson(zoBaseUrl, "/zo/ask", "POST", body);
+      const zoResult = await this.fetchExternalJson(
+        zoBaseUrl,
+        "/zo/ask",
+        "POST",
+        body,
+      );
       if (!zoResult.ok) {
         return this.sendJson(res, 502, zoResult);
       }
@@ -1434,7 +1583,6 @@ export class QoreUiShellServer {
       return this.sendJson(res, 200, {
         assetsDir: this.assetsDir,
         cwd: process.cwd(),
-        hasLegacyIndex: this.hasUiAsset("legacy-index.html"),
         hasIndex: this.hasUiAsset("index.html"),
         filesInDir: fs.existsSync(this.assetsDir)
           ? fs.readdirSync(this.assetsDir).filter((f) => f.endsWith(".html"))
@@ -1465,10 +1613,7 @@ export class QoreUiShellServer {
     ].filter(Boolean);
 
     for (const candidate of candidates) {
-      if (
-        fs.existsSync(path.join(candidate, "legacy-index.html")) ||
-        fs.existsSync(path.join(candidate, "index.html"))
-      ) {
+      if (fs.existsSync(path.join(candidate, "index.html"))) {
         return candidate;
       }
     }
@@ -1483,16 +1628,10 @@ export class QoreUiShellServer {
     res: http.ServerResponse,
     requestedMode: string | null,
   ): void {
-    const useCompact = requestedMode === "compact";
-    const primary = useCompact ? "index.html" : "legacy-index.html";
-    const fallback = useCompact ? "legacy-index.html" : "index.html";
+    const primary = "index.html";
 
     if (this.hasUiAsset(primary)) {
       this.serveFile(res, primary);
-      return;
-    }
-    if (this.hasUiAsset(fallback)) {
-      this.serveFile(res, fallback);
       return;
     }
 
@@ -1516,14 +1655,6 @@ export class QoreUiShellServer {
     }
 
     let candidate = fullPath;
-    if (
-      !fs.existsSync(candidate) &&
-      rel === "index.html" &&
-      this.hasUiAsset("legacy-index.html")
-    ) {
-      candidate = path.resolve(this.assetsDir, "legacy-index.html");
-    }
-
     if (!fs.existsSync(candidate) || fs.statSync(candidate).isDirectory()) {
       this.sendJson(res, 404, {
         error: "NOT_FOUND",
@@ -1839,15 +1970,12 @@ export class QoreUiShellServer {
         "content-type": "application/json",
       };
 
-      const response = await fetch(
-        `${baseUrl}${endpoint}`,
-        {
-          method,
-          headers,
-          body: body !== undefined ? JSON.stringify(body) : undefined,
-          signal: controller.signal,
-        },
-      );
+      const response = await fetch(`${baseUrl}${endpoint}`, {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+        signal: controller.signal,
+      });
       clearTimeout(timeout);
 
       if (!response.ok) {

@@ -11,7 +11,7 @@ const sideBannerSource = fs.existsSync(path.resolve(root, "assets", "branding", 
   ? path.resolve(root, "assets", "branding", "ZoQore-SideBanner.png")
   : path.resolve(root, "assets", "branding", "ZoQoreLogo.png");
 const sideBannerTargetName = "zoqore-side-banner.png";
-const customLegacySource = path.resolve(root, "zo", "ui-shell", "custom", "legacy");
+
 
 // Security: Validate and sanitize environment variables before use
 function sanitizeGitBranch(input) {
@@ -167,15 +167,6 @@ function applyZoQoreBannerOverlay() {
     }
     return out;
   });
-  replaceText(path.join(destination, "legacy-index.html"), (input) => {
-    let out = input;
-    out = out.replace(/<link rel="icon"[^>]*>/g, faviconHtml);
-    if (!out.includes('href="/favicon.png"')) {
-      out = out.replace("<head>", `<head>\n  ${faviconHtml}`);
-    }
-    return out;
-  });
-
   fs.copyFileSync(sideBannerSource, path.join(destination, sideBannerTargetName));
 
   const bannerHtml = '  <aside class="zoqore-side-banner zoqore-side-rail" aria-hidden="true">\n  </aside>\n';
@@ -273,15 +264,11 @@ function applyZoQoreBannerOverlay() {
   upsertText(path.join(destination, "index.html"), /class="zoqore-side-banner"/, (input) =>
     input.replace(/<body[^>]*>\r?\n/, (match) => `${match}${bannerHtml}`)
   );
-  upsertText(path.join(destination, "legacy-index.html"), /class="zoqore-side-banner"/, (input) =>
-    input.replace(/<body[^>]*>\r?\n/, (match) => `${match}${bannerHtml}`)
-  );
+
   upsertText(path.join(destination, "index.html"), /class="zoqore-view-toggle"/, (input) =>
     input.replace(/<body[^>]*>\r?\n/, (match) => `${match}${toggleHtml}`)
   );
-  upsertText(path.join(destination, "legacy-index.html"), /class="zoqore-view-toggle"/, (input) =>
-    input.replace(/<body[^>]*>\r?\n/, (match) => `${match}${toggleHtml}`)
-  );
+
   replaceText(path.join(destination, "index.html"), (input) =>
     input
       .replace(/<aside class="zoqore-side-banner" aria-hidden="true">\\n\s*<img src="\/zoqore-side-banner\.png" alt="">\\n\s*<\/aside>\\n/g, bannerHtml.trimEnd())
@@ -292,20 +279,7 @@ function applyZoQoreBannerOverlay() {
     if (input.includes('class="zoqore-side-banner')) return input;
     return input.replace(/<body[^>]*>/, (match) => `${match}\n${bannerHtml.trimEnd()}`);
   });
-  replaceText(path.join(destination, "legacy-index.html"), (input) =>
-    input
-      .replace(/<aside class="zoqore-side-banner" aria-hidden="true">\\n\s*<img src="\/zoqore-side-banner\.png" alt="">\\n\s*<\/aside>\\n/g, bannerHtml.trimEnd())
-      .replace(/<nav class="zoqore-view-toggle" aria-label="View switch">[\s\S]*?<\/script>\s*/g, `${toggleHtml.trimEnd()}\n`)
-      .replace(/class="zoqore-side-banner"/g, 'class="zoqore-side-banner zoqore-side-rail"')
-  );
-  replaceText(path.join(destination, "index.html"), (input) => {
-    if (input.includes('class="zoqore-view-toggle"')) return input;
-    return input.replace(/<body[^>]*>/, (match) => `${match}\n${toggleHtml.trimEnd()}`);
-  });
-  replaceText(path.join(destination, "legacy-index.html"), (input) => {
-    if (input.includes('class="zoqore-view-toggle"')) return input;
-    return input.replace(/<body[^>]*>/, (match) => `${match}\n${toggleHtml.trimEnd()}`);
-  });
+
 
   const compactCss = `
 .zoqore-side-rail {
@@ -388,141 +362,19 @@ function applyZoQoreBannerOverlay() {
 }
 `;
 
-  const legacyCss = `
-.zoqore-side-rail {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  width: min(22vw, 340px);
-  background:
-    radial-gradient(circle at 18% 16%, rgba(36, 126, 255, 0.2), transparent 42%),
-    radial-gradient(circle at 78% 84%, rgba(24, 194, 165, 0.12), transparent 46%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 20px;
-  z-index: 3;
-  pointer-events: auto;
-  overflow-y: auto;
-}
 
-.zoqore-side-rail img {
-  display: none !important;
-}
 
-.zoqore-view-toggle {
-  position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 12;
-  display: block;
-}
-
-.zoqore-view-toggle button {
-  cursor: pointer;
-  text-decoration: none;
-  color: #d6e6ff;
-  font-size: 0.7rem;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  font-weight: 700;
-  background: rgba(2, 8, 18, 0.9);
-  border: 1px solid rgba(67, 104, 158, 0.58);
-  border-radius: 999px;
-  padding: 6px 14px;
-  backdrop-filter: blur(6px);
-}
-
-.zoqore-view-toggle button:hover {
-  border-color: rgba(72, 127, 232, 0.62);
-  background: rgba(45, 79, 145, 0.32);
-}
-
-.monitor-widget {
-  width: 100%;
-  background: rgba(13, 22, 35, 0.65);
-  border: 1px solid rgba(61, 125, 255, 0.2);
-  border-radius: 8px;
-  padding: 10px;
-  margin-top: auto;
-  margin-bottom: 20px;
-  font-size: 0.7rem;
-  backdrop-filter: blur(4px);
-}
-
-.monitor-widget h2 {
-  font-size: 0.75rem;
-  margin: 0 0 8px;
-  color: #89b3ff;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.monitor-grid {
-  display: grid;
-  gap: 6px;
-}
-
-.monitor-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
-}
-
-.monitor-label {
-  color: #8da2c0;
-}
-
-.monitor-value {
-  color: #e2f0ff;
-  font-weight: 600;
-  text-align: right;
-  overflow-wrap: anywhere;
-  max-width: 60%;
-}
-
-.monitor-status {
-  display: inline-block;
-  padding: 3px 8px;
-  border-radius: 99px;
-  background: rgba(34, 197, 94, 0.15);
-  color: #4ade80;
-  border: 1px solid rgba(34, 197, 94, 0.3);
-  font-size: 0.65rem;
-  margin-top: 6px;
-  text-align: center;
-  width: 100%;
-}
-
-@media (max-width: 900px) {
-  .zoqore-side-rail {
-    display: none;
-  }
-  .zoqore-view-toggle {
-    top: auto;
-    bottom: 10px;
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    z-index: 20;
-  }
-}
-`;
 
   upsertText(path.join(destination, "roadmap.css"), /\.zoqore-side-rail/, (input) => `${input.trimEnd()}\n${compactCss}`);
-  upsertText(path.join(destination, "legacy-roadmap.css"), /\.zoqore-side-rail/, (input) => `${input.trimEnd()}\n${legacyCss}`);
 
   log(`applied Zo-Qore side banner overlay: ${sideBannerTargetName}`);
 }
 
 function applyBrandingOverrides() {
   const indexPath = path.join(destination, "index.html");
-  const legacyIndexPath = path.join(destination, "legacy-index.html");
+
+
   const roadmapCssPath = path.join(destination, "roadmap.css");
-  const legacyRoadmapCssPath = path.join(destination, "legacy-roadmap.css");
   const orbitronLink =
     '<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap">';
   const compactRuntimeBarHtml =
@@ -581,56 +433,14 @@ function applyBrandingOverrides() {
     return output;
   });
 
-  replaceText(legacyIndexPath, (input) => {
-    let output = input;
-    output = output.replace(/<link rel="icon" type="image\/png" href="\/failsafe-icon\.png">\r?\n?/g, "");
-    if (!output.includes('href="/favicon.png"')) {
-      output = output.replace("<head>", '<head>\n  <link rel="icon" type="image/png" href="/favicon.png">');
-    }
-    if (!output.includes("fonts.googleapis.com/css2?family=Orbitron")) {
-      output = output.replace("</head>", `  ${orbitronLink}\n</head>`);
-    }
-    output = output.replace("<title>FailSafe Command Center</title>", "<title>Zo-Qore Command Center</title>");
-    output = output.replace(/<h1>\s*FAILSAFE\s*<\/h1>/g, "<h1>Zo-Qore</h1>");
-    output = output.replace(/FailSafe /g, "Zo-Qore ");
-    output = output.replace(/aria-label="FailSafe Sections"/g, 'aria-label="Zo-Qore Sections"');
-    output = output.replace(/<img src="\/failsafe-icon\.png"[^>]*class="brand-icon"[^>]*>/g, '<img src="/favicon.png" alt="Zo-Qore logo" class="brand-icon">');
-    output = output.replace(/<img src="\/favicon\.png" alt="ZoQore" class="header-logo">\s*/g, '<img src="/favicon.png" alt="Zo-Qore logo" class="brand-icon">\n');
-    if (!/<div class="bg-layer-logo"><\/div>/.test(output)) {
-      output = output.replace('<div class="bg-layer-overlay"></div>', '<div class="bg-layer-logo"></div>\n    <div class="bg-layer-overlay"></div>');
-    }
-    if (!/<img src="\/favicon\.png"[^>]*class="brand-icon"/.test(output)) {
-      output = output.replace('<div class="brand-left">', '<div class="brand-left">\n          <img src="/favicon.png" alt="Zo-Qore logo" class="brand-icon">');
-    }
-    output = output.replace(/FailSafe/g, "Zo-Qore").replace(/FAILSAFE/g, "Zo-Qore");
-    output = output.replace(/ZOQORE/g, "Zo-Qore");
-    return output;
-  });
-
   replaceText(roadmapCssPath, (input) => input.replace(/\.brand-icon\s*\{\s*display:\s*none\s*!important;\s*\}\s*/g, ""));
-  replaceText(legacyRoadmapCssPath, (input) =>
-    input
-      .replace(/\.bg-layer-logo\s*\{\s*display:\s*none\s*!important;[^}]*\}\s*/g, "")
-      .replace(/\.brand-icon\s*\{\s*display:\s*none\s*!important;\s*\}\s*/g, "")
-      .replace(/\.brand-left\s*\{\s*position:\s*relative\s*!important;\s*padding-left:\s*92px\s*!important;[^}]*\}\s*/g, "")
-      .replace(/\.brand-left\s*\.brand-icon\s*\{\s*position:\s*absolute\s*!important;[^}]*\}\s*/g, "")
-      .replace(/@media\s*\(max-width:\s*1100px\)\s*\{[\s\S]*?\.brand-left\s*\.brand-icon\s*\{[\s\S]*?\}\s*\}\s*/g, "")
-  );
+
+
 
   upsertText(
     roadmapCssPath,
     /\.brand-icon \{ width: 62px !important; height: 62px !important; \}/,
     (input) => `${input.trimEnd()}\n.brand-icon { width: 62px !important; height: 62px !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-icon \{ width: 88px !important; height: 88px !important; \}/,
-    (input) => `${input.trimEnd()}\n.brand-icon { width: 88px !important; height: 88px !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.bg-layer-logo \{ display: none !important; background-image: none !important; \}/,
-    (input) => `${input.trimEnd()}\n.bg-layer-logo { display: none !important; background-image: none !important; }\n`
   );
 
   // Normalize previously injected logo size override so repeated syncs converge.
@@ -642,14 +452,6 @@ function applyBrandingOverrides() {
       .replace(/\.brand-icon \{ width: 96px !important; height: 96px !important; \}\s*/g, "")
       .replace(/\.brand-icon \{ width: 88px !important; height: 88px !important; \}\s*/g, "")
       .replace(/\.brand-icon \{ width: 62px !important; height: 62px !important; \}\s*\.brand-icon \{ width: 62px !important; height: 62px !important; \}\s*/g, ".brand-icon { width: 62px !important; height: 62px !important; }\n")
-  );
-  replaceText(legacyRoadmapCssPath, (input) =>
-    input
-      .replace(/\.brand-icon \{ width: 56px !important; height: 56px !important; \}\s*/g, "")
-      .replace(/\.brand-icon \{ width: 68px !important; height: 68px !important; \}\s*/g, "")
-      .replace(/\.brand-icon \{ width: 84px !important; height: 84px !important; \}\s*/g, "")
-      .replace(/\.brand-icon \{ width: 96px !important; height: 96px !important; \}\s*/g, "")
-      .replace(/\.brand-icon \{ width: 88px !important; height: 88px !important; \}\s*\.brand-icon \{ width: 88px !important; height: 88px !important; \}\s*/g, ".brand-icon { width: 88px !important; height: 88px !important; }\n")
   );
 
   // Zo-Qore type treatment
@@ -674,72 +476,20 @@ function applyBrandingOverrides() {
     (input) =>
       `${input.trimEnd()}\n.qore-runtime-ribbon-wrap { margin-top: -2px !important; }\n.qore-runtime-ribbon { display: flex; align-items: center; gap: 8px; width: 100%; padding: 6px 12px; border-top: 1px solid color-mix(in srgb, var(--line) 60%, transparent); border-bottom: 1px solid color-mix(in srgb, var(--line) 60%, transparent); background: color-mix(in srgb, var(--bg) 88%, #01050f); overflow: hidden; }\n.qore-ribbon-item { display: inline-flex; align-items: baseline; gap: 5px; min-width: 0; }\n.qore-ribbon-key { font-size: 0.58rem; letter-spacing: 0.16em; text-transform: uppercase; color: #7fa3d6; white-space: nowrap; }\n.qore-ribbon-value { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #d9ebff; white-space: nowrap; }\n.qore-ribbon-sep { color: #3a6bb0; font-size: 0.62rem; }\n.qore-hidden-value { display: none !important; }\n.qore-ribbon-refresh { margin-left: auto; border: 0; background: transparent; color: #8ec1ff; font-size: 0.56rem; letter-spacing: 0.16em; text-transform: uppercase; cursor: pointer; padding: 2px 0; }\n.qore-ribbon-refresh:hover { color: #d6e9ff; }\n@media (max-width: 720px) { .qore-runtime-ribbon { gap: 6px; padding: 6px 8px; } .qore-ribbon-key { font-size: 0.52rem; letter-spacing: 0.12em; } .qore-ribbon-value { font-size: 0.58rem; } .qore-ribbon-sep { display: none; } }\n`
   );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-left h1 \{ font-family: "Orbitron", "Aptos", "Trebuchet MS", sans-serif !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-left h1 { font-family: "Orbitron", "Aptos", "Trebuchet MS", sans-serif !important; text-transform: none !important; letter-spacing: 0.08em !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-subtitle \{ font-family: "Orbitron", "Aptos", "Trebuchet MS", sans-serif !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-subtitle { font-family: "Orbitron", "Aptos", "Trebuchet MS", sans-serif !important; text-transform: none !important; letter-spacing: 0.12em !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.header-content \{ position: relative !important; overflow: visible !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.header-content { position: relative !important; overflow: visible !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-left \{ position: relative !important; padding-left: 0 !important; min-height: 0 !important; align-items: center !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-left { position: relative !important; padding-left: 0 !important; min-height: 0 !important; align-items: center !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-left \.brand-icon \{ position: static !important; left: auto !important; top: auto !important; transform: none !important; width: 78px !important; height: 78px !important; border-radius: 10px !important; margin-right: 8px !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-left .brand-icon { position: static !important; left: auto !important; top: auto !important; transform: none !important; width: 78px !important; height: 78px !important; border-radius: 10px !important; margin-right: 8px !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /@media \(max-width: 1100px\) \{[\s\S]*?\.brand-left \.brand-icon \{ position: static !important; left: auto !important; top: auto !important; transform: none !important; width: 62px !important; height: 62px !important; margin-right: 6px !important; \}[\s\S]*?\}/,
-    (input) =>
-      `${input.trimEnd()}\n@media (max-width: 1100px) {\n  .brand-left { padding-left: 0 !important; min-height: 0 !important; }\n  .brand-left .brand-icon { position: static !important; left: auto !important; top: auto !important; transform: none !important; width: 62px !important; height: 62px !important; margin-right: 6px !important; }\n}\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-left h1 \{ font-size: 1\.02rem !important; line-height: 1\.05 !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-left h1 { font-size: 1.02rem !important; line-height: 1.05 !important; }\n`
-  );
-  upsertText(
-    legacyRoadmapCssPath,
-    /\.brand-subtitle \{ font-size: 0\.74rem !important; \}/,
-    (input) =>
-      `${input.trimEnd()}\n.brand-subtitle { font-size: 0.74rem !important; }\n`
-  );
 
   log("applied branding overrides: Zo-Qore naming and logo set as primary brand");
 }
 
-function applyCustomLegacyOverrides() {
-  if (!fs.existsSync(customLegacySource)) {
-    return;
-  }
-
+function applyCustomOverrides() {
   const fileMap = [
     { source: path.join(root, "zo", "ui-shell", "custom", "index.html"), target: path.join(destination, "index.html") },
     { source: path.join(root, "zo", "ui-shell", "custom", "roadmap.css"), target: path.join(destination, "roadmap.css") },
     { source: path.join(root, "zo", "ui-shell", "custom", "roadmap.js"), target: path.join(destination, "roadmap.js") },
-    { source: path.join(customLegacySource, "legacy-index.html"), target: path.join(destination, "legacy-index.html") },
-    { source: path.join(customLegacySource, "legacy-roadmap.css"), target: path.join(destination, "legacy-roadmap.css") },
-    { source: path.join(customLegacySource, "main.js"), target: path.join(destination, "legacy", "main.js") },
-    { source: path.join(customLegacySource, "skill-selection.js"), target: path.join(destination, "legacy", "skill-selection.js") },
-    { source: path.join(customLegacySource, "intent-assistant.js"), target: path.join(destination, "legacy", "intent-assistant.js") },
+    { source: path.join(root, "zo", "ui-shell", "assets", "mobile.html"), target: path.join(destination, "mobile.html") },
+    { source: path.join(root, "zo", "ui-shell", "assets", "mobile.css"), target: path.join(destination, "mobile.css") },
+    { source: path.join(root, "zo", "ui-shell", "assets", "mobile.js"), target: path.join(destination, "mobile.js") },
+    { source: path.join(root, "zo", "ui-shell", "assets", "login.html"), target: path.join(destination, "login.html") },
+    { source: path.join(root, "zo", "ui-shell", "assets", "mfa.html"), target: path.join(destination, "mfa.html") },
   ];
 
   for (const mapping of fileMap) {
@@ -748,7 +498,31 @@ function applyCustomLegacyOverrides() {
     fs.copyFileSync(mapping.source, mapping.target);
   }
 
-  log("applied custom legacy UI overrides");
+  log("applied custom UI overrides (Monitor, Mobile, Login)");
+}
+
+
+function removeLegacyFiles() {
+  const legacyFiles = [
+    "legacy-index.html",
+    "legacy-roadmap.css",
+    "legacy-roadmap.js",
+    "legacy"
+  ];
+
+  for (const file of legacyFiles) {
+    const filePath = path.join(destination, file);
+    if (fs.existsSync(filePath)) {
+      // Check if directory
+      const stat = fs.statSync(filePath);
+      if (stat.isDirectory()) {
+         fs.rmSync(filePath, { recursive: true, force: true });
+      } else {
+         fs.unlinkSync(filePath);
+      }
+      log(`removed legacy artifact: ${file}`);
+    }
+  }
 }
 
 function main() {
@@ -762,9 +536,10 @@ function main() {
   if (forceLocal) {
     try {
       syncFromLocal();
+      removeLegacyFiles();
       applyZoQoreBannerOverlay();
       applyBrandingOverrides();
-      applyCustomLegacyOverrides();
+      applyCustomOverrides();
       log(`synced ${countFiles(destination)} files to ${destination}`);
       return;
     } catch (error) {
@@ -778,9 +553,10 @@ function main() {
   if (!forceRemote && fs.existsSync(localSource)) {
     try {
       syncFromLocal();
+      removeLegacyFiles();
       applyZoQoreBannerOverlay();
       applyBrandingOverrides();
-      applyCustomLegacyOverrides();
+      applyCustomOverrides();
       log(`synced ${countFiles(destination)} files to ${destination}`);
       return;
     } catch (error) {
@@ -793,9 +569,10 @@ function main() {
 
   try {
     syncFromRemoteGit();
+    removeLegacyFiles();
     applyZoQoreBannerOverlay();
     applyBrandingOverrides();
-    applyCustomLegacyOverrides();
+    applyCustomOverrides();
     log(`synced ${countFiles(destination)} files to ${destination}`);
   } catch (error) {
     try {

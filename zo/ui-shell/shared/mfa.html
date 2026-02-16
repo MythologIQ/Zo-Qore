@@ -3,186 +3,268 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FailSafe-Qore | Two-Factor Authentication</title>
+    <title>FailSafe-Qore | Identity Verification</title>
     <style>
-        * { box-sizing: border-box; }
+        :root {
+            --bg-color: #050a14;
+            --card-bg: rgba(13, 22, 35, 0.7);
+            --accent-color: #00f0ff;
+            --accent-glow: rgba(0, 240, 255, 0.15);
+            --text-primary: #e6eefb;
+            --text-secondary: #9fb1cd;
+            --error-color: #ff3366;
+            --success-color: #00ff9d;
+            --font-main: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
+        }
 
         body {
-            margin: 0;
-            font-family: "Segoe UI", Tahoma, sans-serif;
-            color: #e7efff;
-            background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%);
-            min-height: 100vh;
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(circle at 50% 0%, #1a2c4e 0%, transparent 50%),
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            color: var(--text-primary);
+            font-family: var(--font-main);
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 16px;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
         }
 
         .container {
             width: 100%;
-            max-width: 380px;
+            max-width: 420px;
+            padding: 20px;
+            perspective: 1000px;
         }
 
         .card {
-            background: #13223a;
-            border: 1px solid #2f4a70;
-            border-radius: 12px;
-            padding: 32px;
+            background: var(--card-bg);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 16px;
+            padding: 40px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transform-style: preserve-3d;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            position: relative;
+            overflow: hidden;
         }
 
-        .header {
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+            opacity: 0.5;
+        }
+
+        .logo {
             text-align: center;
-            margin-bottom: 24px;
+            margin-bottom: 30px;
+            font-family: var(--font-mono);
+            letter-spacing: -0.5px;
         }
 
-        .header h1 {
-            margin: 0 0 4px;
-            font-size: 22px;
-            font-weight: 600;
-        }
-
-        .header p {
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 700;
             margin: 0;
-            color: #a9bad7;
-            font-size: 13px;
+            background: linear-gradient(180deg, #fff, #9fb1cd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 2px;
         }
 
-        form {
-            display: grid;
-            gap: 16px;
+        .logo span {
+            font-size: 12px;
+            color: var(--accent-color);
+            letter-spacing: 4px;
+            text-transform: uppercase;
+            opacity: 0.8;
+            display: block;
+            margin-top: 5px;
         }
 
         .input-group {
-            display: grid;
-            gap: 6px;
+            margin-bottom: 25px;
+            position: relative;
         }
 
         .input-group label {
-            font-size: 13px;
-            color: #c7d8f5;
+            display: block;
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            font-family: var(--font-mono);
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
         input {
             width: 100%;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 8px;
-            border: 1px solid #35537b;
-            background: #0f1b30;
-            color: #e7efff;
-            padding: 10px 12px;
-            font: inherit;
-            font-size: 14px;
+            padding: 12px 16px;
+            font-family: var(--font-mono);
+            color: var(--text-primary);
+            font-size: 16px;
+            transition: all 0.2s ease;
+            box-sizing: border-box;
             outline: none;
-            transition: border-color 0.15s;
         }
 
         input:focus {
-            border-color: #5a8ed0;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+            background: rgba(0, 0, 0, 0.5);
         }
 
         input.otp-input {
-            letter-spacing: 8px;
+            letter-spacing: 4px;
             text-align: center;
             font-size: 20px;
-            font-weight: 600;
-            padding: 14px 12px;
         }
 
         button {
             width: 100%;
+            background: rgba(0, 240, 255, 0.1);
+            border: 1px solid var(--accent-color);
+            color: var(--accent-color);
+            padding: 14px;
             border-radius: 8px;
-            border: 1px solid #35537b;
-            background: #1c3f72;
-            color: #e7efff;
-            padding: 12px;
-            font: inherit;
+            font-family: var(--font-mono);
             font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             cursor: pointer;
-            transition: filter 0.15s;
-            margin-top: 8px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
-            filter: brightness(1.15);
+            background: var(--accent-color);
+            color: #000;
+            box-shadow: 0 0 20px var(--accent-glow);
         }
 
-        button:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
+        button:active {
+            transform: scale(0.98);
         }
 
         .error-message {
-            color: #ff6b8a;
-            font-size: 13px;
+            color: var(--error-color);
+            font-size: 12px;
+            margin-top: 10px;
             text-align: center;
             min-height: 20px;
-            margin-top: 12px;
+            font-family: var(--font-mono);
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: opacity 0.2s ease;
         }
 
         .error-message.visible {
             opacity: 1;
         }
 
-        .status {
-            margin-top: 20px;
+        .status-bar {
+            margin-top: 30px;
             display: flex;
             justify-content: center;
-            gap: 16px;
+            gap: 20px;
         }
 
         .status-item {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 6px;
-            padding: 5px 10px;
-            border: 1px solid #3b5a84;
-            border-radius: 999px;
-            background: #102643;
-            font-size: 11px;
-            color: #a9bad7;
+            font-size: 10px;
+            color: var(--text-secondary);
+            font-family: var(--font-mono);
+            text-transform: uppercase;
         }
 
         .status-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
-            background: #5a6f8c;
+            background: var(--text-secondary);
         }
 
         .status-dot.active {
-            background: #4ade80;
+            background: var(--success-color);
+            box-shadow: 0 0 8px var(--success-color);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        /* Glitch effect on hover for logo */
+        .logo:hover h1 {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: var(--accent-color);
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0) }
+            20% { transform: translate(-2px, 2px) }
+            40% { transform: translate(-2px, -2px) }
+            60% { transform: translate(2px, 2px) }
+            80% { transform: translate(2px, -2px) }
+            100% { transform: translate(0) }
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="card">
-            <div class="header">
-                <h1>Two-Factor Authentication</h1>
-                <p>Enter the code from your authenticator app</p>
+            <div class="logo">
+                <h1>FailSafe</h1>
+                <span>Qore System</span>
             </div>
 
-            <form id="mfaForm">
+            <!-- MFA FORM -->
+            <form id="mfaForm" onsubmit="handleMfa(event)">
                 <div class="input-group">
-                    <label for="otp">Authentication Code</label>
-                    <input type="text" id="otp" class="otp-input" placeholder="000000" maxlength="6" autocomplete="one-time-code" inputmode="numeric" autofocus required>
+                    <label for="otp">Authenticator Code</label>
+                    <input type="text" id="otp" class="otp-input" placeholder="000 000" maxlength="8" autocomplete="one-time-code" inputmode="numeric" autofocus required>
                 </div>
 
-                <button type="submit" id="mfaBtn">Verify</button>
+                <button type="submit" id="mfaBtn">
+                    Authenticate
+                </button>
             </form>
 
             <div id="errorMessage" class="error-message"></div>
 
-            <div class="status">
+            <div class="status-bar">
                 <div class="status-item">
                     <div class="status-dot active"></div>
-                    Authenticated
+                    System Online
                 </div>
                 <div class="status-item">
-                    <div class="status-dot"></div>
-                    MFA Required
+                    <div class="status-dot active"></div>
+                    Secure Link
                 </div>
             </div>
         </div>
@@ -194,12 +276,10 @@
         const mfaBtn = document.getElementById('mfaBtn');
         const errorMessage = document.getElementById('errorMessage');
 
-        mfaForm.addEventListener('submit', handleMfa);
-
-        // Auto-format OTP - digits only
+        // Auto-format OTP with space
         otpInput.addEventListener('input', (e) => {
             let val = e.target.value.replace(/\D/g, '');
-            if (val.length > 6) val = val.slice(0, 6);
+            if (val.length > 6) val = val.slice(0, 6); // standard 6 digits usually
             e.target.value = val;
         });
 
@@ -207,7 +287,7 @@
             e.preventDefault();
             const code = otpInput.value.replace(/\s/g, '');
             if (code.length < 6) {
-                showError('Code must be 6 digits');
+                showError('Invalid code length');
                 return;
             }
 
@@ -248,9 +328,11 @@
             if (isLoading) {
                 mfaBtn.disabled = true;
                 mfaBtn.innerText = 'Verifying...';
+                mfaBtn.style.opacity = '0.7';
             } else {
                 mfaBtn.disabled = false;
-                mfaBtn.innerText = 'Verify';
+                mfaBtn.innerText = 'Authenticate';
+                mfaBtn.style.opacity = '1';
             }
         }
     </script>
