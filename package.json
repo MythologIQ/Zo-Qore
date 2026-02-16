@@ -1,7 +1,7 @@
 {
-  "name": "@mythologiq/failsafe-qore",
-  "version": "1.1.0",
-  "description": "Standalone Qore governance runtime for FailSafe",
+  "name": "@mythologiq/zo-qore",
+  "version": "2.0.0",
+  "description": "Zo-Qore: Autonomous governance runtime evolved from FailSafe-Qore for Zo Computer",
   "license": "MIT",
   "private": false,
   "type": "commonjs",
@@ -52,6 +52,7 @@
   },
   "dependencies": {
     "@mythologiq/qore-contracts": "github:MythologIQ/qore-contracts#main",
+    "agentos-mcp-server": "file:../agent-os/extensions/mcp-server",
     "better-sqlite3": "^12.2.0",
     "proper-lockfile": "^4.1.2",
     "ws": "^8.18.3",

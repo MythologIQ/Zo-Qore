@@ -12,6 +12,7 @@ import { PolicyEngine } from "../../policy/engine/PolicyEngine";
 import { EvaluationRouter } from "../../risk/engine/EvaluationRouter";
 import { LedgerManager } from "../../ledger/engine/LedgerManager";
 import { RuntimeError } from "./errors";
+import { AgentOSIntegration, type AgentOSIntegrationConfig } from "./AgentOSIntegration";
 
 export interface RuntimeHealth {
   status: "ok";
@@ -31,6 +32,7 @@ export class QoreRuntimeService {
     { fingerprint: string; response: DecisionResponse; expiresAt: number }
   >();
   private readonly replayTtlMs = 5 * 60 * 1000;
+  private agentOS?: AgentOSIntegration;
 
   constructor(
     private readonly policyEngine: PolicyEngine,
@@ -56,6 +58,18 @@ export class QoreRuntimeService {
       this.policyLoaded = true;
       this.cachedPolicyVersion = "runtime-defaults";
     }
+
+    // Initialize Agent OS integration with Victor
+    const agentOSEnabled = process.env.QORE_AGENT_OS_ENABLED === "true";
+    if (agentOSEnabled) {
+      this.agentOS = new AgentOSIntegration({
+        enabled: true,
+        policyMode: "strict",
+        victorEnabled: true,
+      });
+      await this.agentOS.initialize();
+    }
+
     this.initialized = true;
   }
 
@@ -80,6 +94,15 @@ export class QoreRuntimeService {
     }
 
     const request = DecisionRequestSchema.parse(input);
+
+    // Agent OS pre-evaluation: Victor can block early if Red Flag
+    if (this.agentOS) {
+      const earlyBlock = await this.agentOS.preEvaluate(request);
+      if (earlyBlock) {
+        return earlyBlock;
+      }
+    }
+
     const nowMs = Date.now();
     const replayKey = `${request.actorId}::${request.requestId}`;
     const fingerprint = this.requestFingerprint(request);
@@ -155,7 +178,7 @@ export class QoreRuntimeService {
       },
     });
 
-    const response = DecisionResponseSchema.parse({
+    let response = DecisionResponseSchema.parse({
       requestId: request.requestId,
       decisionId,
       auditEventId: `ledger:${ledgerEntry.id}`,
@@ -167,6 +190,11 @@ export class QoreRuntimeService {
       policyVersion: this.cachedPolicyVersion,
       evaluatedAt: new Date().toISOString(),
     });
+
+    // Agent OS post-evaluation: Victor enriches response with stance
+    if (this.agentOS) {
+      response = await this.agentOS.postEvaluate(request, response);
+    }
 
     this.replayCache.set(replayKey, {
       fingerprint,
