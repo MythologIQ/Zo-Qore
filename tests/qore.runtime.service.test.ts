@@ -79,8 +79,9 @@ describe("QoreRuntimeService", () => {
       expect(first.decisionId).toMatch(/^dec_/);
       expect(first.auditEventId).toMatch(/^ledger:/);
       expect(second.auditEventId).toMatch(/^ledger:/);
-      expect(service.health().initialized).toBe(true);
-      expect(service.health().policyLoaded).toBe(true);
+      const health = await service.health();
+      expect(health.initialized).toBe(true);
+      expect(health.policyLoaded).toBe(true);
     } finally {
       ledger.close();
     }

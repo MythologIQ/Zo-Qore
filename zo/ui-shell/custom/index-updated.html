@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zo-Qore Monitor</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="roadmap.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;800&display=swap">
+  <style>
+    /* Back to Console button - only shown in popup mode */
+    .back-to-console-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 10000;
+      background: linear-gradient(135deg, #0a1628 0%, #1a2f48 100%);
+      border-bottom: 2px solid #3d7dff;
+      padding: 10px 16px;
+      display: none;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .back-to-console-bar.is-visible {
+      display: flex;
+    }
+    .back-to-console-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #3d7dff;
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .back-to-console-btn:hover {
+      background: #5a8fff;
+      transform: translateX(-2px);
+    }
+    .back-to-console-btn svg {
+      width: 16px;
+      height: 16px;
+    }
+    .back-to-console-label {
+      color: #8ba4cc;
+      font-size: 12px;
+      font-family: 'Inter', sans-serif;
+    }
+    /* Offset body content when back button is shown */
+    body.has-back-button {
+      padding-top: 52px;
+    }
+  </style>
+</head>
+<body>
+  <!-- Back to Console button (only shown in popup monitor mode) -->
+  <div id="back-to-console-bar" class="back-to-console-bar">
+    <button class="back-to-console-btn" onclick="returnToConsoleTop()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      Back to Console
+    </button>
+    <span class="back-to-console-label">Close Monitor</span>
+  </div>
+
+  <nav class="zoqore-view-toggle" aria-label="View switch">
+    <button type="button" data-zoqore-switch>Monitor</button>
+  </nav>
+  <script>
+    function returnToConsoleTop(){
+      if(window.opener && !window.opener.closed){
+        try {
+          window.opener.focus();
+          window.close();
+          return;
+        } catch (error) {
+        }
+      }
+      window.location.assign('/');
+    }
+    
+    (function(){
+      var button=document.querySelector('[data-zoqore-switch]');
+      if(!button){ return; }
+      var path=window.location.pathname||'/';
+      var params=new URLSearchParams(window.location.search||'');
+      var onMonitor=path.indexOf('/ui/monitor')===0 || (path==='/' && params.get('ui')==='compact');
+      var isPopup=params.get('popup')==='1';
+      
+      button.textContent=onMonitor?'Command Center':'Monitor';
+      
+      // Show back button bar if in popup mode
+      if(onMonitor && isPopup){
+        var backBar=document.getElementById('back-to-console-bar');
+        if(backBar){
+          backBar.classList.add('is-visible');
+          document.body.classList.add('has-back-button');
+        }
+      }
+      
+      if(onMonitor){
+        var topBar=document.querySelector('.brand');
+        var statusLine=document.getElementById('status-line');
+        var nav=button.closest('.zoqore-view-toggle');
+        if(topBar && nav){
+          nav.classList.add('in-bar');
+          topBar.appendChild(nav);
+        }
+        if(statusLine){
+          statusLine.classList.add('is-hidden');
+        }
+      }
+      function enforcePopupMonitorSize(){
+        if(!onMonitor || params.get('popup')!=='1'){ return; }
+        var desiredInnerWidth=parseInt(params.get('w')||'0',10);
+        var desiredInnerHeight=parseInt(params.get('h')||'0',10);
+        if(!(desiredInnerWidth>0)){
+          var bodyW=(document.body&&document.body.scrollWidth)||0;
+          var docW=(document.documentElement&&document.documentElement.scrollWidth)||0;
+          desiredInnerWidth=Math.max(560, bodyW, docW) + 24;
+        }
+        if(!(desiredInnerHeight>0)){
+          var bodyH=(document.body&&document.body.scrollHeight)||0;
+          var docH=(document.documentElement&&document.documentElement.scrollHeight)||0;
+          desiredInnerHeight=Math.max(760, bodyH, docH) + 24;
+        }
+        if(!window.resizeTo){ return; }
+        var frameW=Math.max(0, (window.outerWidth||desiredInnerWidth) - (window.innerWidth||desiredInnerWidth));
+        var frameH=Math.max(0, (window.outerHeight||desiredInnerHeight) - (window.innerHeight||desiredInnerHeight));
+        var maxW=(window.screen && window.screen.availWidth) ? window.screen.availWidth : desiredInnerWidth + frameW;
+        var maxH=(window.screen && window.screen.availHeight) ? window.screen.availHeight : desiredInnerHeight + frameH;
+        var targetOuterW=Math.min(maxW, desiredInnerWidth + frameW);
+        var targetOuterH=Math.min(maxH, desiredInnerHeight + frameH);
+        try {
+          window.resizeTo(targetOuterW, targetOuterH);
+          var left=Math.max(0, Math.floor((((window.screen && window.screen.availWidth) || targetOuterW)-targetOuterW)/2));
+          var top=Math.max(0, Math.floor((((window.screen && window.screen.availHeight) || targetOuterH)-targetOuterH)/2));
+          if(window.moveTo){ window.moveTo(left, top); }
+        } catch (error) {
+        }
+      }
+      enforcePopupMonitorSize();
+      function openMonitorPopup(){
+        var width=410;
+        var height=1060;
+        var left=Math.max(0, Math.floor((window.screen.width-width)/2));
+        var top=Math.max(0, Math.floor((window.screen.height-height)/2));
+        var features='popup=yes,toolbar=no,menubar=no,location=yes,status=no,resizable=yes,scrollbars=yes,width=410,height=1060,left='+left+',top='+top;
+        var monitorWindow=window.open('/?ui=compact&popup=1&w='+width+'&h='+height, 'zoqore_monitor', features);
+        if(monitorWindow){
+          monitorWindow.focus();
+          return;
+        }
+        window.location.assign('/?ui=compact&popup=1&w='+width+'&h='+height);
+      }
+      function returnToCommandCenter(){
+        if(window.opener && !window.opener.closed){
+          try {
+            window.opener.location.assign('/?ui=full');
+            window.opener.focus();
+            window.close();
+            return;
+          } catch (error) {
+          }
+        }
+        window.location.assign('/?ui=full');
+      }
+      button.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(onMonitor){
+          returnToCommandCenter();
+          return;
+        }
+        openMonitorPopup();
+      }, true);
+    })();
+  </script>
+<aside class="zoqore-side-banner zoqore-side-rail" aria-hidden="true">
+  </aside>
+  <main class="shell">
+    <div class="stack">
+      <header class="brand">
+        <div class="brand-left">
+          <img src="/favicon.png" alt="Zo-Qore logo" class="brand-icon">
+          <div class="brand-text">
+            <div class="brand-title" data-tooltip="Real-time governance monitoring and system health">Zo-Qore</div>
+            <div class="brand-subtitle">Monitor</div>
+          </div>
+        </div>
+        <div id="status-line" class="status-line">Connecting...</div>
+      </header>
+
+      <section class="card" id="phase-card">
+        <header class="card-head">
+          <span class="eyebrow">Active Build Step</span>
+          <span id="phase-title" class="phase-title">PLAN</span>
+        </header>
+
+        <div id="phase-track" class="phase-track"></div>
+
+        <div class="flow-blocks">
+          <div class="flow-block">
+            <div class="eyebrow">Recently Completed</div>
+            <div id="recent-line" class="flow-copy">None yet</div>
+          </div>
+          <div class="flow-block">
+            <div class="eyebrow">Recommended Next Step</div>
+            <div id="next-step" class="flow-copy flow-copy-action">Continue the active build phase.</div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <span class="eyebrow">Sentinel Status</span>
+        </header>
+        <div class="sentinel-body">
+          <div id="sentinel-orb" class="sentinel-orb monitoring"></div>
+          <div id="sentinel-label" class="sentinel-label">Monitoring</div>
+          <div class="queue-wrap">
+            <div class="queue-title">Queue</div>
+            <div id="queue-value" class="queue-value">0</div>
+          </div>
+        </div>
+        <div id="sentinel-alert" class="sentinel-alert hidden"></div>
+      </section>
+
+      <section class="card">
+        <header class="card-head">
+          <span class="eyebrow">Workspace Health</span>
+        </header>
+        <div class="health-grid">
+          <article class="health-item">
+            <div class="health-label">Critical Blockers</div>
+            <div id="health-blockers" class="health-number">0</div>
+            <div id="blockers-graphic" class="rainbow-bar" title="Critical blockers across active phases."><span id="blocker-bar"></span></div>
+          </article>
+
+          <article class="health-item">
+            <div class="health-label">Unverified Changes</div>
+            <div class="bucket-wrap">
+              <div id="bucket-shell" class="bucket-shell" title="Estimated backlog of unverified changes."><div id="bucket-fill" class="bucket-fill" style="height:0%"></div></div>
+            </div>
+            <div id="bucket-text" class="tiny">0% Full</div>
+          </article>
+
+          <article class="health-item">
+            <div class="health-label">Error Budget Burn</div>
+            <div id="gauge-wrap" class="gauge-wrap" title="Composite burn rate from blockers, queue, and risk verdicts."><svg viewBox="0 0 100 55" class="gauge"><path d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-bg"></path><path id="gauge-value" d="M 10 50 A 40 40 0 0 1 90 50" class="gauge-value"></path></svg></div>
+            <div id="error-budget" class="health-number small">0%</div>
+          </article>
+
+          <article class="health-item">
+            <div class="health-label">Policy Trend</div>
+            <div id="trend-slider" class="slider" title="Recent policy-signal trend from PASS/WARN/BLOCK verdict mix."><div id="trend-fill" class="slider-fill"></div><div id="trend-thumb" class="slider-thumb"></div></div>
+            <div id="policy-trend" class="health-number small">0%</div>
+          </article>
+        </div>
+      </section>
+
+      <section class="qore-runtime-ribbon-wrap">
+  <div class="qore-runtime-ribbon" role="status" aria-live="polite">
+    <span class="qore-ribbon-item"><span class="qore-ribbon-key">Qore</span><span id="qore-runtime-state" class="qore-ribbon-value">Unknown</span></span>
+    <span class="qore-ribbon-sep">•</span>
+    <span class="qore-ribbon-item"><span class="qore-ribbon-key">Policy</span><span id="qore-policy-version" class="qore-ribbon-value">n/a</span></span>
+    <span class="qore-ribbon-sep">•</span>
+    <span class="qore-ribbon-item"><span class="qore-ribbon-key">Latency</span><span id="qore-runtime-latency" class="qore-ribbon-value">n/a</span></span>
+    <span id="qore-runtime-endpoint" class="qore-hidden-value">n/a</span>
+    <button id="qore-runtime-check" class="qore-ribbon-refresh" type="button">Refresh</button>
+  </div>
+</section>
+
+      <footer class="legal">
+        Zo-Qore is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided \"as is\" without warranty of any kind.
+      </footer>
+    </div>
+  </main>
+
+  <script src="roadmap.js"></script>
+</body>
+</html>

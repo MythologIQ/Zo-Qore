@@ -61,7 +61,8 @@ export class LocalApiServer {
           if (requireAuth && !publicHealth) {
             this.ensureAuthorized(req, requireAuth, apiKey);
           }
-          return this.sendJson(res, 200, this.runtime.health());
+          const healthData = await this.runtime.health();
+          return this.sendJson(res, 200, healthData);
         }
 
         if (method === "GET" && url === "/policy/version") {
@@ -81,6 +82,65 @@ export class LocalApiServer {
           const request = DecisionRequestSchema.parse(body);
           const decision = await this.runtime.evaluate(request);
           return this.sendJson(res, 200, decision);
+        }
+
+        // Victor TTS endpoint
+        if (method === "POST" && url === "/victor/tts") {
+          const body = await this.readJsonBody(req, this.options.maxBodyBytes ?? 64 * 1024);
+          const { text } = body as { text: string };
+          if (!text) {
+            return this.sendError(res, 400, "BAD_JSON" as ApiErrorCode, "Text is required", traceId);
+          }
+          // Stub implementation - returns empty audio with status header
+          res.setHeader("Content-Type", "audio/wav");
+          res.setHeader("X-TTS-Status", "stub");
+          res.setHeader("X-TTS-Message", "Qwen3 model not yet configured");
+          res.statusCode = 200;
+          return res.end(Buffer.alloc(0));
+        }
+
+        // Victor emails endpoint
+        if (method === "GET" && url === "/victor/emails") {
+          // Hardcoded email data from Gmail
+          const emails = [
+            {
+              id: "19c6494a3aee5f0a",
+              snippet: "Merged #231 into master. — Reply to this email directly, view it on GitHub...",
+              subject: "Pull Request Merged",
+              from: "GitHub",
+              date: "2026-02-15"
+            },
+            {
+              id: "19c6494a39e71cb5",
+              snippet: "Closed #194 as completed via #231. — Reply to this email directly...",
+              subject: "Issue Closed",
+              from: "GitHub",
+              date: "2026-02-15"
+            }
+          ];
+          return this.sendJson(res, 200, { emails });
+        }
+
+        // Victor calendar endpoint
+        if (method === "GET" && url === "/victor/calendar") {
+          // Placeholder calendar data
+          const events = [
+            {
+              id: "1",
+              summary: "Team Standup",
+              start: "2026-02-16T10:00:00",
+              end: "2026-02-16T10:30:00",
+              location: "Zoom"
+            },
+            {
+              id: "2",
+              summary: "Project Review",
+              start: "2026-02-17T14:00:00",
+              end: "2026-02-17T15:00:00",
+              location: "Conference Room A"
+            }
+          ];
+          return this.sendJson(res, 200, { events });
         }
 
         this.sendError(res, 404, "NOT_FOUND", "Route not found", traceId);

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo}"
+RAW_BASE="${RAW_BASE:-https://raw.githubusercontent.com/MythologIQ/Zo-Qore/main/deploy/zo}"
 BOOTSTRAP_URL="${BOOTSTRAP_URL:-${RAW_BASE}/bootstrap-zo.sh}"
-BOOTSTRAP_PATH="/tmp/failsafe-qore-bootstrap.sh"
+BOOTSTRAP_PATH="/tmp/zo-qore-bootstrap.sh"
 
 log() {
-  printf '[failsafe-qore-take-this-and-go] %s\n' "$*"
+  printf '[zo-qore-take-this-and-go] %s\n' "$*"
 }
 
 require_cmd() {

@@ -6,7 +6,7 @@ Copy and paste this into your Zo in-app agent:
 You are my Zo setup operator. Perform a full installation of FailSafe-Qore in this workspace and do not stop until verification is complete.
 
 Repository:
-https://github.com/MythologIQ/failsafe-qore
+https://github.com/MythologIQ/Zo-Qore
 
 Install target:
 /home/workspace/MythologIQ/Zo-Qore

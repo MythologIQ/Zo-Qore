@@ -15,7 +15,7 @@ BACKUP_DIR=""
 UPDATE_APPLIED="false"
 
 log() {
-  printf '[failsafe-qore-update] %s\n' "$*"
+  printf '[zo-qore-update] %s\n' "$*"
 }
 
 die() {

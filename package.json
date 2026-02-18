@@ -16,7 +16,7 @@
   ],
   "scripts": {
     "clean": "rimraf dist coverage",
-    "build": "npm run clean && tsc -p tsconfig.json",
+    "build": "npm run clean && tsc -p tsconfig.json && cp zo/storage/duckdb-schema.sql dist/zo/storage/duckdb-schema.sql",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint . --ext .ts",
     "test": "vitest run",

@@ -8,8 +8,8 @@ import * as os from "os";
  *
  * Priority order for secret resolution:
  * 1. Environment variables (highest priority)
- * 2. User config directory: ~/.config/failsafe-qore/secrets.env
- * 3. System config directory: /etc/failsafe-qore/secrets.env (Linux only)
+ * 2. User config directory: ~/.config/zo-qore/secrets.env
+ * 3. System config directory: /etc/zo-qore/secrets.env (Linux only)
  * 4. Legacy fallback: .failsafe/zo-native-ai.env (deprecated, for migration)
  */
 
@@ -34,11 +34,11 @@ export class SecureSecretStore {
     this.workspace = workspace;
 
     // User-specific config directory (outside git repository)
-    this.userConfigDir = path.join(os.homedir(), ".config", "failsafe-qore");
+    this.userConfigDir = path.join(os.homedir(), ".config", "zo-qore");
 
     // System-wide config directory (Linux only, requires root)
     this.systemConfigDir =
-      process.platform === "linux" ? "/etc/failsafe-qore" : "";
+      process.platform === "linux" ? "/etc/zo-qore" : "";
 
     // Legacy config path (for migration)
     this.legacyConfigPath = path.join(

@@ -107,8 +107,8 @@ describe('Security Tests', () => {
       ];
 
       const safePaths = [
-        '/opt/failsafe-qore',
-        '/opt/failsafe-qore-test',
+        '/opt/zo-qore',
+        '/opt/zo-qore-test',
         '/usr/local/failsafe',
       ];
 
@@ -133,7 +133,7 @@ describe('Security Tests', () => {
 
       const absolutePaths = [
         '/absolute/path',
-        '/opt/failsafe-qore',
+        '/opt/zo-qore',
         '/usr/local/failsafe',
       ];
 

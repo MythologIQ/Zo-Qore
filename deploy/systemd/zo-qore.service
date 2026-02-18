@@ -1,0 +1,17 @@
+[Unit]
+Description=Zo-Qore Runtime Service
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/zo-qore
+Environment=NODE_ENV=production
+EnvironmentFile=-/etc/zo-qore/env
+ExecStart=/usr/bin/node /opt/zo-qore/dist/runtime/service/start.js
+Restart=always
+RestartSec=5
+User=zoqore
+Group=zoqore
+
+[Install]
+WantedBy=multi-user.target

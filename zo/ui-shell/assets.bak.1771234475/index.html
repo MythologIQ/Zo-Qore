@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FailSafe-Qore Console</title>
+  <link rel="stylesheet" href="/monitor.css" />
+</head>
+<body>
+  <main class="shell">
+    <section class="card">
+      <h1>FailSafe-Qore Console</h1>
+      <p class="muted">Standalone runtime console for Zo. No IDE required.</p>
+      <div class="grid">
+        <div><span class="label">Runtime</span><span id="runtime-state" class="value">Checking...</span></div>
+        <div><span class="label">Policy</span><span id="policy-version" class="value">n/a</span></div>
+        <div><span class="label">Endpoint</span><span id="runtime-endpoint" class="value">n/a</span></div>
+        <div><span class="label">Latency</span><span id="runtime-latency" class="value">n/a</span></div>
+      </div>
+      <div id="status-line" class="status">Connecting...</div>
+    </section>
+
+    <section class="card">
+      <h2>Evaluate Request</h2>
+      <form id="evaluate-form">
+        <label>Actor ID <input id="actor-id" value="did:myth:test:actor" /></label>
+        <label>Action <input id="action" value="read" /></label>
+        <label>Target Path <input id="target-path" value="repo://docs/plan_qore_zo_architecture.md" /></label>
+        <label>Prompt / Context <textarea id="context">Check governance posture for this request.</textarea></label>
+        <button type="submit">Submit Evaluate</button>
+      </form>
+      <pre id="evaluate-output" class="output">{}</pre>
+    </section>
+
+    <section class="card">
+      <h2>Health</h2>
+      <button id="refresh-health" type="button">Refresh</button>
+      <pre id="health-output" class="output">{}</pre>
+    </section>
+  </main>
+  <script src="/monitor.js"></script>
+</body>
+</html>

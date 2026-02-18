@@ -1,5 +1,5 @@
 param(
-  [string]$OutputPath = "dist\failsafe-qore-zo-bundle.tgz"
+  [string]$OutputPath = "dist\zo-qore-bundle.tgz"
 )
 
 $ErrorActionPreference = "Stop"

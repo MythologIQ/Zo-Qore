@@ -3,7 +3,7 @@
 ## Repository Isolation
 
 - `git rev-parse --show-toplevel` equals `g:/MythologIQ/FailSafe-Qore`
-- `git remote -v` includes `https://github.com/MythologIQ/failsafe-qore.git`
+- `git remote -v` includes `https://github.com/MythologIQ/Zo-Qore.git`
 
 ## Tool Versions
 

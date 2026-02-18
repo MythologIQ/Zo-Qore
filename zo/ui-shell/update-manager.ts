@@ -77,7 +77,7 @@ export class UpdateManager {
     private readonly updateSourceUrl?: string,
   ) {
     // Store update state in user config directory
-    this.stateDir = path.join(os.homedir(), ".config", "failsafe-qore");
+    this.stateDir = path.join(os.homedir(), ".config", "zo-qore");
     this.stateFile = path.join(this.stateDir, "updates.json");
     this.backupDir = path.join(this.stateDir, "backups");
     this.state = this.loadState();
@@ -243,7 +243,7 @@ export class UpdateManager {
    */
   private async fetchFromGitHub(): Promise<AvailableUpdate[]> {
     const owner = "MythologIQ";
-    const repo = "failsafe-qore";
+    const repo = "zo-qore";
     const url = `https://api.github.com/repos/${owner}/${repo}/releases`;
 
     const response = await fetch(url, {

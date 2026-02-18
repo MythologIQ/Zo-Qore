@@ -47,10 +47,10 @@ curl -s -H "x-qore-api-key: YOUR_API_KEY" http://127.0.0.1:7777/health
 
 ### 2. FailSafe-Qore Console (Web UI)
 - **Service ID:** `svc_UaYk86_7zEg`
-- **Label:** `failsafe-qore-console`
+- **Label:** `zo-qore-console`
 - **Status:** ✅ RUNNING
 - **Local Port:** 9380
-- **HTTPS URL:** https://failsafe-qore-console-frostwulf.zocomputer.io
+- **HTTPS URL:** https://zo-qore-console-frostwulf.zocomputer.io
 - **TCP Address:** ts1.zocomputer.io:10188
 - **Working Directory:** `/home/workspace/MythologIQ/FailSafe-Qore`
 - **Entrypoint:** `node dist/zo/ui-shell/start.js`
@@ -75,15 +75,15 @@ tail -f /dev/shm/qore-runtime-api.log
 tail -f /dev/shm/qore-runtime-api_err.log
 
 # Console logs
-tail -f /dev/shm/failsafe-qore-console.log
-tail -f /dev/shm/failsafe-qore-console_err.log
+tail -f /dev/shm/zo-qore-console.log
+tail -f /dev/shm/zo-qore-console_err.log
 ```
 
 ### Service Status
 ```bash
 # Check individual service
 service_doctor qore-runtime-api
-service_doctor failsafe-qore-console
+service_doctor zo-qore-console
 
 # List all services
 list_user_services
@@ -107,7 +107,7 @@ curl -G -s "http://localhost:3100/loki/api/v1/query_range" \
 ```bash
 # Restart via supervisorctl
 supervisorctl -c /etc/zo/supervisord-user.conf restart qore-runtime-api
-supervisorctl -c /etc/zo/supervisord-user.conf restart failsafe-qore-console
+supervisorctl -c /etc/zo/supervisord-user.conf restart zo-qore-console
 
 # Or delete and re-register (for config changes)
 delete_user_service svc_O8_0IFhwhAU
@@ -128,7 +128,7 @@ npm run build
 ### Stop Services
 ```bash
 delete_user_service svc_O8_0IFhwhAU  # qore-runtime-api
-delete_user_service svc_UaYk86_7zEg  # failsafe-qore-console
+delete_user_service svc_UaYk86_7zEg  # zo-qore-console
 ```
 
 ---
@@ -136,7 +136,7 @@ delete_user_service svc_UaYk86_7zEg  # failsafe-qore-console
 ## 🌐 Public Access
 
 ### Console UI (Web Interface)
-**URL:** https://failsafe-qore-console-frostwulf.zocomputer.io
+**URL:** https://zo-qore-console-frostwulf.zocomputer.io
 
 Access the standalone runtime console directly in your browser. No authentication required for UI (runtime API is protected internally).
 
@@ -211,7 +211,7 @@ To add custom domain:
 │  Public HTTPS (Zo Reverse Proxy)       │
 ├─────────────────────────────────────────┤
 │                                         │
-│  https://failsafe-qore-console-         │
+│  https://zo-qore-console-         │
 │    frostwulf.zocomputer.io              │
 │          │                              │
 │          └─> :9380 Console UI           │

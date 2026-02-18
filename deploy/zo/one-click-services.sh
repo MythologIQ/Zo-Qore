@@ -4,7 +4,7 @@ set -euo pipefail
 WORKDIR="${WORKDIR:-$(pwd)}"
 
 log() {
-  printf '[failsafe-qore-services] %s\n' "$*"
+  printf '[zo-qore-services] %s\n' "$*"
 }
 
 require_cmd() {

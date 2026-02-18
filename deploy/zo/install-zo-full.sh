@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-REPO_URL="${REPO_URL:-https://github.com/MythologIQ/failsafe-qore.git}"
+REPO_URL="${REPO_URL:-https://github.com/MythologIQ/Zo-Qore.git}"
 BRANCH="${BRANCH:-main}"
 INSTALL_DIR="${INSTALL_DIR:-/home/workspace/MythologIQ/Zo-Qore}"
 WORKDIR="${WORKDIR:-}"
@@ -24,7 +24,7 @@ WRITE_CONFIG_FILE=""
 HANDOFF_ENV_FILE=""
 
 log() {
-  printf '[failsafe-qore-zo-install] %s\n' "$*"
+  printf '[zo-qore-zo-install] %s\n' "$*"
 }
 
 mask_secret() {
@@ -61,7 +61,7 @@ Options:
   --non-interactive         Use env/config only, no prompts.
   --force-reconfigure       If service labels already exist, attempt removal then recreate.
   --uninstall               Remove Zo-Qore services and local install path, then exit.
-  --cleanup-legacy-test     Also remove legacy test bootstrap artifacts (/opt and /etc failsafe-qore-test paths).
+  --cleanup-legacy-test     Also remove legacy test bootstrap artifacts (/opt and /etc zo-qore-test paths).
   --config <path>           Source configuration env file before install.
   --write-config <path>     Write resolved config to file.
   --help                    Show this help.
@@ -249,7 +249,7 @@ perform_uninstall() {
 
   # Legacy labels from early safe bootstrap experiments.
   local legacy_label
-  for legacy_label in "failsafe-qore-test" "failsafe-fallback-watcher-test" "failsafe-qore-test.service" "failsafe-fallback-watcher-test.service"; do
+  for legacy_label in "zo-qore-test" "zo-qore-fallback-watcher-test" "zo-qore-test.service" "zo-qore-fallback-watcher-test.service"; do
     if service_exists "${legacy_label}"; then
       remove_service_if_supported "${legacy_label}" || true
     fi
@@ -262,9 +262,9 @@ perform_uninstall() {
 
   if [[ "${CLEANUP_LEGACY_TEST}" == "true" ]]; then
     log "cleaning legacy test bootstrap artifacts"
-    remove_path_if_present "/opt/failsafe-qore-test" "legacy test install"
-    remove_path_if_present "/opt/failsafe-qore-test2" "legacy test install"
-    remove_path_if_present "/etc/failsafe-qore-test" "legacy test env directory"
+    remove_path_if_present "/opt/zo-qore-test" "legacy test install"
+    remove_path_if_present "/opt/zo-qore-test2" "legacy test install"
+    remove_path_if_present "/etc/zo-qore-test" "legacy test env directory"
   fi
 
   log "uninstall complete"
@@ -381,7 +381,7 @@ write_zo_handoff_env_file() {
   local repo_dir="$1"
   
   # Use secure user config directory instead of repo directory
-  local user_config_dir="${HOME}/.config/failsafe-qore"
+  local user_config_dir="${HOME}/.config/zo-qore"
   HANDOFF_ENV_FILE="${user_config_dir}/secrets.env"
   
   mkdir -p "${user_config_dir}"

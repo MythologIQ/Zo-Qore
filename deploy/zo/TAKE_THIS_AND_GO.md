@@ -2,7 +2,7 @@
 
 Repository:
 
-- `https://github.com/MythologIQ/failsafe-qore`
+- `https://github.com/MythologIQ/Zo-Qore`
 
 This document is the fastest path to a working Zo-Qore installation, with explicit troubleshooting.
 
@@ -11,7 +11,7 @@ This document is the fastest path to a working Zo-Qore installation, with explic
 Run these commands in Zo terminal:
 
 ```bash
-git clone https://github.com/MythologIQ/failsafe-qore.git Zo-Qore
+git clone https://github.com/MythologIQ/Zo-Qore.git Zo-Qore
 cd Zo-Qore
 bash deploy/zo/install-zo-full.sh
 ```
@@ -19,7 +19,7 @@ bash deploy/zo/install-zo-full.sh
 Installer prompt behavior (`implemented`):
 
 - The installer is interactive by default and prompts for values like `Repository URL`.
-- Press `Enter` to accept the default shown in brackets (example: `Repository URL [https://github.com/MythologIQ/failsafe-qore.git]:`).
+- Press `Enter` to accept the default shown in brackets (example: `Repository URL [https://github.com/MythologIQ/Zo-Qore.git]:`).
 - Use `--non-interactive` to skip prompts entirely.
 - In interactive mode, the installer rotates sensitive secrets by default and does not prompt to keep existing ones.
 - Writing `zo-installer.env` is opt-in only via `--write-config` because it stores resolved secrets.
@@ -150,7 +150,7 @@ Fix:
 
 ```bash
 rm -rf /home/workspace/MythologIQ/Zo-Qore
-git clone https://github.com/MythologIQ/failsafe-qore.git Zo-Qore
+git clone https://github.com/MythologIQ/Zo-Qore.git Zo-Qore
 cd Zo-Qore
 bash deploy/zo/install-zo-full.sh
 ```
@@ -258,7 +258,7 @@ cd /home/workspace/MythologIQ/Zo-Qore
 bash deploy/zo/install-zo-full.sh --uninstall
 ```
 
-Also remove first-test bootstrap artifacts (`/opt/failsafe-qore-test*` and `/etc/failsafe-qore-test`):
+Also remove first-test bootstrap artifacts (`/opt/zo-qore-test*` and `/etc/zo-qore-test`):
 
 ```bash
 cd /home/workspace/MythologIQ/Zo-Qore

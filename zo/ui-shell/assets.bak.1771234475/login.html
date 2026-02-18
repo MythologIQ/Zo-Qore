@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FailSafe-Qore | Login</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            color: #e7efff;
+            background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 380px;
+        }
+
+        .card {
+            background: #13223a;
+            border: 1px solid #2f4a70;
+            border-radius: 12px;
+            padding: 32px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .header h1 {
+            margin: 0 0 4px;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        .header p {
+            margin: 0;
+            color: #a9bad7;
+            font-size: 13px;
+        }
+
+        form {
+            display: grid;
+            gap: 16px;
+        }
+
+        .input-group {
+            display: grid;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #c7d8f5;
+        }
+
+        input {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #35537b;
+            background: #0f1b30;
+            color: #e7efff;
+            padding: 10px 12px;
+            font: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input:focus {
+            border-color: #5a8ed0;
+        }
+
+        button {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #35537b;
+            background: #1c3f72;
+            color: #e7efff;
+            padding: 12px;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter 0.15s;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            filter: brightness(1.15);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #ff6b8a;
+            font-size: 13px;
+            text-align: center;
+            min-height: 20px;
+            margin-top: 12px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .error-message.visible {
+            opacity: 1;
+        }
+
+        .status {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 16px;
+        }
+
+        .status-item {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 5px 10px;
+            border: 1px solid #3b5a84;
+            border-radius: 999px;
+            background: #102643;
+            font-size: 11px;
+            color: #a9bad7;
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #5a6f8c;
+        }
+
+        .status-dot.active {
+            background: #4ade80;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <h1>FailSafe-Qore</h1>
+                <p>Sign in to continue</p>
+            </div>
+
+            <form id="loginForm">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" autocomplete="username" autofocus required>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" autocomplete="current-password" required>
+                </div>
+
+                <button type="submit" id="loginBtn">Sign In</button>
+            </form>
+
+            <div id="errorMessage" class="error-message"></div>
+
+            <div class="status">
+                <div class="status-item">
+                    <div class="status-dot active"></div>
+                    Online
+                </div>
+                <div class="status-item">
+                    <div class="status-dot"></div>
+                    Auth Required
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+
+        loginForm.addEventListener('submit', handleLogin);
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) return;
+
+            setLoading(true);
+
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    const redirect = new URLSearchParams(window.location.search).get('next') || '/';
+                    window.location.href = redirect;
+                } else {
+                    showError(data.message || 'Access Denied');
+                    setLoading(false);
+                }
+            } catch (err) {
+                showError('Connection Refused');
+                setLoading(false);
+            }
+        }
+
+        function showError(msg) {
+            errorMessage.textContent = msg;
+            errorMessage.classList.add('visible');
+            setTimeout(() => {
+                errorMessage.classList.remove('visible');
+            }, 3000);
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                loginBtn.disabled = true;
+                loginBtn.innerText = 'Signing in...';
+            } else {
+                loginBtn.disabled = false;
+                loginBtn.innerText = 'Sign In';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -16,7 +16,7 @@ UI_REQUIRE_MFA="${QORE_UI_REQUIRE_MFA:-}"
 UI_REQUIRE_ADMIN_TOKEN="${QORE_UI_REQUIRE_ADMIN_TOKEN:-}"
 
 log() {
-  printf '[failsafe-qore-one-click] %s\n' "$*"
+  printf '[zo-qore-one-click] %s\n' "$*"
 }
 
 require_cmd() {

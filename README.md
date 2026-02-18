@@ -10,7 +10,7 @@ Current release: `Zo-Qore 1.0.0` (2026-02-13).
 3. Run the installer:
 
 ```bash
-git clone https://github.com/MythologIQ/failsafe-qore.git Zo-Qore
+git clone https://github.com/MythologIQ/Zo-Qore.git Zo-Qore
 cd Zo-Qore
 bash deploy/zo/install-zo-full.sh
 ```
@@ -35,7 +35,7 @@ If you are a new user, use this first.
 ### Zo install (recommended)
 
 ```bash
-git clone https://github.com/MythologIQ/failsafe-qore.git Zo-Qore
+git clone https://github.com/MythologIQ/Zo-Qore.git Zo-Qore
 cd Zo-Qore
 bash deploy/zo/install-zo-full.sh
 ```
@@ -46,7 +46,7 @@ In that handoff path, generated secrets are written to `./.failsafe/zo-native-ai
 Installer prompt behavior (`implemented`):
 
 - The installer runs in interactive mode by default.
-- For prompts like `Repository URL [https://github.com/MythologIQ/failsafe-qore.git]:`, press `Enter` to accept the default.
+- For prompts like `Repository URL [https://github.com/MythologIQ/Zo-Qore.git]:`, press `Enter` to accept the default.
 - Use `bash deploy/zo/install-zo-full.sh --non-interactive` for automation with no prompts.
 - In interactive mode, sensitive secrets rotate by default and are not preserved from prior shell environment values.
 - Config file output is opt-in via `--write-config <path>` because it stores resolved secrets.
@@ -55,13 +55,13 @@ Installer prompt behavior (`implemented`):
 ### Public one-line install (download + run)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/install-zo-full.sh | bash
+curl -fsSL https://raw.githubusercontent.com/MythologIQ/Zo-Qore/main/deploy/zo/install-zo-full.sh | bash
 ```
 
 Windows PowerShell:
 
 ```powershell
-iwr -useb https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/install-zo-full.sh | bash
+iwr -useb https://raw.githubusercontent.com/MythologIQ/Zo-Qore/main/deploy/zo/install-zo-full.sh | bash
 ```
 
 ### Local run (no Zo service registration)
@@ -112,7 +112,7 @@ For step-by-step install troubleshooting:
 
 ## What This Repository Is
 
-FailSafe started as extension-coupled governance logic. `FailSafe-Qore` is the extracted runtime that keeps policy, risk, ledger, and decision contracts independent from IDE hosting concerns.
+Zo-Qore evolved from FailSafe's extension-coupled governance logic into a standalone runtime that keeps policy, risk, ledger, and decision contracts independent from IDE hosting concerns.
 
 Repository direction:
 
@@ -243,7 +243,7 @@ curl -X POST http://127.0.0.1:7777/evaluate \
 
 ## Standalone UI (No IDE Required)
 
-FailSafe-Qore can host a dedicated Zo UI surface. QoreLogic policy, risk, ledger, and runtime contracts remain universal and shared across all UI surfaces.
+Zo-Qore can host a dedicated Zo UI surface. QoreLogic policy, risk, ledger, and runtime contracts remain universal and shared across all UI surfaces.
 
 Adapter continuity:
 
@@ -610,7 +610,7 @@ Bootstrap script:
 - installs dependencies
 - builds runtime
 - installs and starts systemd services
-- creates `/etc/failsafe-qore/env` from `deploy/zo/env.example`
+- creates `/etc/zo-qore/env` from `deploy/zo/env.example`
 
 Optional upload bundle path from Windows:
 
@@ -618,7 +618,7 @@ Optional upload bundle path from Windows:
 npm run zo:bundle
 ```
 
-Then upload `dist/failsafe-qore-zo-bundle.tgz` to Zo and extract under `/opt/failsafe-qore` before running `deploy/zo/bootstrap-zo.sh`.
+Then upload `dist/zo-qore-bundle.tgz` to Zo and extract under `/opt/zo-qore` before running `deploy/zo/bootstrap-zo.sh`.
 
 Quick handoff doc: `deploy/zo/TAKE_THIS_AND_GO.md`.
 Agent-assisted setup prompt: `deploy/zo/AGENT_SETUP_PROMPT.md`.
@@ -633,7 +633,7 @@ npm run release:artifacts
 
 Output:
 
-- `dist/release/vX.Y.Z/failsafe-qore-zo-bundle-vX.Y.Z.tgz`
+- `dist/release/vX.Y.Z/zo-qore-bundle-vX.Y.Z.tgz`
 - `dist/release/vX.Y.Z/SHA256SUMS`
 - `dist/release/vX.Y.Z/TAKE_THIS_AND_GO.md`
 - `dist/release/vX.Y.Z/RELEASE_NOTES.md`

@@ -7,7 +7,7 @@
  * - .failsafe/zo-installer.env (in repo directory)
  * 
  * To:
- * - ~/.config/failsafe-qore/secrets.env (user config directory, outside git)
+ * - ~/.config/zo-qore/secrets.env (user config directory, outside git)
  * 
  * Usage:
  *   node scripts/migrate-secrets.mjs [--workspace <path>] [--dry-run]
@@ -122,7 +122,7 @@ This script migrates secrets from:
   - .failsafe/zo-installer.env (in repo directory)
 
 To:
-  - ~/.config/failsafe-qore/secrets.env (user config directory, outside git)
+  - ~/.config/zo-qore/secrets.env (user config directory, outside git)
 `);
       process.exit(0);
     }
@@ -137,7 +137,7 @@ To:
   ];
 
   // New secure path
-  const userConfigDir = path.join(os.homedir(), '.config', 'failsafe-qore');
+  const userConfigDir = path.join(os.homedir(), '.config', 'zo-qore');
   const newSecretsPath = path.join(userConfigDir, 'secrets.env');
 
   // Load secrets from legacy locations

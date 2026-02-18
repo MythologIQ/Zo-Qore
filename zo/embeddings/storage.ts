@@ -18,14 +18,17 @@ export class EmbeddingStorage {
       ? embedding.vector.values
       : Array.from(embedding.vector.values);
 
+    // DuckDB's Node.js driver doesn't natively bind JS arrays to DOUBLE[] columns.
+    // Format the vector as a SQL list literal to avoid VARCHAR-to-DOUBLE[] cast errors.
+    const vectorLiteral = `[${vectorArray.join(',')}]`;
+
     await this.db.execute(
       `INSERT INTO embeddings (id, thought_id, model_id, vector, dimensions)
-       VALUES (?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ${vectorLiteral}::DOUBLE[], ?)`,
       [
         embedding.id,
         thoughtId,
         embedding.vector.model,
-        vectorArray,
         embedding.vector.dimensions,
       ]
     );

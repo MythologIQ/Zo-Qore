@@ -8,7 +8,7 @@ WORKDIR="${WORKDIR:-$(pwd)}"
 ENTRYPOINT="${ENTRYPOINT:-node dist/zo/ui-shell/start.js}"
 
 log() {
-  printf '[failsafe-qore-ui-service] %s\n' "$*"
+  printf '[zo-qore-ui-service] %s\n' "$*"
 }
 
 require_cmd() {

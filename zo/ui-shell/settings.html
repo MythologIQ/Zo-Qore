@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FailSafe-Qore | Settings</title>
+    <style>
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, sans-serif;
+            color: #e7efff;
+            background: radial-gradient(circle at 15% 10%, #1d365f, #0a1220 45%);
+            min-height: 100vh;
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 24px;
+        }
+
+        .subtitle {
+            color: #a9bad7;
+            margin: 0 0 24px;
+        }
+
+        .card {
+            background: #13223a;
+            border: 1px solid #2f4a70;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 16px;
+        }
+
+        .card h2 {
+            margin: 0 0 16px;
+            font-size: 18px;
+        }
+
+        .input-group {
+            display: grid;
+            gap: 6px;
+            margin-bottom: 16px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            color: #c7d8f5;
+        }
+
+        input {
+            width: 100%;
+            border-radius: 8px;
+            border: 1px solid #35537b;
+            background: #0f1b30;
+            color: #e7efff;
+            padding: 10px 12px;
+            font: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input:focus {
+            border-color: #5a8ed0;
+        }
+
+        button {
+            border-radius: 8px;
+            border: 1px solid #35537b;
+            background: #1c3f72;
+            color: #e7efff;
+            padding: 10px 16px;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+            transition: filter 0.15s;
+        }
+
+        button:hover {
+            filter: brightness(1.15);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-danger {
+            background: #7a2f3f;
+            border-color: #a04050;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 12px;
+            font-size: 13px;
+        }
+
+        .message.success {
+            background: #1a3f2a;
+            border: 1px solid #2f7050;
+            color: #7de6a8;
+        }
+
+        .message.error {
+            background: #3f1a2a;
+            border: 1px solid #a04050;
+            color: #ff8a9a;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            background: #102643;
+            border: 1px solid #3b5a84;
+            margin-bottom: 16px;
+        }
+
+        .status-badge.enabled {
+            color: #7de6a8;
+        }
+
+        .status-badge.disabled {
+            color: #a9bad7;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: #5a8ed0;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+
+        .secret-display {
+            font-family: monospace;
+            background: #0f1b30;
+            padding: 12px;
+            border-radius: 8px;
+            word-break: break-all;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+
+        .info-text {
+            color: #a9bad7;
+            font-size: 13px;
+            margin: 8px 0;
+        }
+
+        code {
+            background: #0f1b30;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">&larr; Back to Console</a>
+        <h1>Settings</h1>
+        <p class="subtitle">Manage your authentication and security settings</p>
+
+        <div class="card">
+            <h2>Credentials</h2>
+            <div id="credentials-status"></div>
+            <form id="credentials-form">
+                <div class="input-group" id="current-pass-group" style="display: none;">
+                    <label for="currentPassword">Current Password</label>
+                    <input type="password" id="currentPassword" autocomplete="current-password">
+                </div>
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" autocomplete="username" required>
+                </div>
+                <div class="input-group">
+                    <label for="password">New Password</label>
+                    <input type="password" id="password" autocomplete="new-password" minlength="8" required>
+                </div>
+                <div class="input-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input type="password" id="confirmPassword" autocomplete="new-password" required>
+                </div>
+                <button type="submit" id="save-creds-btn">Save Credentials</button>
+            </form>
+            <div id="credentials-message"></div>
+        </div>
+
+        <div class="card">
+            <h2>Two-Factor Authentication (MFA)</h2>
+            <div id="mfa-status"></div>
+            <div id="mfa-actions"></div>
+            <div id="mfa-secret-display" style="display: none;">
+                <p>Scan this secret with your authenticator app:</p>
+                <div class="secret-display" id="mfa-secret-value"></div>
+                <p class="info-text">
+                    After scanning, set the environment variable <code>QORE_UI_REQUIRE_MFA=true</code>
+                    and restart the server to enable MFA enforcement.
+                </p>
+            </div>
+            <div id="mfa-message"></div>
+        </div>
+
+        <div class="card">
+            <h2>Configuration Location</h2>
+            <p class="info-text">Secrets are stored in:</p>
+            <div class="secret-display" id="config-path">Loading...</div>
+            <p class="info-text">
+                This location is outside the repository and will not be overwritten during updates.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        async function loadSettings() {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+
+            document.getElementById('config-path').textContent = data.configPath + '/secrets.env';
+
+            const credStatus = document.getElementById('credentials-status');
+            const currentPassGroup = document.getElementById('current-pass-group');
+
+            if (data.hasCredentials) {
+                credStatus.innerHTML = '<span class="status-badge enabled">Configured</span>';
+                document.getElementById('username').value = data.username || '';
+                currentPassGroup.style.display = 'block';
+            } else {
+                credStatus.innerHTML = '<span class="status-badge disabled">Not configured</span>';
+            }
+
+            const mfaStatus = document.getElementById('mfa-status');
+            const mfaActions = document.getElementById('mfa-actions');
+
+            if (data.mfaConfigured) {
+                const statusClass = data.mfaEnabled ? 'enabled' : 'disabled';
+                const statusText = data.mfaEnabled ? 'Enabled' : 'Configured (not enforced)';
+                mfaStatus.innerHTML = '<span class="status-badge ' + statusClass + '">' + statusText + '</span>';
+                mfaActions.innerHTML = '<button type="button" class="btn-danger" onclick="disableMfa()">Remove MFA</button>';
+            } else {
+                mfaStatus.innerHTML = '<span class="status-badge disabled">Not configured</span>';
+                mfaActions.innerHTML = '<button type="button" onclick="enableMfa()">Setup MFA</button>';
+            }
+        }
+
+        document.getElementById('credentials-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const msg = document.getElementById('credentials-message');
+            const pass = document.getElementById('password').value;
+            const confirm = document.getElementById('confirmPassword').value;
+
+            if (pass !== confirm) {
+                msg.innerHTML = '<div class="message error">Passwords do not match</div>';
+                return;
+            }
+
+            const body = {
+                username: document.getElementById('username').value,
+                password: pass,
+                currentPassword: document.getElementById('currentPassword').value || undefined
+            };
+
+            const res = await fetch('/api/settings/credentials', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                msg.innerHTML = '<div class="message success">' + data.message + '</div>';
+                setTimeout(() => location.href = '/login', 1500);
+            } else {
+                msg.innerHTML = '<div class="message error">' + (data.message || 'Failed to update') + '</div>';
+            }
+        });
+
+        async function enableMfa() {
+            const res = await fetch('/api/settings/mfa/enable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({})
+            });
+            const data = await res.json();
+            const msg = document.getElementById('mfa-message');
+
+            if (res.ok) {
+                document.getElementById('mfa-secret-display').style.display = 'block';
+                document.getElementById('mfa-secret-value').textContent = data.secret;
+                msg.innerHTML = '<div class="message success">MFA secret generated</div>';
+                loadSettings();
+            } else {
+                msg.innerHTML = '<div class="message error">' + (data.message || 'Failed') + '</div>';
+            }
+        }
+
+        async function disableMfa() {
+            if (!confirm('Are you sure you want to disable MFA?')) return;
+            const code = prompt('Enter your current MFA code to confirm:');
+            if (!code) return;
+
+            const res = await fetch('/api/settings/mfa/disable', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ code })
+            });
+            const data = await res.json();
+            const msg = document.getElementById('mfa-message');
+
+            if (res.ok) {
+                document.getElementById('mfa-secret-display').style.display = 'none';
+                msg.innerHTML = '<div class="message success">' + data.message + '</div>';
+                loadSettings();
+            } else {
+                msg.innerHTML = '<div class="message error">' + (data.message || 'Failed') + '</div>';
+            }
+        }
+
+        loadSettings();
+    </script>
+</body>
+</html>

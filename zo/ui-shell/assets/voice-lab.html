@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Lab | Qore</title>
+<style>
+:root {
+  --bg: #0b1324;
+  --surface: #132442;
+  --surface-2: #182d51;
+  --border: #1e3a6e;
+  --text: #e9f1ff;
+  --text-dim: #7a93be;
+  --accent: #18c2a5;
+  --accent-glow: rgba(24, 194, 165, 0.15);
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --mono: "Cascadia Code", "Consolas", "JetBrains Mono", monospace;
+  --sans: "Inter", -apple-system, system-ui, sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ─────────────────────────────── */
+.vl-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 24px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.vl-header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+.vl-header h1 span { color: var(--accent); }
+.vl-header .nav-back {
+  color: var(--text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all 0.15s;
+}
+.vl-header .nav-back:hover { border-color: var(--accent); color: var(--accent); }
+.vl-status {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.vl-status .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  display: inline-block;
+}
+.vl-status .dot.ok { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+.vl-status .dot.off { background: var(--danger); }
+.vl-status label { font-size: 12px; color: var(--text-dim); }
+
+/* ── Main Layout ────────────────────────── */
+.vl-main {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Panels ─────────────────────────────── */
+.vl-panel {
+  padding: 20px 24px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.vl-panel:first-child { border-right: 1px solid var(--border); }
+.vl-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* ── Tabs ────────────────────────────────── */
+.vl-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--surface);
+  border-radius: 8px;
+  padding: 3px;
+}
+.vl-tab {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: var(--sans);
+}
+.vl-tab:hover { color: var(--text); background: var(--surface-2); }
+.vl-tab.active {
+  background: var(--accent);
+  color: #000;
+  font-weight: 600;
+}
+
+/* ── Form Controls ──────────────────────── */
+.vl-field { display: flex; flex-direction: column; gap: 6px; }
+.vl-field label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.vl-input, .vl-select, .vl-textarea {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  color: var(--text);
+  font-size: 14px;
+  font-family: var(--sans);
+  transition: border-color 0.15s;
+}
+.vl-input:focus, .vl-select:focus, .vl-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+.vl-textarea {
+  resize: vertical;
+  min-height: 80px;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.vl-select {
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%237a93be'%3E%3Cpath d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 32px;
+}
+.vl-select option { background: var(--surface); color: var(--text); }
+
+/* ── Buttons ────────────────────────────── */
+.vl-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: var(--sans);
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+.vl-btn-primary {
+  background: var(--accent);
+  color: #000;
+}
+.vl-btn-primary:hover { filter: brightness(1.1); }
+.vl-btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: none;
+}
+.vl-btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+.vl-btn-secondary:hover { border-color: var(--accent); }
+.vl-btn-row { display: flex; gap: 8px; }
+
+/* ── Audio Player ───────────────────────── */
+.vl-audio-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.vl-audio-container audio {
+  width: 100%;
+  height: 40px;
+  border-radius: 4px;
+}
+.vl-audio-meta {
+  display: flex;
+  gap: 16px;
+  font-size: 12px;
+  color: var(--text-dim);
+  font-family: var(--mono);
+}
+.vl-audio-meta span { display: flex; align-items: center; gap: 4px; }
+
+/* ── Voice Cards ────────────────────────── */
+.vl-voice-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 10px;
+}
+.vl-voice-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.vl-voice-card:hover { border-color: var(--accent); }
+.vl-voice-card.active { border-color: var(--accent); background: var(--accent-glow); }
+.vl-voice-card .name { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+.vl-voice-card .meta { font-size: 11px; color: var(--text-dim); }
+
+/* ── Status / Spinner ───────────────────── */
+.vl-spinner {
+  width: 16px; height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  display: inline-block;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.vl-status-msg {
+  font-size: 13px;
+  padding: 10px 14px;
+  border-radius: 6px;
+  display: none;
+}
+.vl-status-msg.info { display: block; background: var(--accent-glow); color: var(--accent); border: 1px solid var(--accent); }
+.vl-status-msg.error { display: block; background: rgba(239,68,68,0.1); color: var(--danger); border: 1px solid var(--danger); }
+.vl-status-msg.warn { display: block; background: rgba(245,158,11,0.1); color: var(--warn); border: 1px solid var(--warn); }
+
+/* ── Empty state ────────────────────────── */
+.vl-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-dim);
+  font-size: 14px;
+}
+
+/* ── Responsive ─────────────────────────── */
+@media (max-width: 768px) {
+  .vl-main { grid-template-columns: 1fr; }
+  .vl-panel:first-child { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+</head>
+<body>
+
+<header class="vl-header">
+  <a href="/" class="nav-back">Command Center</a>
+  <h1><span>Voice</span> Lab</h1>
+  <div class="vl-status">
+    <div>
+      <span class="dot" id="pocket-dot"></span>
+      <label id="pocket-label">Pocket TTS</label>
+    </div>
+    <div>
+      <span class="dot" id="qwen-dot"></span>
+      <label id="qwen-label">Qwen3-TTS</label>
+    </div>
+  </div>
+</header>
+
+<main class="vl-main">
+  <!-- LEFT: Controls Panel -->
+  <div class="vl-panel">
+    <div class="vl-panel-title">Voice Engine</div>
+
+    <div class="vl-tabs">
+      <button class="vl-tab active" data-tab="quick">Quick Speak</button>
+      <button class="vl-tab" data-tab="design">Voice Design</button>
+      <button class="vl-tab" data-tab="custom">Custom Voice</button>
+    </div>
+
+    <!-- Quick Speak (Pocket TTS) -->
+    <div class="vl-tab-content" id="tab-quick">
+      <div class="vl-field">
+        <label>Text</label>
+        <textarea class="vl-textarea" id="quick-text" placeholder="Enter text to speak...">Hello. This is Victor. All systems are operational.</textarea>
+      </div>
+      <div class="vl-btn-row">
+        <button class="vl-btn vl-btn-primary" id="quick-generate">Generate Speech</button>
+      </div>
+    </div>
+
+    <!-- Voice Design (Qwen3-TTS) -->
+    <div class="vl-tab-content" id="tab-design" style="display:none;">
+      <div class="vl-field">
+        <label>Text</label>
+        <textarea class="vl-textarea" id="design-text" placeholder="Enter text to speak...">Welcome to the Voice Lab. You can design and preview custom voices here.</textarea>
+      </div>
+      <div class="vl-field">
+        <label>Voice Description</label>
+        <textarea class="vl-textarea" id="design-description" placeholder="Describe the voice you want to create...">Male, early 30s, deep baritone, calm and authoritative, measured pace.</textarea>
+      </div>
+      <div class="vl-field">
+        <label>Language</label>
+        <select class="vl-select" id="design-language"></select>
+      </div>
+      <div class="vl-btn-row">
+        <button class="vl-btn vl-btn-primary" id="design-generate">Design Voice</button>
+      </div>
+    </div>
+
+    <!-- Custom Voice (Qwen3-TTS Preset Speakers) -->
+    <div class="vl-tab-content" id="tab-custom" style="display:none;">
+      <div class="vl-field">
+        <label>Text</label>
+        <textarea class="vl-textarea" id="custom-text" placeholder="Enter text to speak...">Strategic analysis complete. All channels are nominal.</textarea>
+      </div>
+      <div class="vl-field">
+        <label>Speaker</label>
+        <select class="vl-select" id="custom-speaker"></select>
+      </div>
+      <div class="vl-field">
+        <label>Style Instruction</label>
+        <textarea class="vl-textarea" id="custom-instruct" placeholder="How should the speaker deliver the text?">Speak with calm authority, like a professional narrator.</textarea>
+      </div>
+      <div class="vl-field">
+        <label>Language</label>
+        <select class="vl-select" id="custom-language"></select>
+      </div>
+      <div class="vl-field">
+        <label>Model Size</label>
+        <select class="vl-select" id="custom-model-size">
+          <option value="1.7B" selected>1.7B (Higher Quality)</option>
+          <option value="0.6B">0.6B (Faster)</option>
+        </select>
+      </div>
+      <div class="vl-btn-row">
+        <button class="vl-btn vl-btn-primary" id="custom-generate">Generate Voice</button>
+      </div>
+    </div>
+
+    <div class="vl-status-msg" id="status-msg"></div>
+  </div>
+
+  <!-- RIGHT: Output Panel -->
+  <div class="vl-panel">
+    <div class="vl-panel-title">Output</div>
+
+    <div id="audio-output">
+      <div class="vl-empty" id="empty-state">
+        Generate speech to hear the result here.
+      </div>
+    </div>
+
+    <div class="vl-panel-title" style="margin-top: 12px;">Saved Voices</div>
+    <div id="saved-voices">
+      <div class="vl-empty" id="voices-empty">No saved voices yet.</div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function() {
+  'use strict';
+
+  // Base URL for API - use same origin as the page
+  const API = '';
+
+  // Elements
+  const tabs = document.querySelectorAll('.vl-tab');
+  const tabContents = {
+    quick: document.getElementById('tab-quick'),
+    design: document.getElementById('tab-design'),
+    custom: document.getElementById('tab-custom'),
+  };
+  const statusMsg = document.getElementById('status-msg');
+  const audioOutput = document.getElementById('audio-output');
+  const emptyState = document.getElementById('empty-state');
+  const pocketDot = document.getElementById('pocket-dot');
+  const qwenDot = document.getElementById('qwen-dot');
+
+  let currentAudioUrl = null;
+  let generating = false;
+
+  // Tab switching
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      tabs.forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      Object.values(tabContents).forEach(c => c.style.display = 'none');
+      const target = tabContents[tab.dataset.tab];
+      if (target) target.style.display = '';
+    });
+  });
+
+  // Status helpers
+  function showStatus(text, type) {
+    statusMsg.textContent = text;
+    statusMsg.className = 'vl-status-msg ' + type;
+  }
+  function clearStatus() {
+    statusMsg.className = 'vl-status-msg';
+    statusMsg.textContent = '';
+  }
+
+  // Health checks
+  async function checkHealth() {
+    try {
+      const res = await fetch(API + '/api/tts/health');
+      const ok = res.ok;
+      pocketDot.className = 'dot ' + (ok ? 'ok' : 'off');
+    } catch {
+      pocketDot.className = 'dot off';
+    }
+
+    try {
+      const res = await fetch(API + '/api/tts/speakers');
+      const ok = res.ok;
+      qwenDot.className = 'dot ' + (ok ? 'ok' : 'off');
+      if (ok) {
+        const data = await res.json();
+        populateSpeakers(data.speakers || []);
+        populateLanguages(data.languages || []);
+      }
+    } catch {
+      qwenDot.className = 'dot off';
+    }
+  }
+
+  function populateSpeakers(speakers) {
+    const sel = document.getElementById('custom-speaker');
+    if (!sel || sel.options.length > 1) return;
+    sel.innerHTML = '';
+    speakers.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s;
+      opt.textContent = s;
+      if (s === 'Ryan') opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+
+  function populateLanguages(languages) {
+    ['design-language', 'custom-language'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel || sel.options.length > 1) return;
+      sel.innerHTML = '';
+      languages.forEach(l => {
+        const opt = document.createElement('option');
+        opt.value = l;
+        opt.textContent = l;
+        if (l === 'English') opt.selected = true;
+        sel.appendChild(opt);
+      });
+    });
+  }
+
+  // Audio rendering
+  function renderAudio(blob, engine, duration) {
+    if (currentAudioUrl) URL.revokeObjectURL(currentAudioUrl);
+    currentAudioUrl = URL.createObjectURL(blob);
+    emptyState.style.display = 'none';
+
+    const sizeKb = (blob.size / 1024).toFixed(1);
+    const container = document.createElement('div');
+    container.className = 'vl-audio-container';
+    container.innerHTML = `
+      <audio controls src="${currentAudioUrl}"></audio>
+      <div class="vl-audio-meta">
+        <span>Engine: ${engine}</span>
+        <span>Size: ${sizeKb} KB</span>
+        <span>Generated in ${duration}s</span>
+      </div>
+      <div class="vl-btn-row">
+        <a class="vl-btn vl-btn-secondary" href="${currentAudioUrl}" download="voice-output.wav">Download WAV</a>
+      </div>
+    `;
+
+    // Prepend (newest first), remove old if > 5
+    const existing = audioOutput.querySelectorAll('.vl-audio-container');
+    if (existing.length >= 5) existing[existing.length - 1].remove();
+    audioOutput.insertBefore(container, audioOutput.firstChild);
+
+    // Auto-play
+    container.querySelector('audio').play().catch(() => {});
+  }
+
+  // Generate handlers
+  async function generateQuick() {
+    const text = document.getElementById('quick-text').value.trim();
+    if (!text) { showStatus('Enter text to speak.', 'warn'); return; }
+    await doGenerate('/api/tts/generate', { text }, 'Pocket TTS');
+  }
+
+  async function generateDesign() {
+    const text = document.getElementById('design-text').value.trim();
+    const desc = document.getElementById('design-description').value.trim();
+    const lang = document.getElementById('design-language').value;
+    if (!text || !desc) { showStatus('Text and voice description are required.', 'warn'); return; }
+    await doGenerate('/api/tts/voice-design', {
+      text, voice_description: desc, language: lang
+    }, 'Qwen3 Voice Design');
+  }
+
+  async function generateCustom() {
+    const text = document.getElementById('custom-text').value.trim();
+    const speaker = document.getElementById('custom-speaker').value;
+    const instruct = document.getElementById('custom-instruct').value.trim();
+    const lang = document.getElementById('custom-language').value;
+    const modelSize = document.getElementById('custom-model-size').value;
+    if (!text || !instruct) { showStatus('Text and style instruction are required.', 'warn'); return; }
+    await doGenerate('/api/tts/custom-voice', {
+      text, speaker, instruct, language: lang, model_size: modelSize
+    }, 'Qwen3 Custom Voice');
+  }
+
+  async function doGenerate(endpoint, payload, engine) {
+    if (generating) return;
+    generating = true;
+    showStatus('Generating audio...', 'info');
+
+    const btn = document.querySelector('.vl-tab.active')?.dataset.tab;
+    const genBtn = document.getElementById(btn + '-generate');
+    if (genBtn) genBtn.disabled = true;
+
+    const start = performance.now();
+    try {
+      const res = await fetch(API + endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const elapsed = ((performance.now() - start) / 1000).toFixed(1);
+
+      if (!res.ok) {
+        let errMsg = 'Generation failed';
+        try {
+          const err = await res.json();
+          errMsg = err.error || err.details || errMsg;
+        } catch { /* ignore */ }
+        showStatus(errMsg, 'error');
+        return;
+      }
+
+      const blob = await res.blob();
+      renderAudio(blob, engine, elapsed);
+      clearStatus();
+    } catch (err) {
+      showStatus('Network error: ' + err.message, 'error');
+    } finally {
+      generating = false;
+      if (genBtn) genBtn.disabled = false;
+    }
+  }
+
+  // Load saved voices
+  async function loadSavedVoices() {
+    try {
+      const res = await fetch(API + '/api/tts/voices');
+      if (!res.ok) return;
+      const data = await res.json();
+      const voices = data.voices || [];
+      const container = document.getElementById('saved-voices');
+      const empty = document.getElementById('voices-empty');
+
+      if (voices.length === 0) {
+        empty.style.display = '';
+        return;
+      }
+      empty.style.display = 'none';
+
+      const grid = document.createElement('div');
+      grid.className = 'vl-voice-grid';
+      voices.forEach(v => {
+        const card = document.createElement('div');
+        card.className = 'vl-voice-card';
+        card.innerHTML = `
+          <div class="name">${v.id}</div>
+          <div class="meta">${v.file}</div>
+        `;
+        grid.appendChild(card);
+      });
+      container.appendChild(grid);
+    } catch { /* ignore */ }
+  }
+
+  // Wire up buttons
+  document.getElementById('quick-generate').addEventListener('click', generateQuick);
+  document.getElementById('design-generate').addEventListener('click', generateDesign);
+  document.getElementById('custom-generate').addEventListener('click', generateCustom);
+
+  // Init
+  checkHealth();
+  loadSavedVoices();
+  setInterval(checkHealth, 30000);
+})();
+</script>
+</body>
+</html>

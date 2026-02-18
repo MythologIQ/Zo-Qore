@@ -67,7 +67,7 @@ const apiKey = process.env.QORE_API_KEY;
 
 ✅ **Local Configuration Files**
 
-- Store in `~/.config/failsafe-qore/`
+- Store in `~/.config/zo-qore/`
 - Set appropriate file permissions (0600)
 - Never commit to version control
 - Document in README

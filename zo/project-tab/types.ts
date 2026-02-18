@@ -58,6 +58,15 @@ export interface Project {
 
   /** ISO 8601 timestamp of last modification */
   updatedAt: string;
+
+  /** Workspace folder path mapped to this project */
+  folderPath?: string;
+
+  /** Parent project ID for branched (sub) projects */
+  parentId?: string | null;
+
+  /** Whether this project is the currently active one */
+  isActive?: boolean;
 }
 
 /**

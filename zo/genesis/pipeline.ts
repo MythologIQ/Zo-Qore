@@ -133,7 +133,16 @@ export class GenesisPipeline {
 
         // Store embedding unless skipped (for testing)
         if (!this.config.skipEmbeddingStorage) {
-          await this.embeddingStorage.store(thought.id, result);
+          try {
+            await this.embeddingStorage.store(thought.id, result);
+          } catch (storeErr) {
+            console.error(
+              `[GenesisPipeline] Failed to store embedding for thought ${
+                thought.id
+              }:`,
+              storeErr
+            );
+          }
         }
 
         embedding = {

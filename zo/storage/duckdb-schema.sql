@@ -437,3 +437,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 INSERT INTO schema_migrations (version, name, checksum)
 SELECT 1, 'initial_schema', 'duckdb_project_tab_v1'
 WHERE NOT EXISTS (SELECT 1 FROM schema_migrations WHERE version = 1);
+
+-- -----------------------------------------------------------------------------
+-- Migration v2: Add project tracking fields (Phase 10)
+-- -----------------------------------------------------------------------------
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS folder_path VARCHAR;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS parent_id VARCHAR;
+ALTER TABLE projects ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT FALSE;
+
+INSERT INTO schema_migrations (version, name, checksum)
+SELECT 2, 'add_project_tracking_fields', 'phase10_v1'
+WHERE NOT EXISTS (SELECT 1 FROM schema_migrations WHERE version = 2);

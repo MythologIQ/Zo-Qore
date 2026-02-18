@@ -13,6 +13,7 @@ import { EvaluationRouter } from "../../risk/engine/EvaluationRouter";
 import { LedgerManager } from "../../ledger/engine/LedgerManager";
 import { RuntimeError } from "./errors";
 import { AgentOSIntegration, type AgentOSIntegrationConfig } from "./AgentOSIntegration";
+import { ServiceRegistry } from "./ServiceRegistry";
 
 export interface RuntimeHealth {
   status: "ok";
@@ -21,6 +22,7 @@ export interface RuntimeHealth {
   ledgerAvailable: boolean;
   policyVersion: string;
   timestamp: string;
+  services?: Record<string, boolean>;
 }
 
 export class QoreRuntimeService {
@@ -33,13 +35,16 @@ export class QoreRuntimeService {
   >();
   private readonly replayTtlMs = 5 * 60 * 1000;
   private agentOS?: AgentOSIntegration;
+  private serviceRegistry: ServiceRegistry;
 
   constructor(
     private readonly policyEngine: PolicyEngine,
     private readonly evaluationRouter: EvaluationRouter,
     private readonly ledgerManager: LedgerManager,
     private readonly config: QoreConfig = defaultQoreConfig,
-  ) {}
+  ) {
+    this.serviceRegistry = new ServiceRegistry();
+  }
 
   async initialize(policyDir?: string): Promise<void> {
     await this.ledgerManager.initialize();
@@ -59,6 +64,10 @@ export class QoreRuntimeService {
       this.cachedPolicyVersion = "runtime-defaults";
     }
 
+    // Load external service registry
+    await this.serviceRegistry.loadServices();
+    console.log("Service registry loaded");
+
     // Initialize Agent OS integration with Victor
     const agentOSEnabled = process.env.QORE_AGENT_OS_ENABLED === "true";
     if (agentOSEnabled) {
@@ -77,7 +86,14 @@ export class QoreRuntimeService {
     return this.cachedPolicyVersion;
   }
 
-  health(): RuntimeHealth {
+  async health(): Promise<RuntimeHealth> {
+    const services: Record<string, boolean> = {};
+
+    // Check health of all registered services
+    for (const [serviceId, _] of this.serviceRegistry.getAllServices()) {
+      services[serviceId] = await this.serviceRegistry.checkHealth(serviceId);
+    }
+
     return {
       status: "ok",
       initialized: this.initialized,
@@ -85,7 +101,12 @@ export class QoreRuntimeService {
       ledgerAvailable: this.ledgerManager.getEntryCount() >= 1,
       policyVersion: this.cachedPolicyVersion,
       timestamp: new Date().toISOString(),
+      services,
     };
+  }
+
+  getServiceRegistry(): ServiceRegistry {
+    return this.serviceRegistry;
   }
 
   async evaluate(input: DecisionRequest): Promise<DecisionResponse> {

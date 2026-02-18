@@ -59,6 +59,9 @@ interface ProjectRow {
   updated_at: string;
   status: string;
   metadata: string | null;
+  folder_path: string | null;
+  parent_id: string | null;
+  is_active: boolean | null;
 }
 
 interface GenesisSessionRow {
@@ -371,8 +374,8 @@ export class ProjectTabStorage {
     };
 
     await this.db.execute(
-      `INSERT INTO projects (id, name, description, created_at, updated_at, status, metadata)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      `INSERT INTO projects (id, name, description, created_at, updated_at, status, metadata, folder_path, parent_id, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         createdProject.id,
         createdProject.name,
@@ -381,6 +384,9 @@ export class ProjectTabStorage {
         createdProject.updatedAt,
         createdProject.state,
         null,
+        createdProject.folderPath ?? null,
+        createdProject.parentId ?? null,
+        createdProject.isActive ?? false,
       ]
     );
 
@@ -435,7 +441,7 @@ export class ProjectTabStorage {
    */
   async listProjects(): Promise<Project[]> {
     const rows = await this.db.query<ProjectRow>(
-      "SELECT * FROM projects ORDER BY created_at DESC"
+      "SELECT * FROM projects WHERE status != 'removed' ORDER BY created_at DESC"
     );
     return rows.map((row) => this.mapRowToProject(row));
   }
@@ -447,7 +453,99 @@ export class ProjectTabStorage {
       state: row.status as ProjectState,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
+      folderPath: row.folder_path ?? undefined,
+      parentId: row.parent_id ?? null,
+      isActive: row.is_active ?? false,
     };
+  }
+
+  /**
+   * Rename a project.
+   */
+  async renameProject(id: string, name: string): Promise<void> {
+    const project = await this.getProject(id);
+    const prev = project?.name ?? "";
+    const now = nowTimestamp();
+    await this.db.execute(
+      "UPDATE projects SET name = ?, updated_at = ? WHERE id = ?",
+      [name, now, id]
+    );
+    await this.emitLedgerEvent("project", id, id, prev, name);
+  }
+
+  /**
+   * Soft-remove a project (sets status to 'removed').
+   */
+  async removeProject(id: string): Promise<void> {
+    const project = await this.getProject(id);
+    const prev = project?.state ?? "EMPTY";
+    const now = nowTimestamp();
+    await this.db.execute(
+      "UPDATE projects SET status = 'removed', updated_at = ? WHERE id = ?",
+      [now, id]
+    );
+    await this.emitLedgerEvent("project", id, id, prev, "removed");
+  }
+
+  /**
+   * Set the workspace folder path for a project.
+   */
+  async setProjectFolder(id: string, folderPath: string): Promise<void> {
+    const now = nowTimestamp();
+    await this.db.execute(
+      "UPDATE projects SET folder_path = ?, updated_at = ? WHERE id = ?",
+      [folderPath, now, id]
+    );
+  }
+
+  /**
+   * Set a project as the active project (deactivates all others).
+   */
+  async setProjectActive(id: string): Promise<void> {
+    const now = nowTimestamp();
+    await this.db.execute(
+      "UPDATE projects SET is_active = FALSE WHERE is_active = TRUE"
+    );
+    await this.db.execute(
+      "UPDATE projects SET is_active = TRUE, updated_at = ? WHERE id = ?",
+      [now, id]
+    );
+    await this.emitLedgerEvent("project", id, id, "inactive", "active");
+  }
+
+  /**
+   * Unlink a sub-project from its parent.
+   */
+  async unlinkSubProject(id: string): Promise<void> {
+    const project = await this.getProject(id);
+    const prev = project?.parentId ?? "";
+    const now = nowTimestamp();
+    await this.db.execute(
+      "UPDATE projects SET parent_id = NULL, updated_at = ? WHERE id = ?",
+      [now, id]
+    );
+    await this.emitLedgerEvent("project", id, id, prev, "unlinked");
+  }
+
+  /**
+   * Get the currently active project, or null if none.
+   */
+  async listActiveProject(): Promise<Project | null> {
+    const row = await this.db.queryOne<ProjectRow>(
+      "SELECT * FROM projects WHERE is_active = TRUE AND status != 'removed' LIMIT 1"
+    );
+    return row ? this.mapRowToProject(row) : null;
+  }
+
+  /**
+   * List sub-projects for a given parent project.
+   */
+  async listSubProjects(parentId: string): Promise<Project[]> {
+    const rows = await this.db.query<ProjectRow>(
+      "SELECT * FROM projects WHERE parent_id = ? AND status != 'removed' ORDER BY created_at DESC",
+      [parentId]
+    );
+    return rows.map((row) => this.mapRowToProject(row));
   }
 
   // ==========================================================================
@@ -1299,8 +1397,8 @@ export class ProjectTabStorage {
       [
         task.id,
         task.projectId,
-        task.phaseId,
-        task.clusterId,
+        task.phaseId || null,
+        task.clusterId || null,
         task.title,
         task.description,
         "standard",

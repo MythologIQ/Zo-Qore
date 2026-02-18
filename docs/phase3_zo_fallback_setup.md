@@ -36,8 +36,8 @@ Status: `implemented`
 - `zo/fallback/cli/failsafe-run.ts`
 - `zo/fallback/start-watcher.ts`
 - `runtime/service/start.ts`
-- `deploy/systemd/failsafe-qore.service`
-- `deploy/systemd/failsafe-fallback-watcher.service`
+- `deploy/systemd/zo-qore.service`
+- `deploy/systemd/zo-qore-fallback-watcher.service`
 
 ## Substantiation
 

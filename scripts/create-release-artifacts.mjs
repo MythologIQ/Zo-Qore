@@ -17,7 +17,7 @@ if (!version || typeof version !== "string") {
 
 const releaseDir = join(root, "dist", "release", `v${version}`);
 const stagingDir = join(root, "dist", "release-staging");
-const bundleName = `failsafe-qore-zo-bundle-v${version}.tgz`;
+const bundleName = `zo-qore-bundle-v${version}.tgz`;
 const bundlePath = join(releaseDir, bundleName);
 const shaPath = join(releaseDir, "SHA256SUMS");
 const notesPath = join(releaseDir, "RELEASE_NOTES.md");
@@ -105,13 +105,13 @@ const notes = [
   "## Install",
   "",
   "```bash",
-  "sudo bash -c \"$(curl -fsSL https://raw.githubusercontent.com/MythologIQ/failsafe-qore/main/deploy/zo/take-this-and-go.sh)\"",
+  "sudo bash -c \"$(curl -fsSL https://raw.githubusercontent.com/MythologIQ/Zo-Qore/main/deploy/zo/take-this-and-go.sh)\"",
   "```",
   "",
   "## Notes",
   "",
   "- Auto model selection is best-effort and operator-owned.",
-  "- Configure `/etc/failsafe-qore/env` before production use.",
+  "- Configure `/etc/zo-qore/env` before production use.",
   "",
 ].join("\n");
 writeFileSync(notesPath, notes, "utf-8");

@@ -173,11 +173,11 @@ Runtime Port: ${RUNTIME_PORT}
 UI Port: ${UI_PORT}
 
 Secret references (already generated and stored in Zo secret management):
-- QORE_API_KEY: zo-secret://failsafe-qore/api-key
+- QORE_API_KEY: zo-secret://zo-qore/api-key
 - QORE_UI_BASIC_AUTH_USER: admin
-- QORE_UI_BASIC_AUTH_PASS: zo-secret://failsafe-qore/ui-password
-- QORE_UI_TOTP_SECRET: zo-secret://failsafe-qore/mfa-secret
-- QORE_UI_ADMIN_TOKEN: zo-secret://failsafe-qore/admin-token
+- QORE_UI_BASIC_AUTH_PASS: zo-secret://zo-qore/ui-password
+- QORE_UI_TOTP_SECRET: zo-secret://zo-qore/mfa-secret
+- QORE_UI_ADMIN_TOKEN: zo-secret://zo-qore/admin-token
 
 Steps to complete:
 1. Register runtime service with these commands:
@@ -199,7 +199,7 @@ Steps to complete:
 3. Verify services are healthy:
    service_doctor ${RUNTIME_LABEL}
    service_doctor ${UI_LABEL}
-   curl -H "x-qore-api-key: zo-secret://failsafe-qore/api-key" http://127.0.0.1:${RUNTIME_PORT}/health
+   curl -H "x-qore-api-key: zo-secret://zo-qore/api-key" http://127.0.0.1:${RUNTIME_PORT}/health
 
 4. Print final URLs:
    echo "Runtime URL: https://${RUNTIME_LABEL}-<zo-host>.zocomputer.io"

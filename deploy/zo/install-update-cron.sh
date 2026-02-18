@@ -3,11 +3,11 @@ set -euo pipefail
 
 WORKDIR="${WORKDIR:-$(pwd)}"
 SCHEDULE="${SCHEDULE:-17 * * * *}"
-LOG_FILE="${LOG_FILE:-/dev/shm/failsafe-qore-update.log}"
+LOG_FILE="${LOG_FILE:-/dev/shm/zo-qore-update.log}"
 REMOVE="${REMOVE:-false}"
 
 log() {
-  printf '[failsafe-qore-update-cron] %s\n' "$*"
+  printf '[zo-qore-update-cron] %s\n' "$*"
 }
 
 die() {
@@ -25,7 +25,7 @@ Usage:
 Options:
   --workdir <path>      Repo path (default: current directory)
   --schedule "<expr>"   Cron expression (default: "17 * * * *")
-  --log-file <path>     Log path (default: /dev/shm/failsafe-qore-update.log)
+  --log-file <path>     Log path (default: /dev/shm/zo-qore-update.log)
   --remove              Remove existing updater cron entry
   --help                Show this help
 EOF
@@ -71,7 +71,7 @@ main() {
   WORKDIR="$(cd "${WORKDIR}" && pwd)"
   [[ -f "${WORKDIR}/deploy/zo/update-from-repo.sh" ]] || die "missing updater script in ${WORKDIR}"
 
-  local marker="# failsafe-qore-auto-update"
+  local marker="# zo-qore-auto-update"
   local cmd="cd ${WORKDIR} && bash deploy/zo/update-from-repo.sh >> ${LOG_FILE} 2>&1"
   local line="${SCHEDULE} ${cmd} ${marker}"
   local current

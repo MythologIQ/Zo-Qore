@@ -1,0 +1,252 @@
+{
+  "$schema": "Zo-Qore Test Index — IR-002 enforced",
+  "version": 1,
+  "generatedAt": "2026-02-18T00:00:00Z",
+  "description": "Authoritative index of all registered test files. Every test must be listed here per IR-002.",
+  "modules": {
+    "action": {
+      "label": "Action Classification",
+      "files": [
+        "tests/action.classification.test.ts"
+      ]
+    },
+    "autonomy": {
+      "label": "Autonomy Checker",
+      "files": [
+        "tests/autonomy.checker.test.ts"
+      ]
+    },
+    "constellation": {
+      "label": "Constellation",
+      "files": [
+        "tests/constellation.physics.test.ts",
+        "tests/constellation.service.test.ts",
+        "tests/constellation.types.test.ts"
+      ]
+    },
+    "embedding": {
+      "label": "Embedding",
+      "files": [
+        "tests/embedding.hash.test.ts",
+        "tests/embedding.similarity.test.ts",
+        "tests/embedding.storage.test.ts",
+        "tests/embedding.types.test.ts"
+      ]
+    },
+    "empty-state": {
+      "label": "Empty State",
+      "files": [
+        "tests/empty-state.test.ts"
+      ]
+    },
+    "evaluation": {
+      "label": "Evaluation Router",
+      "files": [
+        "tests/evaluation.router.test.ts"
+      ]
+    },
+    "gantt": {
+      "label": "Gantt Service",
+      "files": [
+        "tests/gantt.service.test.ts"
+      ]
+    },
+    "genesis": {
+      "label": "Genesis Pipeline",
+      "files": [
+        "tests/genesis.clusterer.test.ts",
+        "tests/genesis.completeness.test.ts",
+        "tests/genesis.fast-pass.test.ts",
+        "tests/genesis.integration.test.ts",
+        "tests/genesis.llm-pass.test.ts",
+        "tests/genesis.pipeline.test.ts",
+        "tests/genesis.types.test.ts"
+      ]
+    },
+    "intent": {
+      "label": "Intent History",
+      "files": [
+        "tests/intent.history.test.ts"
+      ]
+    },
+    "kanban": {
+      "label": "Kanban",
+      "files": [
+        "tests/kanban.generator.test.ts",
+        "tests/kanban.storage.test.ts"
+      ]
+    },
+    "ledger": {
+      "label": "Ledger",
+      "files": [
+        "tests/ledger-bridge.test.ts",
+        "tests/ledger.hashchain.test.ts",
+        "tests/storage.ledger.test.ts"
+      ]
+    },
+    "local-api": {
+      "label": "Local API Server",
+      "files": [
+        "tests/local.api.server.test.ts"
+      ]
+    },
+    "milestone": {
+      "label": "Milestone Storage",
+      "files": [
+        "tests/milestone.storage.test.ts"
+      ]
+    },
+    "path": {
+      "label": "Path Service",
+      "files": [
+        "tests/path.dependencies.test.ts",
+        "tests/path.generator.test.ts",
+        "tests/path.service.test.ts"
+      ]
+    },
+    "phase1": {
+      "label": "Phase 1 Integration",
+      "files": [
+        "tests/phase1.integration.test.ts"
+      ]
+    },
+    "policy": {
+      "label": "Policy Engine",
+      "files": [
+        "tests/policy.engine.test.ts"
+      ]
+    },
+    "prompt": {
+      "label": "Prompt Transparency",
+      "files": [
+        "tests/prompt.transparency.view.test.ts"
+      ]
+    },
+    "qore": {
+      "label": "Qore Runtime",
+      "files": [
+        "tests/qore.logic.manager.test.ts",
+        "tests/qore.runtime.service.test.ts"
+      ]
+    },
+    "reveal": {
+      "label": "Reveal",
+      "files": [
+        "tests/reveal.layout.test.ts",
+        "tests/reveal.service.test.ts",
+        "tests/reveal.types.test.ts"
+      ]
+    },
+    "risk": {
+      "label": "Risk Service",
+      "files": [
+        "tests/risk.derivation.test.ts",
+        "tests/risk.service.test.ts"
+      ]
+    },
+    "runtime": {
+      "label": "Runtime API",
+      "files": [
+        "tests/runtime.api.index.test.ts",
+        "tests/runtime.api.trust-shadow.test.ts",
+        "tests/runtime.eventbus.test.ts"
+      ]
+    },
+    "security": {
+      "label": "Security",
+      "files": [
+        "tests/security.test.ts"
+      ]
+    },
+    "sprint": {
+      "label": "Sprint Storage",
+      "files": [
+        "tests/sprint.storage.test.ts"
+      ]
+    },
+    "void": {
+      "label": "Void (STT / Negotiator)",
+      "files": [
+        "tests/void-stt.test.ts",
+        "tests/void.negotiator.test.ts",
+        "tests/void.prompts.test.ts",
+        "tests/void.storage.test.ts",
+        "tests/void.types.test.ts"
+      ]
+    },
+    "zo-nav": {
+      "label": "Zo Navigation",
+      "files": [
+        "tests/zo-nav.test.ts"
+      ]
+    },
+    "zo-assumptions": {
+      "label": "Zo Assumptions",
+      "files": [
+        "tests/zo.assumptions.check.test.ts"
+      ]
+    },
+    "zo-fallback": {
+      "label": "Zo Fallback",
+      "files": [
+        "tests/zo.fallback.identity.test.ts",
+        "tests/zo.fallback.pipeline.test.ts",
+        "tests/zo.fallback.wrapper.test.ts"
+      ]
+    },
+    "zo-http": {
+      "label": "Zo HTTP Proxy",
+      "files": [
+        "tests/zo.http.proxy.errors.test.ts",
+        "tests/zo.http.proxy.integration.test.ts",
+        "tests/zo.http.proxy.replay.distributed.test.ts",
+        "tests/zo.http.translator.test.ts"
+      ]
+    },
+    "zo-install": {
+      "label": "Zo Install Handoff",
+      "files": [
+        "tests/zo.install.handoff.security.test.ts"
+      ]
+    },
+    "zo-mcp": {
+      "label": "Zo MCP",
+      "files": [
+        "tests/zo.mcp.forwarder.test.ts",
+        "tests/zo.mcp.metrics.sink.test.ts",
+        "tests/zo.mcp.proxy.hardening.test.ts",
+        "tests/zo.mcp.proxy.integration.test.ts",
+        "tests/zo.mcp.rate-limit.sqlite.test.ts",
+        "tests/zo.mcp.translator.test.ts"
+      ]
+    },
+    "zo-model": {
+      "label": "Zo Model Selection",
+      "files": [
+        "tests/zo.model.selection.performance.test.ts",
+        "tests/zo.model.selection.test.ts"
+      ]
+    },
+    "zo-resilience": {
+      "label": "Zo Resilience",
+      "files": [
+        "tests/zo.resilience.test.ts"
+      ]
+    },
+    "zo-security": {
+      "label": "Zo Security",
+      "files": [
+        "tests/zo.security.actor-key-rotation.test.ts",
+        "tests/zo.security.mtls.binding.test.ts",
+        "tests/zo.security.replay-store.test.ts"
+      ]
+    },
+    "zo-ui": {
+      "label": "Zo UI",
+      "files": [
+        "tests/zo.ui.mfa.test.ts",
+        "tests/zo.ui.shell.test.ts"
+      ]
+    }
+  }
+}

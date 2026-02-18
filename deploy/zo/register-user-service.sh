@@ -10,7 +10,7 @@ QORE_API_HOST="${QORE_API_HOST:-0.0.0.0}"
 QORE_API_PORT="${QORE_API_PORT:-$SERVICE_PORT}"
 
 log() {
-  printf '[failsafe-qore-zo-service] %s\n' "$*"
+  printf '[zo-qore-zo-service] %s\n' "$*"
 }
 
 require_cmd() {

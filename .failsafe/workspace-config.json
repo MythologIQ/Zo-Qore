@@ -1,5 +1,5 @@
 {
-  "workspaceType": "failsafe-qore-runtime",
+  "workspaceType": "zo-qore-runtime",
   "detectedAt": "2026-02-12T00:00:00Z",
   "applicationContainer": {
     "root": ".",

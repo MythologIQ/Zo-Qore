@@ -6,7 +6,13 @@
  */
 
 // @ts-ignore - agentos-mcp-server types not published yet
-import { AgentOSMCPServer } from "agentos-mcp-server";
+// Temporarily commented out until agentos-mcp-server is available
+// import { AgentOSMCPServer } from "agentos-mcp-server";
+class AgentOSMCPServer {
+  constructor(config: any) {
+    // Stub implementation
+  }
+}
 
 type ServerConfig = {
   policyMode: "strict" | "permissive";

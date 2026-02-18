@@ -272,11 +272,21 @@ export class DuckDBClient {
 
   /**
    * Close the database connection and release resources.
+   * Runs CHECKPOINT first to flush WAL to the main database file.
    * Safe to call multiple times.
    */
   async close(): Promise<void> {
     if (!this.db) {
       return;
+    }
+
+    // Flush WAL to main file before closing
+    if (this.connection) {
+      try {
+        await this.execute("CHECKPOINT");
+      } catch {
+        // Best-effort checkpoint; proceed with close regardless
+      }
     }
 
     return new Promise((resolve, reject) => {
