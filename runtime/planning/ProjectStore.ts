@@ -3,8 +3,9 @@ import { join } from "path";
 import { createLogger } from "./Logger.js";
 import { PlanningStoreError } from "./StoreErrors.js";
 import { StoreIntegrity } from "./StoreIntegrity.js";
-import { VoidStore, createVoidStore } from "./VoidStore.js";
-import { ViewStore, createViewStore, ViewType } from "./ViewStore.js";
+import { VoidStore, createVoidStore, VoidStoreOptions } from "./VoidStore.js";
+import { ViewStore, createViewStore, ViewType, ViewStoreOptions } from "./ViewStore.js";
+import { PlanningLedger, createPlanningLedger } from "./PlanningLedger.js";
 import type {
   QoreProject,
   PipelineState,
@@ -22,16 +23,28 @@ const logger = createLogger("project-store");
 
 const DEFAULT_PROJECTS_DIR = join(process.cwd(), ".qore", "projects");
 
+export interface ProjectStoreOptions {
+  enableLedger?: boolean;
+}
+
 export class ProjectStore {
   private voidStore: VoidStore;
   private integrity: StoreIntegrity;
+  private ledger: PlanningLedger;
 
   constructor(
     private basePath: string,
     private projectId: string,
+    options?: ProjectStoreOptions,
   ) {
-    this.voidStore = createVoidStore(basePath, projectId);
     this.integrity = new StoreIntegrity(basePath);
+    this.ledger = createPlanningLedger(projectId, basePath);
+
+    const voidOptions: VoidStoreOptions = {
+      ledger: options?.enableLedger ? this.ledger : undefined,
+      integrity: this.integrity,
+    };
+    this.voidStore = createVoidStore(basePath, projectId, voidOptions);
   }
 
   private get projectPath(): string {
@@ -78,6 +91,17 @@ export class ProjectStore {
     await writeFile(this.projectFile, JSON.stringify(project, null, 2), "utf-8");
     await this.integrity.updateChecksums(this.projectId);
 
+    await this.ledger.appendEntry({
+      projectId: this.projectId,
+      view: "void",
+      action: "create",
+      artifactId: this.projectId,
+      actorId: data.createdBy,
+      checksumBefore: null,
+      checksumAfter: await this.integrity.getChecksum("project.json", "project.json"),
+      payload: { name: data.name },
+    });
+
     logger.info("Project created", { projectId: this.projectId });
     return project;
   }
@@ -107,11 +131,13 @@ export class ProjectStore {
     }
   }
 
-  async update(updates: Partial<QoreProject>): Promise<QoreProject> {
+  async update(updates: Partial<QoreProject>, actorId?: string): Promise<QoreProject> {
     const project = await this.get();
     if (!project) {
       throw new PlanningStoreError("PROJECT_NOT_FOUND", undefined, { projectId: this.projectId });
     }
+
+    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
 
     const updated = {
       ...project,
@@ -122,18 +148,49 @@ export class ProjectStore {
     await writeFile(this.projectFile, JSON.stringify(updated, null, 2), "utf-8");
     await this.integrity.updateChecksums(this.projectId);
 
+    const checksumAfter = await this.integrity.getChecksum("project.json", "project.json");
+
+    await this.ledger.appendEntry({
+      projectId: this.projectId,
+      view: "void",
+      action: "update",
+      artifactId: this.projectId,
+      actorId: actorId ?? "system",
+      checksumBefore,
+      checksumAfter,
+    });
+
     logger.info("Project updated", { projectId: this.projectId });
     return updated;
   }
 
-  async delete(): Promise<void> {
+  async delete(actorId?: string): Promise<void> {
     logger.info("Deleting project", { projectId: this.projectId });
+
+    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
+
     await rm(this.projectPath, { recursive: true, force: true });
+
+    await this.ledger.appendEntry({
+      projectId: this.projectId,
+      view: "void",
+      action: "delete",
+      artifactId: this.projectId,
+      actorId: actorId ?? "system",
+      checksumBefore,
+      checksumAfter: null,
+    });
+
     logger.info("Project deleted", { projectId: this.projectId });
   }
 
-  async getViewStore(viewType: ViewType): Promise<ViewStore> {
-    return createViewStore(this.basePath, this.projectId, viewType);
+  async getViewStore(viewType: ViewType, options?: ViewStoreOptions): Promise<ViewStore> {
+    const viewOptions: ViewStoreOptions = {
+      ledger: options?.ledger ?? this.ledger,
+      integrity: options?.integrity ?? this.integrity,
+      artifactId: options?.artifactId,
+    };
+    return createViewStore(this.basePath, this.projectId, viewType, viewOptions);
   }
 
   async getVoidStore(): Promise<VoidStore> {
@@ -144,17 +201,40 @@ export class ProjectStore {
     return this.integrity.verify(this.projectId);
   }
 
-  async updatePipelineState(view: keyof PipelineState, state: "empty" | "active"): Promise<void> {
+  async getLedger(): Promise<PlanningLedger> {
+    return this.ledger;
+  }
+
+  async updatePipelineState(
+    view: keyof PipelineState,
+    state: "empty" | "active",
+    actorId?: string,
+  ): Promise<void> {
     const project = await this.get();
     if (!project) {
       throw new PlanningStoreError("PROJECT_NOT_FOUND", undefined, { projectId: this.projectId });
     }
+
+    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
 
     project.pipelineState[view] = state;
     project.updatedAt = new Date().toISOString();
 
     await writeFile(this.projectFile, JSON.stringify(project, null, 2), "utf-8");
     await this.integrity.updateChecksums(this.projectId);
+
+    const checksumAfter = await this.integrity.getChecksum("project.json", "project.json");
+
+    await this.ledger.appendEntry({
+      projectId: this.projectId,
+      view: "void",
+      action: "update",
+      artifactId: `pipeline.${view}`,
+      actorId: actorId ?? "system",
+      checksumBefore,
+      checksumAfter,
+      payload: { view, state },
+    });
 
     logger.info("Pipeline state updated", { projectId: this.projectId, view, state });
   }
@@ -163,14 +243,13 @@ export class ProjectStore {
 export function createProjectStore(
   projectId: string,
   basePath?: string,
+  options?: ProjectStoreOptions,
 ): ProjectStore {
   const projectsDir = process.env.QORE_PROJECTS_DIR || DEFAULT_PROJECTS_DIR;
-  return new ProjectStore(basePath || projectsDir, projectId);
+  return new ProjectStore(basePath || projectsDir, projectId, options);
 }
 
 export function listProjects(basePath?: string): string[] {
-  // This would list all project directories
-  // Implementation deferred to async for filesystem access
   return [];
 }
 

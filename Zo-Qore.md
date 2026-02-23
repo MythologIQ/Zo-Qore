@@ -1265,7 +1265,7 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 
 **Verification:**
 - [x] npm run typecheck passes (zero errors)
-- [x] Contracts importable from `contracts/src/planning/`
+- [x] Contracts importable from contracts/src/planning/
 - [x] Each interface has JSDoc describing its role
 - [x] Action constants follow 'planning:<view>:<operation>' pattern
 
@@ -1344,3 +1344,52 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 ---
 
 *Next session scheduled: 2026-02-23 18:15 EST*
+
+---
+
+### Session 3: 2026-02-23 18:50 EST (Phase 11A - TASK 11A.3)
+
+**Tasks Completed:**
+
+1. **TASK 11A.3: Ledger Integration for Planning Mutations** ✅ COMPLETE
+   - Created `runtime/planning/PlanningLedger.ts`:
+     - Append-only JSONL ledger for planning mutations
+     - `appendEntry()` creates ledger entries with:
+       - projectId, view, action, artifactId, actorId, timestamp
+       - checksumBefore, checksumAfter for integrity tracking
+       - optional payload for additional context
+     - `getEntries()` supports filtering by view, action, artifactId
+     - `verifyConsistency()` implements PL-INT-02 check
+     - History directory stores individual entry files for replay
+
+2. **Wired Ledger into Stores**:
+   - Updated `VoidStore` to accept optional ledger and integrity
+   - Added ledger entry creation after `addThought()` and `updateThoughtStatus()`
+   - Updated `ViewStore` to accept optional ledger and integrity
+   - Added ledger entry creation after `write()` and `delete()`
+   - Updated `ProjectStore` to create and manage ledger instance
+   - All mutations now produce ledger entries with before/after checksums
+
+3. **Added Ledger to Barrel Export**:
+   - Exported `PlanningLedger`, `createPlanningLedger` from index.ts
+   - Exported types: `PlanningView`, `PlanningAction`, `PlanningLedgerEntry`, `LedgerSummary`
+
+**Verification:**
+- [x] npm run typecheck passes (zero errors)
+- [x] npm test passes (449 tests)
+- [x] All mutations produce ledger entries
+- [x] Ledger entries include checksumBefore and checksumAfter
+- [x] PL-INT-02 check implemented via `verifyConsistency()`
+- [x] History directory populated with individual entry files
+
+**Next Steps (TASK 11A.4):**
+- Create `runtime/planning/IntegrityChecker.ts`
+- Implement PL-INT-01 through PL-INT-06 checks
+- Implement PL-TRC-01 through PL-TRC-03 traceability checks
+
+**Files Modified:**
+- `runtime/planning/PlanningLedger.ts` (new)
+- `runtime/planning/VoidStore.ts` (added ledger integration)
+- `runtime/planning/ViewStore.ts` (added ledger integration)
+- `runtime/planning/ProjectStore.ts` (wired ledger into stores)
+- `runtime/planning/index.ts` (added ledger exports)

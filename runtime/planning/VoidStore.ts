@@ -2,15 +2,29 @@ import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
 import { createLogger } from "./Logger.js";
 import { PlanningStoreError } from "./StoreErrors.js";
+import { StoreIntegrity } from "./StoreIntegrity.js";
 import type { VoidThought } from "@mythologiq/qore-contracts";
+import type { PlanningLedger } from "./PlanningLedger.js";
 
 const logger = createLogger("void-store");
 
+export interface VoidStoreOptions {
+  ledger?: PlanningLedger;
+  integrity?: StoreIntegrity;
+}
+
 export class VoidStore {
+  private ledger?: PlanningLedger;
+  private integrity?: StoreIntegrity;
+
   constructor(
     private basePath: string,
     private projectId: string,
-  ) {}
+    options?: VoidStoreOptions,
+  ) {
+    this.ledger = options?.ledger;
+    this.integrity = options?.integrity;
+  }
 
   private get voidPath(): string {
     return join(this.basePath, this.projectId, "void");
@@ -32,9 +46,11 @@ export class VoidStore {
     }
   }
 
-  async addThought(thought: VoidThought): Promise<VoidThought> {
+  async addThought(thought: VoidThought, actorId?: string): Promise<VoidThought> {
     logger.info("Adding thought", { projectId: this.projectId, thoughtId: thought.thoughtId });
     await this.ensureDirectory();
+
+    const checksumBefore = await this.integrity?.getChecksum("void", "thoughts.jsonl") ?? null;
 
     const line = JSON.stringify(thought) + "\n";
     try {
@@ -45,6 +61,21 @@ export class VoidStore {
         `Failed to write thought: ${e instanceof Error ? e.message : "Unknown error"}`,
         { projectId: this.projectId, thoughtId: thought.thoughtId },
       );
+    }
+
+    const checksumAfter = await this.integrity?.getChecksum("void", "thoughts.jsonl") ?? null;
+
+    if (this.ledger) {
+      await this.ledger.appendEntry({
+        projectId: this.projectId,
+        view: "void",
+        action: "create",
+        artifactId: thought.thoughtId,
+        actorId: actorId ?? "system",
+        checksumBefore,
+        checksumAfter,
+        payload: { source: thought.source, status: thought.status },
+      });
     }
 
     logger.info("Thought added", { projectId: this.projectId, thoughtId: thought.thoughtId });
@@ -92,6 +123,7 @@ export class VoidStore {
   async updateThoughtStatus(
     thoughtId: string,
     status: "raw" | "claimed",
+    actorId?: string,
   ): Promise<VoidThought | null> {
     const thoughts = await this.getAllThoughts();
     const index = thoughts.findIndex((t) => t.thoughtId === thoughtId);
@@ -100,6 +132,8 @@ export class VoidStore {
       return null;
     }
 
+    const checksumBefore = await this.integrity?.getChecksum("void", "thoughts.jsonl") ?? null;
+
     thoughts[index] = { ...thoughts[index], status };
 
     await writeFile(
@@ -107,6 +141,22 @@ export class VoidStore {
       thoughts.map((t) => JSON.stringify(t)).join("\n") + "\n",
       "utf-8",
     );
+
+    const checksumAfter = await this.integrity?.getChecksum("void", "thoughts.jsonl") ?? null;
+
+    const action = status === "claimed" ? "claim" : "update";
+
+    if (this.ledger) {
+      await this.ledger.appendEntry({
+        projectId: this.projectId,
+        view: "void",
+        action,
+        artifactId: thoughtId,
+        actorId: actorId ?? "system",
+        checksumBefore,
+        checksumAfter,
+      });
+    }
 
     logger.info("Thought status updated", { projectId: this.projectId, thoughtId, status });
     return thoughts[index];
@@ -118,6 +168,10 @@ export class VoidStore {
   }
 }
 
-export function createVoidStore(basePath: string, projectId: string): VoidStore {
-  return new VoidStore(basePath, projectId);
+export function createVoidStore(
+  basePath: string,
+  projectId: string,
+  options?: VoidStoreOptions,
+): VoidStore {
+  return new VoidStore(basePath, projectId, options);
 }

@@ -1,18 +1,43 @@
-import { readFile, writeFile, mkdir, rename } from "fs/promises";
+import { readFile, writeFile, mkdir, rename, access } from "fs/promises";
 import { join } from "path";
 import { createLogger } from "./Logger.js";
 import { PlanningStoreError } from "./StoreErrors.js";
+import { StoreIntegrity } from "./StoreIntegrity.js";
+import type { PlanningLedger, PlanningView } from "./PlanningLedger.js";
 
 const logger = createLogger("view-store");
 
 export type ViewType = "reveal" | "constellation" | "path" | "risk" | "autonomy";
 
+const VIEW_TO_LEDGER: Record<ViewType, PlanningView> = {
+  reveal: "reveal",
+  constellation: "constellation",
+  path: "path",
+  risk: "risk",
+  autonomy: "autonomy",
+};
+
+export interface ViewStoreOptions {
+  ledger?: PlanningLedger;
+  integrity?: StoreIntegrity;
+  artifactId?: string;
+}
+
 export class ViewStore {
+  private ledger?: PlanningLedger;
+  private integrity?: StoreIntegrity;
+  private artifactId?: string;
+
   constructor(
     private basePath: string,
     private projectId: string,
     private viewType: ViewType,
-  ) {}
+    options?: ViewStoreOptions,
+  ) {
+    this.ledger = options?.ledger;
+    this.integrity = options?.integrity;
+    this.artifactId = options?.artifactId;
+  }
 
   private get viewPath(): string {
     return join(this.basePath, this.projectId, this.viewType);
@@ -60,12 +85,23 @@ export class ViewStore {
     }
   }
 
-  async write<T>(data: T): Promise<T> {
+  async write<T>(data: T, actorId?: string): Promise<T> {
     logger.info("Writing view data", { projectId: this.projectId, viewType: this.viewType });
     await this.ensureDirectory();
 
+    const fileName = this.dataFile.split("/").pop() ?? "";
+    const checksumBefore = await this.integrity?.getChecksum(this.viewType, fileName) ?? null;
+
     const tmpFile = `${this.dataFile}.tmp.${Date.now()}`;
     const jsonContent = JSON.stringify(data, null, 2);
+
+    let writeAction: "create" | "update" = "create";
+    try {
+      await access(this.dataFile);
+      writeAction = "update";
+    } catch {
+      // File doesn't exist, use create
+    }
 
     try {
       await writeFile(tmpFile, jsonContent, "utf-8");
@@ -83,6 +119,21 @@ export class ViewStore {
       );
     }
 
+    const checksumAfter = await this.integrity?.getChecksum(this.viewType, fileName) ?? null;
+
+    if (this.ledger) {
+      const artifactId = this.artifactId ?? `${this.viewType}-data`;
+      await this.ledger.appendEntry({
+        projectId: this.projectId,
+        view: VIEW_TO_LEDGER[this.viewType],
+        action: writeAction,
+        artifactId,
+        actorId: actorId ?? "system",
+        checksumBefore,
+        checksumAfter,
+      });
+    }
+
     logger.info("View data written", { projectId: this.projectId, viewType: this.viewType });
     return data;
   }
@@ -96,8 +147,11 @@ export class ViewStore {
     }
   }
 
-  async delete(): Promise<void> {
+  async delete(actorId?: string): Promise<void> {
     logger.info("Deleting view data", { projectId: this.projectId, viewType: this.viewType });
+
+    const fileName = this.dataFile.split("/").pop() ?? "";
+    const checksumBefore = await this.integrity?.getChecksum(this.viewType, fileName) ?? null;
 
     try {
       await rename(this.dataFile, `${this.dataFile}.deleted.${Date.now()}`);
@@ -111,6 +165,19 @@ export class ViewStore {
       }
     }
 
+    if (this.ledger) {
+      const artifactId = this.artifactId ?? `${this.viewType}-data`;
+      await this.ledger.appendEntry({
+        projectId: this.projectId,
+        view: VIEW_TO_LEDGER[this.viewType],
+        action: "delete",
+        artifactId,
+        actorId: actorId ?? "system",
+        checksumBefore,
+        checksumAfter: null,
+      });
+    }
+
     logger.info("View data deleted", { projectId: this.projectId, viewType: this.viewType });
   }
 }
@@ -119,6 +186,7 @@ export function createViewStore(
   basePath: string,
   projectId: string,
   viewType: ViewType,
+  options?: ViewStoreOptions,
 ): ViewStore {
-  return new ViewStore(basePath, projectId, viewType);
+  return new ViewStore(basePath, projectId, viewType, options);
 }
