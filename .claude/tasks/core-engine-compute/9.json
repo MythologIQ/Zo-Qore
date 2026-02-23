@@ -1,0 +1,12 @@
+{
+  "id": "9",
+  "subject": "qa-chaos-engineer",
+  "description": "You are joining the core-engine-compute team for chaos and resilience testing.\n\n**Your Task**: Compl",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": [],
+  "metadata": {
+    "_internal": true
+  },
+  "owner": "chaos-engineer"
+}

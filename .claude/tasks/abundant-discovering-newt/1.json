@@ -1,0 +1,12 @@
+{
+  "id": "1",
+  "subject": "Chaos Testing - Fault Injection & Resilience",
+  "description": "Implement chaos engineering tests for the inference engine.\n\nObjectives:\n1. Malformed IPC messages (truncated frames, invalid headers)\n2. Connection interrupts (mid-message drops, timeout handling)\n3. Load testing (high concurrency, queue saturation)\n4. Token boundary conditions (empty sequences, max vocab)\n\nUnblocked by: Task #3 (Tokenizer Integration) ✅\n\nDeliverables:\n- tests/chaos_resilience_test.rs (fault injection harness)\n- Backend graceful degradation under stress\n- All Section 4 Razor compliance (≤40 lines/function, ≤250 lines/file, ≤3 nesting)\n- All tests passing",
+  "activeForm": "Implementing chaos fault injection tests",
+  "owner": "chaos-tester",
+  "status": "completed",
+  "blocks": [
+    "2"
+  ],
+  "blockedBy": []
+}

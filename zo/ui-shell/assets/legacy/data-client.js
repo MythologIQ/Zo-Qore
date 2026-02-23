@@ -21,7 +21,6 @@ export class DataClient {
     try { this.connect(); } catch (err) { console.warn('[DataClient] WebSocket connect failed:', err); this.onConnection('disconnected'); }
     this.fetchHub();
     this.fetchSkills();
-    this.fetchProjects();
     this.fetchDashboard();
   }
 
@@ -250,8 +249,7 @@ export class DataClient {
     try {
       const res = await fetch('/api/projects');
       if (!res.ok) throw new Error(`Projects request failed (${res.status})`);
-      const payload = await res.json();
-      this.onProjects?.(payload);
+      return await res.json();
     } catch (error) {
       console.error('[DataClient] fetchProjects:', error);
     }
@@ -264,7 +262,7 @@ export class DataClient {
       body: JSON.stringify({ projectId, name })
     });
     if (!res.ok) throw new Error(`Rename failed (${res.status})`);
-    await this.fetchProjects();
+    await this.fetchDashboard();
     return res.json();
   }
 
@@ -275,7 +273,7 @@ export class DataClient {
       body: JSON.stringify({ projectId })
     });
     if (!res.ok) throw new Error(`Remove failed (${res.status})`);
-    await this.fetchProjects();
+    await this.fetchDashboard();
     return res.json();
   }
 
@@ -298,7 +296,7 @@ export class DataClient {
       body: JSON.stringify({ projectId })
     });
     if (!res.ok) throw new Error(`Unlink failed (${res.status})`);
-    await this.fetchProjects();
+    await this.fetchDashboard();
     return res.json();
   }
 
@@ -309,7 +307,7 @@ export class DataClient {
       body: JSON.stringify({ projectId, folderPath })
     });
     if (!res.ok) throw new Error(`Set folder failed (${res.status})`);
-    await this.fetchProjects();
+    await this.fetchDashboard();
     return res.json();
   }
 
@@ -320,7 +318,7 @@ export class DataClient {
       body: JSON.stringify({ name, folderPath, parentId: parentId || null })
     });
     if (!res.ok) throw new Error(`Create project failed (${res.status})`);
-    await this.fetchProjects();
+    await this.fetchDashboard();
     return res.json();
   }
 
@@ -331,9 +329,8 @@ export class DataClient {
       body: JSON.stringify({ projectId })
     });
     if (!res.ok) throw new Error(`Switch project failed (${res.status})`);
-    const payload = await res.json();
-    this.onProjects?.(payload);
-    return payload;
+    await this.fetchDashboard();
+    await this.fetchHub();
   }
 
   async fetchProjectFolders() {

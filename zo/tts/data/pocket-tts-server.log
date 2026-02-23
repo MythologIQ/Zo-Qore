@@ -1,0 +1,25 @@
+INFO:     Started server process [9357]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8200 (Press CTRL+C to quit)
+INFO:     127.0.0.1:55849 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45086 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:27765 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:39854 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:58879 - "POST /tts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25135 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:53723 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30665 - "POST /tts HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:64954 - "POST /tts HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:31234 - "POST /tts HTTP/1.1" 422 Unprocessable Entity
+INFO:     127.0.0.1:24989 - "GET /docs HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50822 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:48230 - "GET /openapi.json HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50234 - "POST /tts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55138 - "POST /tts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30125 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:30125 - "POST /tts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45142 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:45142 - "POST /tts HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38788 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:38788 - "POST /tts HTTP/1.1" 200 OK

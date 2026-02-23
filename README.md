@@ -1,6 +1,6 @@
 # Zo-Qore
 
-Zo-Qore is MythologIQ's Zo-native governance runtime.
+Zo-Qore is MythologIQ's Zo-native governance runtime with Victor Kernel integration.
 Current release: `Zo-Qore 1.0.0` (2026-02-13).
 
 ## Here's how you can get started with Zo-Qore.
@@ -165,9 +165,53 @@ graph TD
   E --> H[Ledger Manager]
   B --> I[Zo MCP Upstream]
   C --> J[Zo HTTP Upstream]
+  E --> K[Victor Kernel]
+  K --> L[Deterministic Rules]
+  K --> M[Task Management]
+  K --> N[Integration Hooks]
 ```
 
 Design guardrail: Zo-specific behavior stays in adapter layers under `zo/`. Core policy, risk, ledger, and contracts stay adapter-agnostic.
+
+## Victor Kernel Integration
+
+Victor is a safety-first virtual collaborator built on Agent OS primitives with **zero LLM dependency for core functions**. Victor enforces governance rules through deterministic evaluation, using LLM only when explicitly requested for complex reasoning.
+
+### Key Principles
+
+1. **Deterministic Processing** - Core functions execute without LLM involvement
+2. **Rule-Based Enforcement** - Honesty, Focus, Momentum, Safety rules
+3. **Clear Boundaries** - No autonomous action beyond configured rules
+4. **Optional LLM Integration** - LLM can be added for complex reasoning when requested
+
+### Victor's Operating Modes
+
+| Mode | Meaning | When Used |
+|-------|---------|-----------|
+| **Support** | Encouragement, reinforcement | Safe operations aligned with goals |
+| **Challenge** | Skeptical, evidence-based opposition | Actions requiring scrutiny |
+| **Mixed** | Strengths and flaws separated | Operations with trade-offs |
+| **Red Flag** | Faulty premise, high risk | Blocked or critical issues |
+
+### Victor API Endpoints
+
+- `GET /health` - Health check with mode status
+- `POST /api/victor/process` - Process request through rule engine
+- `POST /api/victor/stance` - Get stance determination for action
+- `GET /api/victor/mode` - Get current Victor mode
+- `GET /api/audit` - View audit log and rules
+
+## TTS Integration
+
+Zo-Qore includes TTS (Text-to-Speech) capabilities via Qwen3:
+
+- **zo/tts/server/** - Python TTS server with MCP helper
+- **zo/tts/data/** - Voice data and Qwen3 bridge scripts
+
+TTS features:
+- Real-time speech synthesis
+- Multiple voice support
+- Integration with Victor responses
 
 ## Repository Layout
 
@@ -181,6 +225,8 @@ Design guardrail: Zo-specific behavior stays in adapter layers under `zo/`. Core
 | `zo/mcp-proxy/`              | MCP governance adapter, forwarding, rate limiting, metrics            |
 | `zo/http-proxy/`             | Zo HTTP governance adapter for `/zo/ask`                              |
 | `zo/fallback/`               | SSH fallback governance wrapper, identity, watcher pipeline           |
+| `zo/victor/`                 | Victor Kernel - deterministic rule engine and task management         |
+| `zo/tts/`                    | TTS server and voice data for speech synthesis                        |
 | `deploy/systemd/`            | Service templates for runtime and fallback watcher                    |
 | `tests/`                     | Unit and integration validation                                       |
 | `docs/`                      | Phase plans, adversarial reviews, and substantiation artifacts        |

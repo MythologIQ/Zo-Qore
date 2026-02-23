@@ -143,6 +143,139 @@ export class LocalApiServer {
           return this.sendJson(res, 200, { events });
         }
 
+        // Victor chat endpoint
+        if (method === "POST" && url === "/victor/chat") {
+          this.ensureAuthorized(req, requireAuth, apiKey);
+          const body = await this.readJsonBody(req, this.options.maxBodyBytes ?? 64 * 1024);
+          const { message, history = [], model = "openrouter:z-ai/glm-5" } = body as {
+            message: string;
+            history?: Array<{ role: string; content: string }>;
+            model?: string;
+          };
+
+          if (!message) {
+            return this.sendError(res, 400, "BAD_JSON" as ApiErrorCode, "Message is required", traceId);
+          }
+
+          const VICTOR_SYSTEM = `You are Victor — a Personal Executive Ally, Strategic Challenger, and Confidant.
+
+Core Mandate: Keep the user honest, focused, and moving forward—without flattery, hallucination, or epistemic blur.
+
+Operating Principles:
+- Warm but not agreeable
+- Support never implies agreement
+- Disagreement never implies disrespect
+- Truth outranks comfort
+- Momentum matters, but not at the cost of reality
+- Bring receipts when you challenge
+
+Stance Declaration: For any substantive response, explicitly declare your stance:
+- Support Mode – encouragement, reinforcement, refinement
+- Challenge Mode – skeptical, evidence-based opposition
+- Mixed Mode – strengths and flaws clearly separated
+- Red Flag – faulty premise, high risk, or incorrect assumption
+
+You have access to these tools:
+- Gmail (read emails, search inbox)
+- Google Calendar (view events, check availability)
+- Google Drive (list files, read documents)
+
+When asked to check emails or calendar, USE THE TOOLS. Do not say you could check — actually check.`;
+
+          const token = process.env.ZO_CLIENT_IDENTITY_TOKEN;
+          if (!token) {
+            return this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, "ZO_CLIENT_IDENTITY_TOKEN not configured", traceId);
+          }
+
+          try {
+            const response = await fetch("https://api.zo.computer/zo/ask", {
+              method: "POST",
+              headers: {
+                "Authorization": token,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                input: message,
+                model_name: model,
+                system_prompt: VICTOR_SYSTEM,
+                conversation_history: history,
+              }),
+            });
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error(`[Victor Chat] Zo API error: ${response.status}`, errorText);
+              return this.sendError(res, response.status, "INTERNAL_ERROR" as ApiErrorCode, `Zo API error: ${response.status}`, traceId);
+            }
+
+            const data = await response.json() as { output?: string };
+            return this.sendJson(res, 200, { response: data.output || "No response received" });
+          } catch (err) {
+            console.error("[Victor Chat] Error:", err);
+            return this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, `Chat error: ${(err as Error).message}`, traceId);
+          }
+        }
+
+        // Victor models endpoint
+        if (method === "GET" && url === "/victor/models") {
+          this.ensureAuthorized(req, requireAuth, apiKey);
+          const token = process.env.ZO_CLIENT_IDENTITY_TOKEN;
+          if (!token) {
+            return this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, "ZO_CLIENT_IDENTITY_TOKEN not configured", traceId);
+          }
+
+          try {
+            const response = await fetch("https://api.zo.computer/v1/models", {
+              headers: {
+                "Authorization": token,
+              },
+            });
+
+            if (!response.ok) {
+              console.error(`[Victor Models] Zo API error: ${response.status}`);
+              // Fallback to hardcoded models
+              return this.sendJson(res, 200, {
+                models: [
+                  { id: "openrouter:z-ai/glm-5", name: "GLM-5", description: "Fast and capable" },
+                  { id: "openrouter:anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "High quality" },
+                  { id: "openrouter:openai/gpt-4o", name: "GPT-4o", description: "OpenAI flagship" },
+                ],
+              });
+            }
+
+            const data = await response.json() as { data?: Array<{ id: string; name?: string }> };
+            const models = (data.data || []).map((m: any) => ({
+              id: m.id,
+              name: m.name || m.id.split("/").pop() || m.id,
+              description: m.description,
+            }));
+            return this.sendJson(res, 200, { models });
+          } catch (err) {
+            console.error("[Victor Models] Error:", err);
+            // Fallback
+            return this.sendJson(res, 200, {
+              models: [
+                { id: "openrouter:z-ai/glm-5", name: "GLM-5", description: "Fast and capable" },
+                { id: "openrouter:anthropic/claude-3.5-sonnet", name: "Claude 3.5 Sonnet", description: "High quality" },
+              ],
+            });
+          }
+        }
+
+        // Logs endpoint
+        if (method === "GET" && url === "/logs") {
+          this.ensureAuthorized(req, requireAuth, apiKey);
+          return this.sendJson(res, 200, { logs: [], patterns: [] });
+        }
+
+        // Logs collect endpoint
+        if (method === "POST" && url === "/logs/collect") {
+          const body = await this.readJsonBody(req, this.options.maxBodyBytes ?? 64 * 1024);
+          // TODO: Persist logs to storage
+          console.log("[Log Entry]", JSON.stringify(body));
+          return this.sendJson(res, 200, { success: true });
+        }
+
         this.sendError(res, 404, "NOT_FOUND", "Route not found", traceId);
       } catch (error) {
         this.handleError(res, error, traceId);

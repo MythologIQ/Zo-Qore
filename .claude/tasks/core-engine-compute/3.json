@@ -1,0 +1,14 @@
+{
+  "id": "3",
+  "subject": "Tokenizer Integration - Wire llama-cpp-2 tokenize/detokenize functions",
+  "description": "Phase 3: Tokenizer Integration with Model Backend\n\n**Objective**: Connect the tokenizer to the llama-cpp-2 backend for encoding input and decoding output.\n\n**Tasks**:\n1. Review existing TokenizerWrapper structure and interface\n2. Integrate llama-cpp-2's tokenize() function for input encoding\n3. Integrate llama-cpp-2's detokenize() function for output decoding\n4. Update TokenizerWrapper::encode() to call real model tokenizer\n5. Update TokenizerWrapper::decode() to call real model detokenizer\n6. Handle tokenizer errors and edge cases (BOS/EOS tokens, special tokens)\n7. Add integration tests with real models\n\n**Dependencies**: Task 2 (llama-cpp-2 Backend)\n\n**Acceptance Criteria**:\n- TokenizerWrapper calls llama-cpp-2 tokenizer functions\n- Input text encodes to token IDs correctly\n- Token IDs decode back to text\n- Special tokens handled appropriately\n- All integration tests pass\n- End-to-end text→tokens→inference→tokens→text works",
+  "activeForm": "Wiring tokenizer integration",
+  "status": "in_progress",
+  "blocks": [
+    "4"
+  ],
+  "blockedBy": [
+    "2"
+  ],
+  "owner": "tokenizer-engineer"
+}

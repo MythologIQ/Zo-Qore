@@ -1,0 +1,23 @@
+[
+  {
+    "from": "ipc-engineer",
+    "text": "{\"type\":\"task_assignment\",\"taskId\":\"1\",\"subject\":\"IPC Server Loop - Read interprocess crate and implement socket handling\",\"description\":\"Phase 1: Core IPC Infrastructure\\n\\n**Objective**: Implement the IPC server foundation that receives inference requests and routes them to the handler.\\n\\n**Tasks**:\\n1. Read interprocess crate documentation (Unix sockets, named pipes, feature flags)\\n2. Verify current src/ipc/ structure exists and review existing handler.process()\\n3. Implement socket bind/accept loop in main.rs using tokio::net for cross-platform support\\n4. Wire accepted connections to existing handler.process() for request handling\\n5. Add basic error handling and connection cleanup\\n6. Ensure Section 4 Razor compliance (functions ≤40 lines, nesting ≤3)\\n\\n**Dependencies**: None (foundational)\\n\\n**Acceptance Criteria**:\\n- Socket server accepts connections\\n- Requests route to handler.process()\\n- No compiler errors\\n- Section 4 Razor compliance verified\\n- Ready for backend integration (Task 2)\",\"assignedBy\":\"ipc-engineer\",\"timestamp\":\"2026-02-18T20:58:10.199Z\"}",
+    "timestamp": "2026-02-18T20:58:10.199Z",
+    "color": "blue",
+    "read": false
+  },
+  {
+    "from": "backend-engineer",
+    "text": "{\"type\":\"task_assignment\",\"taskId\":\"7\",\"subject\":\"backend-engineer\",\"description\":\"You are joining the core-engine-compute team to integrate the llama-cpp-2 backend.\\n\\n**Your Task**: C\",\"assignedBy\":\"backend-engineer\",\"timestamp\":\"2026-02-18T20:59:05.830Z\"}",
+    "timestamp": "2026-02-18T20:59:05.830Z",
+    "color": "green",
+    "read": false
+  },
+  {
+    "from": "backend-engineer",
+    "text": "{\"type\":\"task_assignment\",\"taskId\":\"2\",\"subject\":\"llama-cpp-2 Backend - Wire feature flag and implement model loading\",\"description\":\"Phase 2: llama-cpp-2 Model Backend Integration\\n\\n**Objective**: Integrate real LLM inference via llama-cpp-2, implementing model loading and generation.\\n\\n**Tasks**:\\n1. Add llama-cpp-rs crate to Cargo.toml with feature flag `llama-cpp-backend`\\n2. Review existing src/engine/gguf/generator.rs structure\\n3. Implement actual model loading in gguf/generator.rs using llama-cpp-2\\n4. Implement generate() method that calls llama-cpp-2 inference engine\\n5. Wire InferenceEngine::run() to call generate() for GGUF models\\n6. Add token streaming support via llama-cpp-2's streaming interface\\n7. Test with mock token output validation\\n\\n**Dependencies**: Task 1 (IPC Server Loop)\\n\\n**Acceptance Criteria**:\\n- llama-cpp-2 crate integrated with feature flag\\n- Model loads from GGUF files\\n- generate() returns token stream\\n- InferenceEngine::run() successfully executes\\n- All tests pass\\n- Ready for tokenizer integration (Task 3)\",\"assignedBy\":\"backend-engineer\",\"timestamp\":\"2026-02-18T20:59:58.849Z\"}",
+    "timestamp": "2026-02-18T20:59:58.849Z",
+    "color": "green",
+    "read": false
+  }
+]

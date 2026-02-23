@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Victor - Tasks</title>
+  <link rel="icon" href="/failsafe-icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a1220; color: #e7efff; min-height: 100vh; }
+    
+    #login-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: linear-gradient(135deg, #0a1220 0%, #13223a 100%); }
+    .login-box { background: #13223a; border: 1px solid #2f4a70; border-radius: 12px; padding: 40px; text-align: center; max-width: 400px; width: 90%; }
+    .login-avatar { width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #5a9cf8); display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; font-size: 36px; font-weight: bold; color: white; }
+    .login-title { font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .login-subtitle { color: #7a8fb8; margin-bottom: 24px; }
+    .login-input { width: 100%; padding: 12px 16px; border: 1px solid #2f4a70; border-radius: 8px; background: #0f1b30; color: #e7efff; font-size: 16px; margin-bottom: 16px; outline: none; }
+    .login-input:focus { border-color: #5a9cf8; }
+    .login-btn { width: 100%; padding: 12px; background: linear-gradient(135deg, #1e3a5f, #5a9cf8); border: none; border-radius: 8px; color: white; font-size: 16px; font-weight: 600; cursor: pointer; }
+    .shake { animation: shake 0.5s ease-in-out; }
+    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-10px); } 75% { transform: translateX(10px); } }
+    
+    .victor-nav { display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #0d1a2d; border-bottom: 1px solid #2f4a70; }
+    .nav-brand { display: flex; align-items: center; gap: 12px; }
+    .nav-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #5a9cf8); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; }
+    .nav-title { font-size: 18px; font-weight: 600; }
+    .nav-links { display: flex; gap: 4px; }
+    .nav-link { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px; transition: all 0.2s; }
+    .nav-link:hover { background: #162d4a; color: #e7efff; }
+    .nav-link.active { background: #1e3a5f; color: #e7efff; }
+    .nav-logout { padding: 8px 16px; background: transparent; border: 1px solid #2f4a70; border-radius: 6px; color: #7a8fb8; font-size: 14px; cursor: pointer; }
+    .nav-logout:hover { background: #ef4444; border-color: #ef4444; color: white; }
+    
+    #app-container { display: none; }
+    .app-content { padding: 24px; max-width: 1200px; margin: 0 auto; }
+    
+    .card { background: #13223a; border: 1px solid #2f4a70; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
+    .card-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .card-title { font-size: 18px; font-weight: 600; }
+    
+    .btn { padding: 8px 16px; border-radius: 6px; border: none; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .btn-primary { background: #5a9cf8; color: white; }
+    .btn-primary:hover { background: #4a8ce8; }
+    
+    .task-item { display: flex; align-items: center; gap: 12px; padding: 16px; border-bottom: 1px solid #2f4a70; }
+    .task-item:last-child { border-bottom: none; }
+    .task-checkbox { width: 20px; height: 20px; cursor: pointer; }
+    .task-content { flex: 1; }
+    .task-text { font-weight: 500; }
+    .task-text.completed { text-decoration: line-through; color: #7a8fb8; }
+    .task-meta { font-size: 12px; color: #7a8fb8; margin-top: 4px; }
+    .task-delete { background: transparent; border: none; color: #7a8fb8; cursor: pointer; padding: 4px; }
+    .task-delete:hover { color: #ef4444; }
+    
+    .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; }
+    .badge-high { background: #ef444420; color: #ef4444; }
+    .badge-medium { background: #eab30820; color: #eab308; }
+    .badge-low { background: #22c55e20; color: #22c55e; }
+    
+    .new-task-form { display: flex; gap: 12px; margin-bottom: 20px; }
+    .new-task-input { flex: 1; padding: 12px 16px; border: 1px solid #2f4a70; border-radius: 8px; background: #0f1b30; color: #e7efff; font-size: 14px; outline: none; }
+    .new-task-input:focus { border-color: #5a9cf8; }
+    .new-task-select { padding: 12px 16px; border: 1px solid #2f4a70; border-radius: 8px; background: #0f1b30; color: #e7efff; font-size: 14px; outline: none; }
+    
+    .empty-state { text-align: center; padding: 40px; color: #7a8fb8; }
+    
+    @media (max-width: 768px) { .nav-links { display: none; } .new-task-form { flex-direction: column; } }
+  </style>
+</head>
+<body>
+  <div id="login-screen" style="display:none;">
+    <div class="login-box">
+      <div class="login-avatar">V</div>
+      <div class="login-title">Victor</div>
+      <div class="login-subtitle">Executive Ally</div>
+      <input type="password" id="password-input" class="login-input" placeholder="Enter password" autofocus>
+      <button class="login-btn" onclick="authenticate()">Access</button>
+    </div>
+  </div>
+  
+  <div id="app-container">
+    <nav class="victor-nav">
+      <div class="nav-brand">
+        <div class="nav-avatar">V</div>
+        <span class="nav-title">Victor</span>
+      </div>
+      <div class="nav-links">
+        <a href="index.html" class="nav-link"><span>⌂</span><span>Dashboard</span></a>
+        <a href="emails.html" class="nav-link"><span>✉</span><span>Emails</span></a>
+        <a href="calendar.html" class="nav-link"><span>📅</span><span>Calendar</span></a>
+        <a href="tasks.html" class="nav-link active"><span>☑</span><span>Tasks</span></a>
+        <a href="victor.html" class="nav-link"><span>💬</span><span>Chat</span></a>
+        <a href="victor-dashboard.html" class="nav-link"><span>⚙</span><span>Config</span></a>
+      </div>
+      <button class="nav-logout" onclick="logout()">Logout</button>
+    </nav>
+    
+    <div class="app-content">
+      <div class="new-task-form">
+        <input type="text" id="new-task-text" class="new-task-input" placeholder="Add a new task...">
+        <select id="new-task-priority" class="new-task-select">
+          <option value="low">Low</option>
+          <option value="medium" selected>Medium</option>
+          <option value="high">High</option>
+        </select>
+        <button class="btn btn-primary" onclick="addTask()">Add Task</button>
+      </div>
+      
+      <div class="card">
+        <div class="card-header">
+          <h1 class="card-title">Tasks</h1>
+          <span id="task-stats" style="color: #7a8fb8;"></span>
+        </div>
+        <div id="task-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="victor-app.js"></script>
+  <script>
+    const auth = sessionStorage.getItem('victor-auth');
+    if (auth === 'authenticated') {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app-container').style.display = 'block';
+      loadTasks();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app-container').style.display = 'none';
+    }
+    
+    document.getElementById('password-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') authenticate();
+    });
+    
+    document.getElementById('new-task-text').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') addTask();
+    });
+    
+    function loadTasks() {
+      const tasks = JSON.parse(localStorage.getItem('victor_tasks') || '[]');
+      const active = tasks.filter(t => !t.completed).length;
+      const completed = tasks.filter(t => t.completed).length;
+      document.getElementById('task-stats').textContent = `${active} active, ${completed} completed`;
+      
+      if (tasks.length === 0) {
+        document.getElementById('task-list').innerHTML = '<div class="empty-state">No tasks yet. Add one above!</div>';
+        return;
+      }
+      
+      // Sort: incomplete first, then by priority
+      const priorityOrder = { high: 0, medium: 1, low: 2 };
+      const sorted = [...tasks].sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+      });
+      
+      const html = sorted.map(t => `
+        <div class="task-item">
+          <input type="checkbox" class="task-checkbox" ${t.completed ? 'checked' : ''} onchange="toggleTask('${t.id}')">
+          <div class="task-content">
+            <div class="task-text ${t.completed ? 'completed' : ''}">${escapeHtml(t.text)}</div>
+            ${t.dueDate ? `<div class="task-meta">Due: ${t.dueDate}</div>` : ''}
+          </div>
+          <span class="badge badge-${t.priority}">${t.priority}</span>
+          <button class="task-delete" onclick="deleteTask('${t.id}')">✕</button>
+        </div>
+      `).join('');
+      
+      document.getElementById('task-list').innerHTML = html;
+    }
+    
+    function addTask() {
+      const text = document.getElementById('new-task-text').value.trim();
+      if (!text) return;
+      
+      const tasks = JSON.parse(localStorage.getItem('victor_tasks') || '[]');
+      const task = {
+        id: 'task-' + Date.now(),
+        text,
+        completed: false,
+        priority: document.getElementById('new-task-priority').value,
+        createdAt: new Date().toISOString()
+      };
+      
+      tasks.push(task);
+      localStorage.setItem('victor_tasks', JSON.stringify(tasks));
+      
+      document.getElementById('new-task-text').value = '';
+      loadTasks();
+    }
+    
+    function toggleTask(id) {
+      const tasks = JSON.parse(localStorage.getItem('victor_tasks') || '[]');
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        task.completed = !task.completed;
+        localStorage.setItem('victor_tasks', JSON.stringify(tasks));
+        loadTasks();
+      }
+    }
+    
+    function deleteTask(id) {
+      let tasks = JSON.parse(localStorage.getItem('victor_tasks') || '[]');
+      tasks = tasks.filter(t => t.id !== id);
+      localStorage.setItem('victor_tasks', JSON.stringify(tasks));
+      loadTasks();
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text || '';
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

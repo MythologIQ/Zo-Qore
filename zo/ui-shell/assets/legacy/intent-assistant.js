@@ -413,6 +413,21 @@ export class IntentAssistant {
     }
   }
 
+  async pollZoJob(jobId, maxWaitMs = 120000) {
+    const pollUrl = `/api/zo/ask/status/${jobId}`;
+    const interval = 2000;
+    const deadline = Date.now() + maxWaitMs;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, interval));
+      const res = await fetch(pollUrl);
+      if (!res.ok) throw new Error(`Poll error: ${res.status}`);
+      const data = await res.json();
+      if (data.status === 'done') return data.result;
+      if (data.status === 'error') throw new Error(data.error || 'Zo API error');
+    }
+    throw new Error('Response timed out — try again');
+  }
+
   applyTemplateDefaults(initial = false) {
     const key = String(this.elements.template?.value || 'fast');
     const template = TEMPLATE_DECKS[key] || TEMPLATE_DECKS.fast;
@@ -612,7 +627,7 @@ export class IntentAssistant {
         return;
       }
 
-      // Step 2: Forward to Zo (decision ALLOW or WARN)
+      // Step 2: Forward to Zo (async job pattern — submit then poll)
       const zoPayload = {
         input: promptText,
       };
@@ -626,7 +641,14 @@ export class IntentAssistant {
         throw new Error(zoResult?.error || zoResult?.message || `Zo request failed (${zoResponse.status})`);
       }
 
-      const assistantReply = this.extractAssistantReply(zoResult);
+      let assistantReply;
+      if (zoResult.jobId) {
+        this.appendChat('system', 'Processing...');
+        const jobResult = await this.pollZoJob(zoResult.jobId);
+        assistantReply = this.extractAssistantReply(jobResult);
+      } else {
+        assistantReply = this.extractAssistantReply(zoResult);
+      }
       this.appendChat('assistant', assistantReply);
       this.setFlowState('package', 'ready');
       this.setFlowState('chat', 'ready');

@@ -1,0 +1,12 @@
+{
+  "id": "1",
+  "subject": "IPC Server Loop - Read interprocess crate and implement socket handling",
+  "description": "Phase 1: Core IPC Infrastructure\n\n**Objective**: Implement the IPC server foundation that receives inference requests and routes them to the handler.\n\n**Tasks**:\n1. Read interprocess crate documentation (Unix sockets, named pipes, feature flags)\n2. Verify current src/ipc/ structure exists and review existing handler.process()\n3. Implement socket bind/accept loop in main.rs using tokio::net for cross-platform support\n4. Wire accepted connections to existing handler.process() for request handling\n5. Add basic error handling and connection cleanup\n6. Ensure Section 4 Razor compliance (functions ≤40 lines, nesting ≤3)\n\n**Dependencies**: None (foundational)\n\n**Acceptance Criteria**:\n- Socket server accepts connections\n- Requests route to handler.process()\n- No compiler errors\n- Section 4 Razor compliance verified\n- Ready for backend integration (Task 2)",
+  "activeForm": "Implementing IPC server loop",
+  "owner": "rust-engineer",
+  "status": "completed",
+  "blocks": [
+    "2"
+  ],
+  "blockedBy": []
+}

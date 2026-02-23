@@ -1,0 +1,3 @@
+{"id":"b6e413d6-515d-4d7e-8e17-79a04a782ef3","timestamp":"2025-08-29T16:14:36.950Z","instructions":null}
+{"record_type":"state"}
+{"type":"message","id":null,"role":"user","content":[{"type":"input_text","text":"<environment_context>\n  <cwd>d:\\Myth-TechForge\\MythologIQ\\Website</cwd>\n  <approval_policy>on-request</approval_policy>\n  <sandbox_mode>workspace-write</sandbox_mode>\n  <network_access>restricted</network_access>\n  <shell>powershell.exe</shell>\n</environment_context>"}]}

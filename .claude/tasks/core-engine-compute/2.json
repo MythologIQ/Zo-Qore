@@ -1,0 +1,14 @@
+{
+  "id": "2",
+  "subject": "llama-cpp-2 Backend - Wire feature flag and implement model loading",
+  "description": "Phase 2: llama-cpp-2 Model Backend Integration\n\n**Objective**: Integrate real LLM inference via llama-cpp-2, implementing model loading and generation.\n\n**Tasks**:\n1. Add llama-cpp-rs crate to Cargo.toml with feature flag `llama-cpp-backend`\n2. Review existing src/engine/gguf/generator.rs structure\n3. Implement actual model loading in gguf/generator.rs using llama-cpp-2\n4. Implement generate() method that calls llama-cpp-2 inference engine\n5. Wire InferenceEngine::run() to call generate() for GGUF models\n6. Add token streaming support via llama-cpp-2's streaming interface\n7. Test with mock token output validation\n\n**Dependencies**: Task 1 (IPC Server Loop)\n\n**Acceptance Criteria**:\n- llama-cpp-2 crate integrated with feature flag\n- Model loads from GGUF files\n- generate() returns token stream\n- InferenceEngine::run() successfully executes\n- All tests pass\n- Ready for tokenizer integration (Task 3)",
+  "activeForm": "Integrating llama-cpp-2 backend",
+  "owner": "rust-engineer",
+  "status": "completed",
+  "blocks": [
+    "3"
+  ],
+  "blockedBy": [
+    "1"
+  ]
+}

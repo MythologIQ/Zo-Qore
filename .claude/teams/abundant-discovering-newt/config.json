@@ -1,0 +1,47 @@
+{
+  "name": "abundant-discovering-newt",
+  "description": "Inference engine compute layer - unblocking stalled chaos testing and QA phases",
+  "createdAt": 1771456718598,
+  "leadAgentId": "team-lead@abundant-discovering-newt",
+  "leadSessionId": "af010f8c-8909-43c8-b7e6-3b5bb6c04927",
+  "members": [
+    {
+      "agentId": "team-lead@abundant-discovering-newt",
+      "name": "team-lead",
+      "agentType": "team-lead",
+      "model": "claude-haiku-4-5-20251001",
+      "joinedAt": 1771456718598,
+      "tmuxPaneId": "",
+      "cwd": "G:\\MythologIQ\\CORE\\core-runtime",
+      "subscriptions": []
+    },
+    {
+      "agentId": "chaos-tester@abundant-discovering-newt",
+      "name": "chaos-tester",
+      "agentType": "test-automator",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team to implement chaos engineering tests for the inference engine.\n\nTeam context:\n- Working directory: G:\\MythologIQ\\CORE\\core-runtime\n- Team file: ~/.claude/teams/abundant-discovering-newt/config.json\n- Task list location: ~/.claude/tasks/abundant-discovering-newt/\n\n**Your role**: Implement comprehensive fault injection and chaos tests.\n\n**Steps**:\n1. Read TaskList to see available tasks\n2. Claim Task #1 (Chaos Testing) by calling TaskUpdate with owner: \"chaos-tester\"\n3. Begin implementation:\n   - Review existing IPC server (src/ipc/server.rs) and backend (src/engine/gguf/backend.rs)\n   - Implement tests/chaos_resilience_test.rs with fault injection scenarios:\n     * Malformed IPC frames (truncated, invalid headers)\n     * Connection interrupts (mid-message drops, timeout handling)\n     * Load testing (high concurrency, queue saturation)\n     * Token boundary conditions (empty sequences, max vocab)\n   - Ensure all new code meets Section 4 Razor: ≤40 line functions, ≤250 line files, ≤3 nesting\n4. Run `cargo test --test chaos_resilience_test` to validate\n5. Mark task as completed when all chaos tests pass\n\nKeep responses concise and focus on implementation. Work autonomously—you will receive task assignments and feedback via TaskList updates.",
+      "color": "blue",
+      "planModeRequired": false,
+      "joinedAt": 1771456736313,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE\\core-runtime",
+      "subscriptions": [],
+      "backendType": "in-process"
+    },
+    {
+      "agentId": "qa-validator@abundant-discovering-newt",
+      "name": "qa-validator",
+      "agentType": "qa-expert",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team for final QA and validation.\n\nTeam context:\n- Working directory: G:\\MythologIQ\\CORE\\core-runtime\n- Team file: ~/.claude/teams/abundant-discovering-newt/config.json\n- Task list location: ~/.claude/tasks/abundant-discovering-newt/\n\n**Your role**: Conduct comprehensive validation and security audit.\n\n**Steps**:\n1. Read TaskList to monitor for Task #2 becoming available (will be unblocked when chaos tests complete)\n2. When Task #2 is unblocked, claim it by calling TaskUpdate with owner: \"qa-validator\"\n3. Execute comprehensive QA:\n   - Run full test suite: `cargo test` (all 400+ tests must pass)\n   - Code audit for Section 4 Razor compliance (≤40 lines/function, ≤250 lines/file, ≤3 nesting)\n   - Security boundary validation:\n     * IPC authentication and protocol compliance\n     * Filesystem isolation (read: models/, tokenizers/; write: temp/, cache/; deny else)\n     * Network denial (zero inbound/outbound ports)\n   - Performance baseline (capture throughput, latency, memory)\n   - Integration test with CLI client if applicable\n4. Document findings and ensure readiness for Meta-LEDGER Entry #17\n5. Mark task as completed when all validations pass\n\nStand by and monitor TaskList. Work autonomously—you will receive task assignments via TaskList updates.",
+      "color": "green",
+      "planModeRequired": false,
+      "joinedAt": 1771456741063,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE\\core-runtime",
+      "subscriptions": [],
+      "backendType": "in-process"
+    }
+  ]
+}

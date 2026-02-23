@@ -1,0 +1,11 @@
+{
+  "id": "3",
+  "subject": "chaos-tester",
+  "description": "You are joining the core-engine-compute team to implement chaos engineering tests for the inference ",
+  "status": "in_progress",
+  "blocks": [],
+  "blockedBy": [],
+  "metadata": {
+    "_internal": true
+  }
+}

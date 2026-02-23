@@ -1,0 +1,14 @@
+INFO:     Started server process [12890]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8201 (Press CTRL+C to quit)
+INFO:     127.0.0.1:58338 - "GET /health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:55553 - "GET /speakers HTTP/1.1" 200 OK
+INFO:     127.0.0.1:25034 - "GET /speakers HTTP/1.1" 200 OK
+Loaded as API: https://qwen-qwen3-tts.hf.space
+INFO:     127.0.0.1:50765 - "POST /voice-design HTTP/1.1" 200 OK
+INFO:     127.0.0.1:32095 - "POST /custom-voice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:34881 - "POST /custom-voice HTTP/1.1" 200 OK
+INFO:     127.0.0.1:64846 - "POST /custom-voice HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:24946 - "POST /custom-voice HTTP/1.1" 500 Internal Server Error
+INFO:     127.0.0.1:64166 - "GET /speakers HTTP/1.1" 200 OK

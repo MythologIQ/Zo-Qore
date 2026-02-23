@@ -1,0 +1,16 @@
+[
+  {
+    "from": "chaos-tester",
+    "text": "{\"type\":\"task_assignment\",\"taskId\":\"1\",\"subject\":\"Chaos Testing - Fault Injection & Resilience\",\"description\":\"Implement chaos engineering tests for the inference engine.\\n\\nObjectives:\\n1. Malformed IPC messages (truncated frames, invalid headers)\\n2. Connection interrupts (mid-message drops, timeout handling)\\n3. Load testing (high concurrency, queue saturation)\\n4. Token boundary conditions (empty sequences, max vocab)\\n\\nUnblocked by: Task #3 (Tokenizer Integration) ✅\\n\\nDeliverables:\\n- tests/chaos_resilience_test.rs (fault injection harness)\\n- Backend graceful degradation under stress\\n- All Section 4 Razor compliance (≤40 lines/function, ≤250 lines/file, ≤3 nesting)\\n- All tests passing\",\"assignedBy\":\"chaos-tester\",\"timestamp\":\"2026-02-18T23:19:05.396Z\"}",
+    "timestamp": "2026-02-18T23:19:05.396Z",
+    "color": "blue",
+    "read": true
+  },
+  {
+    "from": "team-lead",
+    "text": "🚀 **Team Restart: Ready to Unblock**\n\nThe inference engine is now unblocked:\n- ✅ Task #1 (IPC Server) & Task #2 (llama-cpp-2 Backend) both COMPLETE\n- ✅ Task #3 (Tokenizer Integration) COMPLETE—all 239 lines implemented with tests passing\n- 🟡 Task #4 (Chaos Testing) NOW UNBLOCKED—this is your task!\n\n**Immediate Next Steps:**\n1. Call `TaskList` to see your assigned task\n2. Claim Task #1 (Chaos Testing) if not auto-assigned\n3. Review the existing code:\n   - `src/ipc/server.rs` (197 lines)—connection handling, shutdown, pool limits\n   - `src/engine/gguf/backend.rs` (195 lines)—inference, tokenize/detokenize\n   - `src/engine/tokenizer.rs` (239 lines)—BOS/EOS, fallback stubs\n4. Implement `tests/chaos_resilience_test.rs` with:\n   - Malformed IPC frames, connection interrupts, load scenarios, token boundaries\n   - All code must meet Section 4 Razor: ≤40 line functions, ≤250 lines/file, ≤3 nesting\n\nThe file stubs already exist—implement the test harness and validate with `cargo test --test chaos_resilience_test`.\n\nWork autonomously. Report progress via task status updates.",
+    "summary": "Chaos testing task unblocked, ready to start",
+    "timestamp": "2026-02-18T23:19:06.748Z",
+    "read": true
+  }
+]

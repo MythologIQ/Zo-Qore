@@ -708,12 +708,10 @@ export class ProjectsPanel {
       const res = await fetch('/api/projects/brainstorm/ingest', { method: 'POST', body: fd });
       if (!res.ok) throw new Error(`Ingest failed (${res.status})`);
 
-      // Re-fetch constellation to reflect new thoughts
+      // Re-fetch dashboard to reflect new constellation data
       if (this.dataClient) {
         await this.dataClient.fetchConstellation(projectId);
-        // constellation data will flow via onConstellation → re-render
-        // But also re-fetch projects data so renderBrainstorm picks up changes
-        await this.dataClient.fetchProjects();
+        await this.dataClient.fetchDashboard();
       }
 
       this._recBlob = null;

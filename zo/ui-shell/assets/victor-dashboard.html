@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Victor Dashboard - Executive Ally</title>
+  <link rel="icon" href="/failsafe-icon.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Password Screen */
+    .auth-screen {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    .auth-box {
+      background: rgba(30, 41, 59, 0.8);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      text-align: center;
+    }
+    .auth-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+      font-size: 36px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 8px 32px rgba(59, 130, 246, 0.3);
+    }
+    .auth-title { color: white; font-size: 24px; font-weight: 600; margin-bottom: 8px; }
+    .auth-subtitle { color: #94a3b8; font-size: 14px; margin-bottom: 32px; }
+    .auth-input {
+      width: 100%;
+      padding: 14px 18px;
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      margin-bottom: 16px;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .auth-input:focus {
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+    .auth-input::placeholder { color: #64748b; }
+    .auth-error { color: #f87171; font-size: 13px; margin-bottom: 16px; display: none; }
+    .auth-error.visible { display: block; }
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      border: none;
+      border-radius: 10px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .auth-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(59, 130, 246, 0.4);
+    }
+    
+    /* Dashboard (hidden by default) */
+    .dashboard { display: none; }
+    .dashboard.visible { display: block; }
+    
+    body.dashboard-active {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: #e2e8f0;
+    }
+    
+    /* Header */
+    .header {
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      background: rgba(15, 23, 42, 0.5);
+      backdrop-filter: blur(8px);
+    }
+    .header-inner {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .header-left { display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 20px;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+    }
+    .header-title { color: white; font-size: 20px; font-weight: 600; }
+    .header-subtitle { color: #94a3b8; font-size: 12px; }
+    .status-badge {
+      padding: 6px 12px;
+      border-radius: 20px;
+      background: rgba(34, 197, 94, 0.1);
+      border: 1px solid rgba(34, 197, 94, 0.2);
+      color: #22c55e;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    
+    /* Tabs */
+    .tabs-container {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 16px 24px;
+    }
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+    }
+    .tab {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.1);
+      color: #94a3b8;
+      white-space: nowrap;
+    }
+    .tab:hover { background: rgba(51, 65, 85, 0.5); color: #e2e8f0; }
+    .tab.active {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 16px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Content */
+    .content {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .panel {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+    .panel-title { color: white; font-size: 18px; font-weight: 600; margin-bottom: 16px; }
+    
+    /* Status Grid */
+    .status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+    .status-card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .status-label { color: #94a3b8; font-size: 13px; margin-bottom: 4px; }
+    .status-value { font-size: 20px; font-weight: 700; }
+    .status-value.green { color: #22c55e; }
+    .status-value.red { color: #f87171; }
+    .status-value.blue { color: #3b82f6; }
+    
+    /* Quick Actions */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+    }
+    .action-card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-card:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+      background: rgba(30, 41, 59, 0.5);
+    }
+    .action-icon { font-size: 24px; margin-bottom: 8px; }
+    .action-title { color: white; font-weight: 500; margin-bottom: 4px; }
+    .action-desc { color: #94a3b8; font-size: 13px; }
+    
+    /* Tasks */
+    .task-list { display: flex; flex-direction: column; gap: 12px; }
+    .task-item {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+    .task-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .task-title { color: white; font-weight: 500; }
+    .task-status {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+    .task-status.pending { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+    .task-status.progress { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .task-status.planned { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+    .task-desc { color: #94a3b8; font-size: 14px; }
+    
+    /* Email */
+    .email-item {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      border-left: 4px solid;
+      margin-bottom: 12px;
+    }
+    .email-item.blue { border-left-color: #3b82f6; }
+    .email-item.yellow { border-left-color: #eab308; }
+    .email-header { display: flex; justify-content: space-between; margin-bottom: 8px; }
+    .email-subject { color: white; font-weight: 500; }
+    .email-time { color: #64748b; font-size: 12px; }
+    .email-preview { color: #94a3b8; font-size: 14px; margin-bottom: 8px; }
+    .email-link { color: #3b82f6; font-size: 14px; cursor: pointer; }
+    .email-link:hover { color: #60a5fa; }
+    
+    /* Calendar */
+    .event-item {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .event-icon { font-size: 20px; }
+    .event-info { flex: 1; }
+    .event-title { color: white; font-weight: 500; }
+    .event-time { color: #94a3b8; font-size: 14px; }
+    
+    /* Settings */
+    .setting-item {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 10px;
+      padding: 16px;
+      border: 1px solid rgba(255,255,255,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .setting-label { color: white; font-weight: 500; }
+    .setting-desc { color: #94a3b8; font-size: 13px; }
+    .setting-badge {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-family: monospace;
+    }
+    .setting-badge.green { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .setting-badge.red { background: rgba(248, 113, 113, 0.1); color: #f87171; }
+    .setting-badge.blue { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .setting-badge.yellow { background: rgba(234, 179, 8, 0.1); color: #eab308; }
+    .setting-badge.gray { background: rgba(148, 163, 184, 0.1); color: #94a3b8; }
+    
+    /* Section title */
+    .section-title { color: white; font-weight: 500; margin-bottom: 16px; margin-top: 24px; }
+    .section-title:first-child { margin-top: 0; }
+    
+    /* Logout button */
+    .logout-btn {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.2);
+      color: #f87171;
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .logout-btn:hover { background: rgba(248, 113, 113, 0.2); }
+    
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <!-- Auth Screen -->
+  <div class="auth-screen" id="auth-screen">
+    <div class="auth-box">
+      <div class="auth-avatar">V</div>
+      <h1 class="auth-title">Victor Dashboard</h1>
+      <p class="auth-subtitle">Enter password to access</p>
+      <input type="password" class="auth-input" id="password-input" placeholder="Password" autofocus>
+      <p class="auth-error" id="auth-error">Incorrect password</p>
+      <button class="auth-btn" onclick="authenticate()">Access Dashboard</button>
+    </div>
+  </div>
+  
+  <!-- Dashboard -->
+  <div class="dashboard" id="dashboard">
+    <!-- Add navigation bar -->
+    <nav class="victor-nav" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; background: #0d1a2d; border-bottom: 1px solid #2f4a70;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <div style="width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, #1e3a5f, #5a9cf8); display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">V</div>
+        <span style="font-size: 18px; font-weight: 600;">Victor</span>
+      </div>
+      <div style="display: flex; gap: 4px;">
+        <a href="index.html" style="padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px;">⌂ Dashboard</a>
+        <a href="emails.html" style="padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px;">✉ Emails</a>
+        <a href="calendar.html" style="padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px;">📅 Calendar</a>
+        <a href="tasks.html" style="padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px;">☑ Tasks</a>
+        <a href="victor.html" style="padding: 8px 12px; border-radius: 6px; color: #7a8fb8; text-decoration: none; font-size: 14px;">💬 Chat</a>
+        <a href="victor-dashboard.html" style="padding: 8px 12px; border-radius: 6px; background: #1e3a5f; color: #e7efff; text-decoration: none; font-size: 14px;">⚙ Config</a>
+      </div>
+      <button onclick="logout()" style="padding: 8px 16px; background: transparent; border: 1px solid #2f4a70; border-radius: 6px; color: #7a8fb8; font-size: 14px; cursor: pointer;">Logout</button>
+    </nav>
+    
+    <div class="header">
+      <div class="header-inner">
+        <div class="header-left">
+          <div class="avatar">V</div>
+          <div>
+            <h1 class="header-title">Victor</h1>
+            <p class="header-subtitle">Virtual Collaborator • Deterministic Mode</p>
+          </div>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <div class="status-badge">ONLINE</div>
+          <button class="logout-btn" onclick="logout()">Lock</button>
+        </div>
+      </div>
+    </div>
+    
+    <div class="tabs-container">
+      <div class="tabs">
+        <div class="tab active" data-tab="hub" onclick="setTab('hub')">
+          <span>⚡</span> Command Center
+        </div>
+        <div class="tab" data-tab="tasks" onclick="setTab('tasks')">
+          <span>📋</span> Task Management
+        </div>
+        <div class="tab" data-tab="email" onclick="setTab('email')">
+          <span>✉️</span> Email
+        </div>
+        <div class="tab" data-tab="calendar" onclick="setTab('calendar')">
+          <span>📅</span> Calendar
+        </div>
+        <div class="tab" data-tab="settings" onclick="setTab('settings')">
+          <span>⚙️</span> Settings
+        </div>
+      </div>
+    </div>
+    
+    <div class="content">
+      <!-- Hub Tab -->
+      <div id="tab-hub" class="tab-content">
+        <div class="panel">
+          <h2 class="panel-title">System Status</h2>
+          <div class="status-grid">
+            <div class="status-card">
+              <div class="status-label">Processing Mode</div>
+              <div class="status-value green">Deterministic</div>
+            </div>
+            <div class="status-card">
+              <div class="status-label">LLM Access</div>
+              <div class="status-value red">Disabled</div>
+            </div>
+            <div class="status-card">
+              <div class="status-label">Boundary Mode</div>
+              <div class="status-value blue">Protected</div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h2 class="panel-title">Quick Actions</h2>
+          <div class="actions-grid">
+            <div class="action-card" onclick="setTab('tasks')">
+              <div class="action-icon">📋</div>
+              <div class="action-title">Create Task</div>
+              <div class="action-desc">Add a new deterministic task</div>
+            </div>
+            <div class="action-card" onclick="setTab('email')">
+              <div class="action-icon">✉️</div>
+              <div class="action-title">Check Email</div>
+              <div class="action-desc">Review unread messages</div>
+            </div>
+            <div class="action-card" onclick="setTab('calendar')">
+              <div class="action-icon">📅</div>
+              <div class="action-title">View Calendar</div>
+              <div class="action-desc">Check upcoming events</div>
+            </div>
+            <div class="action-card" onclick="setTab('settings')">
+              <div class="action-icon">🛡️</div>
+              <div class="action-title">Review Rules</div>
+              <div class="action-desc">View governance boundaries</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Tasks Tab -->
+      <div id="tab-tasks" class="tab-content hidden">
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 class="panel-title" style="margin: 0;">Task Management</h2>
+            <button style="background: #3b82f6; border: none; color: white; padding: 10px 16px; border-radius: 8px; cursor: pointer; font-weight: 500;">+ Add Task</button>
+          </div>
+          <div class="task-list">
+            <div class="task-item">
+              <div class="task-header">
+                <div class="task-title">Review Zo-Qore Policy</div>
+                <span class="task-status pending">PENDING</span>
+              </div>
+              <div class="task-desc">Validate current governance rules against Victor principles</div>
+            </div>
+            <div class="task-item">
+              <div class="task-header">
+                <div class="task-title">Analyze AgentMesh Integration</div>
+                <span class="task-status progress">IN PROGRESS</span>
+              </div>
+              <div class="task-desc">Examine multi-agent governance protocols</div>
+            </div>
+            <div class="task-item">
+              <div class="task-header">
+                <div class="task-title">Plan Victor UI Refactor</div>
+                <span class="task-status planned">PLANNED</span>
+              </div>
+              <div class="task-desc">Design Alden-inspired interface with clear boundaries</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Email Tab -->
+      <div id="tab-email" class="tab-content hidden">
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 class="panel-title" style="margin: 0;">Email Management</h2>
+            <div style="color: #94a3b8; font-size: 14px;"><span style="color: #3b82f6; font-family: monospace;">3</span> unread</div>
+          </div>
+          <div class="email-item blue">
+            <div class="email-header">
+              <div class="email-subject">AgentMesh Integration Request</div>
+              <div class="email-time">10:32 AM</div>
+            </div>
+            <div class="email-preview">Reviewing trust protocols for multi-agent deployment...</div>
+            <span class="email-link">View →</span>
+          </div>
+          <div class="email-item yellow">
+            <div class="email-header">
+              <div class="email-subject">Zo-Qore Deployment Update</div>
+              <div class="email-time">Yesterday</div>
+            </div>
+            <div class="email-preview">Runtime service registered successfully. Ready for testing.</div>
+            <span class="email-link">View →</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Calendar Tab -->
+      <div id="tab-calendar" class="tab-content hidden">
+        <div class="panel">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <h2 class="panel-title" style="margin: 0;">Calendar</h2>
+            <button style="background: rgba(51, 65, 85, 0.5); border: 1px solid rgba(255,255,255,0.1); color: white; padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 13px;">Today</button>
+          </div>
+          <div class="event-item">
+            <div class="event-icon">📅</div>
+            <div class="event-info">
+              <div class="event-title">Victor Design Review</div>
+              <div class="event-time">2:00 PM - 3:00 PM</div>
+            </div>
+          </div>
+          <div class="event-item">
+            <div class="event-icon">📅</div>
+            <div class="event-info">
+              <div class="event-title">Zo-Qore Testing</div>
+              <div class="event-time">4:00 PM - 5:00 PM</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Settings Tab -->
+      <div id="tab-settings" class="tab-content hidden">
+        <div class="panel">
+          <h3 class="section-title">Victor Persona</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">Mode</div>
+              <div class="setting-desc">Current processing behavior</div>
+            </div>
+            <span class="setting-badge green">DETERMINISTIC</span>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">LLM Access</div>
+              <div class="setting-desc">Large language model integration</div>
+            </div>
+            <span class="setting-badge red">DISABLED</span>
+          </div>
+          
+          <h3 class="section-title">Integration Status</h3>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">Zo-Qore Runtime</div>
+              <div class="setting-desc">Governance system connection</div>
+            </div>
+            <span class="setting-badge blue">CONNECTED</span>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">AgentMesh</div>
+              <div class="setting-desc">Multi-agent coordination</div>
+            </div>
+            <span class="setting-badge yellow">PENDING</span>
+          </div>
+          <div class="setting-item">
+            <div>
+              <div class="setting-label">Qwen3 TTS</div>
+              <div class="setting-desc">Text-to-speech engine</div>
+            </div>
+            <span class="setting-badge gray">NOT CONFIGURED</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    // Use the SAME session key as all other Victor pages
+    const PASSWORD = 'AliceGrace';
+    const SESSION_KEY = 'victor-auth'; // Changed from 'victor-dashboard-auth' to share auth
+    
+    // Check existing auth
+    function checkAuth() {
+      const auth = sessionStorage.getItem(SESSION_KEY);
+      if (auth === 'authenticated') {
+        showDashboard();
+      }
+    }
+    
+    // Authenticate
+    function authenticate() {
+      const input = document.getElementById('password-input');
+      const error = document.getElementById('auth-error');
+      
+      if (input.value === PASSWORD) {
+        sessionStorage.setItem(SESSION_KEY, 'authenticated');
+        showDashboard();
+      } else {
+        error.classList.add('visible');
+        input.value = '';
+        input.focus();
+      }
+    }
+    
+    // Show dashboard
+    function showDashboard() {
+      document.getElementById('auth-screen').style.display = 'none';
+      document.getElementById('dashboard').classList.add('visible');
+      document.body.classList.add('dashboard-active');
+    }
+    
+    // Logout
+    function logout() {
+      sessionStorage.removeItem(SESSION_KEY);
+      location.reload();
+    }
+    
+    // Set tab
+    function setTab(tabId) {
+      // Update tab buttons
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabId);
+      });
+      
+      // Update content
+      document.querySelectorAll('.tab-content').forEach(content => {
+        content.classList.toggle('hidden', content.id !== `tab-${tabId}`);
+      });
+    }
+    
+    // Enter key on password
+    document.getElementById('password-input').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        authenticate();
+      }
+    });
+    
+    // Init
+    checkAuth();
+  </script>
+</body>
+</html>

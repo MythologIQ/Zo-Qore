@@ -1,0 +1,89 @@
+{
+  "name": "core-engine-compute",
+  "description": "Agent team implementing core engine compute layer: IPC server loop, llama-cpp-2 backend, tokenizer integration, chaos testing, and QA",
+  "createdAt": 1771448260866,
+  "leadAgentId": "team-lead@core-engine-compute",
+  "leadSessionId": "b76ebd1c-ac4f-4b9a-8d87-9b16857e1b44",
+  "members": [
+    {
+      "agentId": "team-lead@core-engine-compute",
+      "name": "team-lead",
+      "agentType": "team-lead",
+      "model": "claude-haiku-4-5-20251001",
+      "joinedAt": 1771448260866,
+      "tmuxPaneId": "",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": []
+    },
+    {
+      "agentId": "ipc-engineer@core-engine-compute",
+      "name": "ipc-engineer",
+      "agentType": "rust-engineer",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team to implement the IPC server loop.\n\n**Your Task**: Complete Task #1 - IPC Server Loop\n\nRead the full task description using TaskGet to understand requirements. Then:\n\n1. Review the Hearthlink CORE Runtime architecture in docs/ARCHITECTURE_PLAN.md and docs/architecture/CORE_RUNTIME_ARCHITECTURE.md\n2. Examine existing src/ipc/ module structure and handler.process() implementation\n3. Read interprocess crate documentation and evaluate socket options (Unix sockets vs named pipes for cross-platform)\n4. Implement socket bind/accept loop in main.rs using tokio::net\n5. Wire accepted connections to handler.process()\n6. Verify Section 4 Razor compliance (functions ≤40 lines, files ≤250 lines, nesting ≤3)\n7. Run tests to validate socket handling\n8. Mark task #1 as completed when done\n\nFocus on getting a working foundation that Task #2 (backend integration) can depend on.",
+      "color": "blue",
+      "planModeRequired": false,
+      "joinedAt": 1771448282096,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": [],
+      "backendType": "in-process"
+    },
+    {
+      "agentId": "backend-engineer@core-engine-compute",
+      "name": "backend-engineer",
+      "agentType": "rust-engineer",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team to integrate the llama-cpp-2 backend.\n\n**Your Task**: Complete Task #2 - llama-cpp-2 Backend\n\nWait for Task #1 (IPC Server Loop) to complete first. Then:\n\n1. Read task #2 description using TaskGet\n2. Add llama-cpp-rs crate to Cargo.toml with feature flag `llama-cpp-backend`\n3. Review existing src/engine/gguf/generator.rs structure\n4. Implement real model loading using llama-cpp-2\n5. Implement generate() method for text generation\n6. Wire InferenceEngine::run() to the generator\n7. Add token streaming support\n8. Verify Section 4 Razor compliance\n9. Run backend tests\n10. Mark task #2 as completed\n\nThis task unblocks Task #3 (Tokenizer Integration).",
+      "color": "green",
+      "planModeRequired": false,
+      "joinedAt": 1771448284153,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": [],
+      "backendType": "in-process"
+    },
+    {
+      "agentId": "tokenizer-engineer@core-engine-compute",
+      "name": "tokenizer-engineer",
+      "agentType": "rust-engineer",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team to integrate the tokenizer with the backend.\n\n**Your Task**: Complete Task #3 - Tokenizer Integration\n\nWait for Task #2 (llama-cpp-2 Backend) to complete first. Then:\n\n1. Read task #3 description using TaskGet\n2. Review TokenizerWrapper structure and current implementation\n3. Integrate llama-cpp-2's tokenize() for input encoding\n4. Integrate llama-cpp-2's detokenize() for output decoding\n5. Update TokenizerWrapper methods to use real model tokenizer\n6. Handle special tokens (BOS, EOS) correctly\n7. Add comprehensive integration tests\n8. Verify Section 4 Razor compliance\n9. Test end-to-end text→tokens→inference→tokens→text pipeline\n10. Mark task #3 as completed\n\nThis task unblocks Task #4 (Chaos Testing).",
+      "color": "yellow",
+      "planModeRequired": false,
+      "joinedAt": 1771448286139,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": [],
+      "backendType": "in-process"
+    },
+    {
+      "agentId": "qa-chaos-engineer@core-engine-compute",
+      "name": "qa-chaos-engineer",
+      "agentType": "chaos-engineer",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team for chaos and resilience testing.\n\n**Your Task**: Complete Task #4 - Chaos Engineer\n\nWait for Task #3 (Tokenizer Integration) to complete first. Then:\n\n1. Read task #4 description using TaskGet\n2. Create chaos test suite for fault injection scenarios:\n   - Malformed IPC messages\n   - Token stream interruptions\n   - Model loading failures\n   - Resource limit exceeded\n   - Connection drops/reconnects\n   - Concurrent request load\n3. Run all chaos tests and verify graceful degradation\n4. Document failure modes and recovery behavior\n5. Ensure no panics or unsafe behavior under stress\n6. Verify performance remains acceptable under load\n7. Mark task #4 as completed\n\nThis task unblocks Task #5 (Final QA).",
+      "color": "purple",
+      "planModeRequired": false,
+      "joinedAt": 1771448288161,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": [],
+      "backendType": "in-process"
+    },
+    {
+      "agentId": "qa-validator@core-engine-compute",
+      "name": "qa-validator",
+      "agentType": "qa-expert",
+      "model": "claude-opus-4-6",
+      "prompt": "You are joining the core-engine-compute team for final quality assurance.\n\n**Your Task**: Complete Task #5 - Quality Assurance\n\nWait for Task #4 (Chaos Testing) to complete first. Then:\n\n1. Read task #5 description using TaskGet\n2. Run full test suite (unit, integration, chaos tests)\n3. Verify Section 4 Razor compliance across all new code\n4. Audit for forbidden modules/dependencies\n5. Validate security boundaries (sandboxing, resource limits)\n6. Run performance benchmarks\n7. Check API completeness and documentation\n8. Prepare substantiation artifacts for META_LEDGER entry\n9. Generate final quality report\n10. Mark task #5 as completed\n\nThis completes the compute layer implementation and readies it for SUBSTANTIATE phase.",
+      "color": "orange",
+      "planModeRequired": false,
+      "joinedAt": 1771448289826,
+      "tmuxPaneId": "in-process",
+      "cwd": "G:\\MythologIQ\\CORE",
+      "subscriptions": [],
+      "backendType": "in-process"
+    }
+  ]
+}

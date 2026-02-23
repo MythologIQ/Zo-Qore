@@ -1,0 +1,13 @@
+{
+  "id": "4",
+  "subject": "Chaos Engineer - Fault injection and resilience testing",
+  "description": "Phase 4: Chaos & Resilience Testing\n\n**Objective**: Verify the compute layer handles failures gracefully and recovers properly.\n\n**Tasks**:\n1. Create chaos test suite for malformed IPC messages\n2. Implement token stream interruption scenarios\n3. Test model loading failures and fallback behavior\n4. Test resource limit exceeded conditions (memory, token count)\n5. Implement connection drop/reconnect scenarios\n6. Test concurrent request handling under load\n7. Verify no panics or unsafe behavior under stress\n\n**Dependencies**: Task 3 (Tokenizer Integration)\n\n**Acceptance Criteria**:\n- All chaos tests pass\n- No panics under adverse conditions\n- Graceful degradation documented\n- Error recovery verified\n- Performance under load acceptable",
+  "activeForm": "Running chaos engineering tests",
+  "status": "pending",
+  "blocks": [
+    "5"
+  ],
+  "blockedBy": [
+    "3"
+  ]
+}

@@ -1,0 +1,12 @@
+{
+  "id": "7",
+  "subject": "backend-engineer",
+  "description": "You are joining the core-engine-compute team to integrate the llama-cpp-2 backend.\n\n**Your Task**: C",
+  "owner": "rust-engineer",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": [],
+  "metadata": {
+    "_internal": true
+  }
+}

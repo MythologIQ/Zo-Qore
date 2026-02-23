@@ -1,0 +1,9 @@
+[
+  {
+    "from": "qa-chaos-engineer",
+    "text": "{\"type\":\"task_assignment\",\"taskId\":\"9\",\"subject\":\"qa-chaos-engineer\",\"description\":\"You are joining the core-engine-compute team for chaos and resilience testing.\\n\\n**Your Task**: Compl\",\"assignedBy\":\"qa-chaos-engineer\",\"timestamp\":\"2026-02-18T20:58:48.088Z\"}",
+    "timestamp": "2026-02-18T20:58:48.088Z",
+    "color": "purple",
+    "read": false
+  }
+]

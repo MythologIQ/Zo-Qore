@@ -521,11 +521,52 @@ document.getElementById('project-select')?.addEventListener('change', async (e) 
   }
 });
 
-// New project button
-document.getElementById('project-new')?.addEventListener('click', () => {
-  const name = prompt('Enter new project name:');
-  if (!name?.trim()) return;
-  dataClient.createProject(name.trim(), '', null).catch(err => console.error('[Projects] create failed:', err));
+// New project button — shows inline form with folder picker
+const projectNewBtn = document.getElementById('project-new');
+const projectCreateForm = document.getElementById('project-create-form');
+const projectCreateName = document.getElementById('project-create-name');
+const projectCreateFolder = document.getElementById('project-create-folder');
+const projectCreateSave = document.getElementById('project-create-save');
+const projectCreateCancel = document.getElementById('project-create-cancel');
+
+function hideCreateForm() {
+  if (projectCreateForm) projectCreateForm.style.display = 'none';
+  if (projectNewBtn) projectNewBtn.style.display = '';
+  if (projectCreateName) projectCreateName.value = '';
+}
+
+projectNewBtn?.addEventListener('click', async () => {
+  if (projectNewBtn) projectNewBtn.style.display = 'none';
+  if (projectCreateForm) projectCreateForm.style.display = 'flex';
+  if (projectCreateName) { projectCreateName.value = ''; projectCreateName.focus(); }
+  if (projectCreateFolder) {
+    projectCreateFolder.innerHTML = '<option value="">No folder</option><option value="" disabled>Loading...</option>';
+    try {
+      const folders = await dataClient.fetchProjectFolders();
+      projectCreateFolder.innerHTML = '<option value="">No folder</option>' +
+        folders.map(f => `<option value="${f}">${f.replace('/home/workspace/', '')}</option>`).join('');
+    } catch { projectCreateFolder.innerHTML = '<option value="">No folder</option>'; }
+  }
+});
+
+projectCreateSave?.addEventListener('click', async () => {
+  const name = projectCreateName?.value?.trim();
+  if (!name) { projectCreateName?.focus(); return; }
+  const folder = projectCreateFolder?.value || '';
+  projectCreateSave.disabled = true;
+  try {
+    await dataClient.createProject(name, folder, null);
+    await dataClient.fetchDashboard();
+  } catch (err) { console.error('[Projects] create failed:', err); }
+  projectCreateSave.disabled = false;
+  hideCreateForm();
+});
+
+projectCreateCancel?.addEventListener('click', hideCreateForm);
+
+projectCreateName?.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') projectCreateSave?.click();
+  if (e.key === 'Escape') hideCreateForm();
 });
 
 function setupActions() {

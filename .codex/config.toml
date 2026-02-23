@@ -1,0 +1,11 @@
+model = "gpt-5.3-codex"
+model_reasoning_effort = "medium"
+personality = "pragmatic"
+
+[core]
+telemetry = false
+
+[mcpServers]
+playwright = { command = "npx", args = ["-y","@modelcontextprotocol/server-playwright"], env = { ACTIVE_AGENT = "frontend-developer" } }
+lighthouse = { command = "npx", args = ["-y","@modelcontextprotocol/server-lighthouse"], env = { ACTIVE_AGENT = "frontend-developer" } }
+vector = { command = "npx", args = ["-y","@modelcontextprotocol/server-vector"], env = { VECTOR_DIR = "data/vector-store" } }

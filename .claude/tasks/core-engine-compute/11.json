@@ -1,0 +1,10 @@
+{
+  "id": "11",
+  "subject": "IPC Server Integration Tests - Validate platform-specific socket handling",
+  "description": "**Objective**: Build comprehensive integration test suite for IPC server to validate socket handling, framing, connection limits, and graceful shutdown.\n\n**Background**: ipc-engineer just completed the IPC server implementation in `src/ipc/server.rs` with:\n- Platform-specific transports (Windows named pipes, Unix domain sockets)\n- Length-prefixed 4-byte LE framing\n- Connection limiting via OwnedConnectionGuard\n- Graceful shutdown with ShutdownCoordinator\n\n**Tasks**:\n1. Create test module `src/ipc/server_tests.rs` (or inline tests in server.rs if <250 lines total)\n2. Write integration tests covering:\n   - Server startup and socket binding (both platforms)\n   - Client connection acceptance and teardown\n   - Single request/response roundtrip\n   - Concurrent connections within pool limits\n   - Connection rejection when pool is saturated\n   - Graceful shutdown (SIGTERM simulation with tokio::signal mocking)\n   - Malformed frame detection (oversized, corrupted length prefix)\n   - Clean reconnection after disconnect\n3. Verify Section 4 Razor compliance\n4. All tests pass, including edge cases\n\n**Acceptance Criteria**:\n- Integration test suite runs cleanly\n- Platform-specific behavior validated (or mocked appropriately)\n- Connection pool limits enforced\n- Graceful shutdown verified\n- Malformed input rejected gracefully\n- Ready for CI integration",
+  "activeForm": "Building IPC server integration tests",
+  "owner": "ipc-engineer",
+  "status": "completed",
+  "blocks": [],
+  "blockedBy": []
+}
