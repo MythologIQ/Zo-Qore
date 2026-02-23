@@ -1,0 +1,27 @@
+{
+  "name": "@mythologiq/qore-contracts",
+  "version": "1.0.0",
+  "description": "Shared schemas, runtime interfaces, and action classifications for Zo-Qore",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MythologIQ/Zo-Qore.git",
+    "directory": "contracts"
+  }
+}

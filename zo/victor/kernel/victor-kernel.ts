@@ -5,7 +5,7 @@
  * LLM is only used when explicitly requested for complex reasoning.
  */
 
-import { VICTOR_RULES, evaluateRules, VictorMode } from './victor-rules';
+import { VICTOR_RULES, evaluateRules, VictorMode, type RuleEvaluationResult } from './victor-rules.js';
 
 export interface VictorRequest {
   id: string;
@@ -61,7 +61,7 @@ export class VictorKernel {
       mode: evaluation.mode,
       allowed: evaluation.overallAllowed,
       requiresReview: evaluation.requiresReview,
-      ruleEvaluations: evaluation.rules.map(r => ({
+      ruleEvaluations: evaluation.rules.map((r: RuleEvaluationResult) => ({
         id: r.id,
         name: r.name,
         decision: r.decision
@@ -246,7 +246,7 @@ export class VictorKernel {
 
   private async listRules(params: any, userId: string) {
     return {
-      rules: VICTOR_RULES.map(r => ({
+      rules: VICTOR_RULES.map((r: { id: string; name: string; category: string }) => ({
         id: r.id,
         name: r.name,
         category: r.category

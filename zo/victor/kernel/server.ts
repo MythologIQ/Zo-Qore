@@ -6,13 +6,14 @@
  */
 
 import { Hono } from 'hono';
-import { victorKernel } from './victor-kernel';
+import type { Context } from 'hono';
+import { victorKernel } from './victor-kernel.js';
 
 const app = new Hono();
 const PORT = process.env.PORT ? parseInt(process.env.PORT) : 9500;
 
 // Health check
-app.get('/health', (c) => {
+app.get('/health', (c: Context) => {
   return c.json({
     service: 'victor-kernel',
     status: 'healthy',
@@ -23,7 +24,7 @@ app.get('/health', (c) => {
 });
 
 // Victor API endpoints
-app.post('/api/victor/process', async (c) => {
+app.post('/api/victor/process', async (c: Context) => {
   try {
     const request = await c.req.json();
     
@@ -44,7 +45,7 @@ app.post('/api/victor/process', async (c) => {
 });
 
 // Task management endpoints (deterministic)
-app.post('/api/tasks', async (c) => {
+app.post('/api/tasks', async (c: Context) => {
   const request = {
     id: crypto.randomUUID(),
     userId: c.req.header('x-user-id') || 'anonymous',
@@ -57,7 +58,7 @@ app.post('/api/tasks', async (c) => {
   return c.json(result);
 });
 
-app.get('/api/tasks', async (c) => {
+app.get('/api/tasks', async (c: Context) => {
   const request = {
     id: crypto.randomUUID(),
     userId: c.req.header('x-user-id') || 'anonymous',
@@ -71,7 +72,7 @@ app.get('/api/tasks', async (c) => {
 });
 
 // Governance endpoints
-app.get('/api/victor/mode', async (c) => {
+app.get('/api/victor/mode', async (c: Context) => {
   const request = {
     id: crypto.randomUUID(),
     userId: c.req.header('x-user-id') || 'system',
@@ -84,7 +85,7 @@ app.get('/api/victor/mode', async (c) => {
   return c.json(result);
 });
 
-app.post('/api/victor/stance', async (c) => {
+app.post('/api/victor/stance', async (c: Context) => {
   const request = {
     id: crypto.randomUUID(),
     userId: c.req.header('x-user-id') || 'system',
@@ -98,7 +99,7 @@ app.post('/api/victor/stance', async (c) => {
 });
 
 // Audit log
-app.get('/api/audit', async (c) => {
+app.get('/api/audit', async (c: Context) => {
   const request = {
     id: crypto.randomUUID(),
     userId: c.req.header('x-user-id') || 'system',
@@ -111,12 +112,5 @@ app.get('/api/audit', async (c) => {
   return c.json(result);
 });
 
-// Start server
-console.log('Victor Kernel Service starting...');
-console.log(`Port: ${PORT}`);
-console.log('Mode: Deterministic (no LLM)');
-
-Bun.serve({
-  fetch: app.fetch,
-  port: PORT
-});
+// Export for use with existing server infrastructure
+export { app as victorApp, PORT as VICTOR_PORT };

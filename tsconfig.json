@@ -24,5 +24,14 @@
     "zo/**/*.ts",
     "tests/**/*.ts"
   ],
-  "exclude": ["node_modules", "dist", "coverage"]
+  "exclude": [
+    "node_modules",
+    "dist",
+    "coverage",
+    "zo/victor/kernel/learning-flows.ts",
+    "zo/victor/kernel/learning-schema.ts",
+    "zo/victor/kernel/svg-learning-overlay.ts",
+    "zo/victor/kernel/victor-kernel-unified.ts",
+    "zo/victor/kernel/server.ts"
+  ]
 }

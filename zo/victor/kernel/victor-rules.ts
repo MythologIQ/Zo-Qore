@@ -183,18 +183,28 @@ export function getVictorMode(context: RuleContext): VictorMode {
 }
 
 /**
- * Evaluate all applicable rules and return comprehensive decision
+ * Result of evaluating a single rule
  */
-export function evaluateRules(context: RuleContext): {
+export interface RuleEvaluationResult {
+  id: string;
+  name: string;
+  decision: RuleDecision;
+}
+
+/**
+ * Result of evaluateRules function
+ */
+export interface RulesEvaluationResult {
   mode: VictorMode;
-  rules: Array<{
-    id: string;
-    name: string;
-    decision: RuleDecision;
-  }>;
+  rules: RuleEvaluationResult[];
   overallAllowed: boolean;
   requiresReview: boolean;
-} {
+}
+
+/**
+ * Evaluate all applicable rules and return comprehensive decision
+ */
+export function evaluateRules(context: RuleContext): RulesEvaluationResult {
   const relevantRules = VICTOR_RULES.filter(rule =>
     rule.appliesTo.includes(context.action)
   );

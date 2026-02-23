@@ -504,6 +504,7 @@ export async function tribunalGate(
       riskLevel: "L1",
       requiresJudgeReview: false,
       timestamp: new Date().toISOString(),
+      persona,
     };
   }
 
