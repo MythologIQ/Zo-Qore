@@ -1,11 +1,11 @@
 import { readFile, writeFile, mkdir, access, rm } from "fs/promises";
 import { join } from "path";
-import { createLogger } from "./Logger.js";
-import { PlanningStoreError } from "./StoreErrors.js";
-import { StoreIntegrity } from "./StoreIntegrity.js";
-import { VoidStore, createVoidStore, VoidStoreOptions } from "./VoidStore.js";
-import { ViewStore, createViewStore, ViewType, ViewStoreOptions } from "./ViewStore.js";
-import { PlanningLedger, createPlanningLedger } from "./PlanningLedger.js";
+import { createLogger } from "./Logger";
+import { PlanningStoreError } from "./StoreErrors";
+import { StoreIntegrity } from "./StoreIntegrity";
+import { VoidStore, createVoidStore, VoidStoreOptions } from "./VoidStore";
+import { ViewStore, createViewStore, ViewType, ViewStoreOptions } from "./ViewStore";
+import { PlanningLedger, createPlanningLedger } from "./PlanningLedger";
 import type {
   QoreProject,
   PipelineState,
@@ -98,7 +98,7 @@ export class ProjectStore {
       artifactId: this.projectId,
       actorId: data.createdBy,
       checksumBefore: null,
-      checksumAfter: await this.integrity.getChecksum("project.json", "project.json"),
+      checksumAfter: await this.integrity.getChecksum(this.projectId, "project.json"),
       payload: { name: data.name },
     });
 
@@ -137,7 +137,7 @@ export class ProjectStore {
       throw new PlanningStoreError("PROJECT_NOT_FOUND", undefined, { projectId: this.projectId });
     }
 
-    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
+    const checksumBefore = await this.integrity.getChecksum(this.projectId, "project.json");
 
     const updated = {
       ...project,
@@ -148,7 +148,7 @@ export class ProjectStore {
     await writeFile(this.projectFile, JSON.stringify(updated, null, 2), "utf-8");
     await this.integrity.updateChecksums(this.projectId);
 
-    const checksumAfter = await this.integrity.getChecksum("project.json", "project.json");
+    const checksumAfter = await this.integrity.getChecksum(this.projectId, "project.json");
 
     await this.ledger.appendEntry({
       projectId: this.projectId,
@@ -167,7 +167,7 @@ export class ProjectStore {
   async delete(actorId?: string): Promise<void> {
     logger.info("Deleting project", { projectId: this.projectId });
 
-    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
+    const checksumBefore = await this.integrity.getChecksum(this.projectId, "project.json");
 
     await rm(this.projectPath, { recursive: true, force: true });
 
@@ -215,7 +215,7 @@ export class ProjectStore {
       throw new PlanningStoreError("PROJECT_NOT_FOUND", undefined, { projectId: this.projectId });
     }
 
-    const checksumBefore = await this.integrity.getChecksum("project.json", "project.json");
+    const checksumBefore = await this.integrity.getChecksum(this.projectId, "project.json");
 
     project.pipelineState[view] = state;
     project.updatedAt = new Date().toISOString();
@@ -223,7 +223,7 @@ export class ProjectStore {
     await writeFile(this.projectFile, JSON.stringify(project, null, 2), "utf-8");
     await this.integrity.updateChecksums(this.projectId);
 
-    const checksumAfter = await this.integrity.getChecksum("project.json", "project.json");
+    const checksumAfter = await this.integrity.getChecksum(this.projectId, "project.json");
 
     await this.ledger.appendEntry({
       projectId: this.projectId,

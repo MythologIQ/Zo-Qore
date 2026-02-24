@@ -1,10 +1,10 @@
 import { readFile, writeFile, mkdir } from "fs/promises";
 import { join } from "path";
-import { createLogger } from "./Logger.js";
-import { PlanningStoreError } from "./StoreErrors.js";
-import { StoreIntegrity } from "./StoreIntegrity.js";
+import { createLogger } from "./Logger";
+import { PlanningStoreError } from "./StoreErrors";
+import { StoreIntegrity } from "./StoreIntegrity";
 import type { VoidThought } from "@mythologiq/qore-contracts";
-import type { PlanningLedger } from "./PlanningLedger.js";
+import type { PlanningLedger } from "./PlanningLedger";
 
 const logger = createLogger("void-store");
 

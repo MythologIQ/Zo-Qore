@@ -1,8 +1,8 @@
 import { createHash } from "crypto";
 import { readFile, writeFile, readdir, stat } from "fs/promises";
 import { join } from "path";
-import { createLogger, planningLogger } from "./Logger.js";
-import { PlanningStoreError } from "./StoreErrors.js";
+import { createLogger, planningLogger } from "./Logger";
+import { PlanningStoreError } from "./StoreErrors";
 
 interface ChecksumEntry {
   file: string;
@@ -57,7 +57,7 @@ export class StoreIntegrity {
           const filePath = join(subdirPath, file);
           try {
             const entry = await this.computeFileHash(filePath);
-            entry.file = file;
+            entry.file = `${subdir}/${file}`;
             entries.push(entry);
           } catch {
             logger.warn("Skipping file during checksum", { file: filePath });
@@ -111,7 +111,7 @@ export class StoreIntegrity {
     }
 
     for (const entry of checksums.files) {
-      const filePath = join(projectPath, entry.file.split("/")[0], entry.file);
+      const filePath = join(projectPath, entry.file);
 
       let currentEntry: ChecksumEntry;
       try {
@@ -133,7 +133,7 @@ export class StoreIntegrity {
     }
 
     const valid = errors.length === 0;
-    logger.info("Integrity check complete", { projectId, valid, errorCount: errors.length });
+    logger.info("Integrity check complete", { projectId, valid, errorCount: errors.length, errors });
 
     return { valid, errors };
   }

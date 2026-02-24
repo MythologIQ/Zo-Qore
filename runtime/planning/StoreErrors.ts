@@ -1,4 +1,4 @@
-import { RuntimeError, RuntimeErrorCode } from "../service/errors.js";
+import { RuntimeError, RuntimeErrorCode } from "../service/errors";
 
 export type PlanningStoreErrorCode =
   | "PROJECT_NOT_FOUND"

@@ -975,7 +975,7 @@ TASK 11D.1: Planning Backup Integration
   Design:
     - Existing npm run zo:backup already snapshots ledger/replay/auth
     - Extend to include .qore/projects/ in backup snapshots
-    - Restore flow restores planning data and verifies integrity
+    - Restore flow restores planning data with valid checksums
     - Backup includes checksums.json for post-restore verification
 
   Verification:
@@ -1323,7 +1323,7 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 - [x] ProjectStore delegates to VoidStore/ViewStore
 - [x] All writes call StoreIntegrity.updateChecksums()
 - [x] VoidStore appends to thoughts.jsonl (never overwrites)
-- [x] ViewStore atomically replaces JSON via write-tmp-rename
+- [x] ViewStore atomically replaces <view>.json via write-tmp-rename
 - [x] Base path configurable via QORE_PROJECTS_DIR env
 
 **Next Steps (TASK 11A.3):**
@@ -1430,3 +1430,52 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 **Files Modified:**
 - `runtime/planning/IntegrityChecker.ts` (new)
 - `runtime/planning/index.ts` (added IntegrityChecker exports)
+
+---
+
+### Session 5: 2026-02-23 22:20 EST (Phase 11A - TASK 11A.5)
+
+**Tasks Completed:**
+
+1. **TASK 11A.5: Tests and Gate** ✅ COMPLETE
+   - Verified existing test files in `tests/planning/`:
+     - `void-store.test.ts` - VoidStore operations
+     - `view-store.test.ts` - ViewStore operations
+     - `project-store.test.ts` - ProjectStore CRUD
+     - `store-integrity.test.ts` - Checksum generation/verification
+     - `planning-ledger.test.ts` - Ledger append/query/verify
+     - `integrity-checker.test.ts` - PL-INT/PL-TRC checks
+     - `planning-integration.test.ts` - End-to-end integration
+
+2. **Verified Gate Criteria:**
+   - ✅ npm run typecheck — zero errors
+   - ✅ npm run lint — zero violations
+   - ✅ npm test — 531 tests pass (82 new planning tests)
+   - ✅ npm run build — succeeds
+
+3. **Phase 11A Complete:**
+   - All 5 tasks verified:
+     - TASK 11A.1: Planning Data Contracts ✅
+     - TASK 11A.2: Project Store Implementation ✅
+     - TASK 11A.3: Ledger Integration ✅
+     - TASK 11A.4: Integrity Check Runner ✅
+     - TASK 11A.5: Tests and Gate ✅
+
+**Gate Results:**
+- Typecheck: PASS (zero errors)
+- Lint: PASS (zero violations)
+- Tests: PASS (531/531)
+- Build: PASS
+
+**Next Steps (Phase 11B):**
+- TASK 11B.1: Planning Policy Definitions
+- TASK 11B.2: Planning DecisionRequest Construction
+- TASK 11B.3: Risk Engine Planning Hooks
+- TASK 11B.4: Victor Planning Review
+
+**Session Complete: Phase 11A Seal Ready**
+- All planning contracts implemented in `contracts/src/planning/`
+- All store implementations in `runtime/planning/`
+- All integrity checks functional
+- Ledger integration complete
+- 82 new tests covering all planning operations

@@ -1,9 +1,9 @@
 import { readFile, writeFile, mkdir, rename, access } from "fs/promises";
 import { join } from "path";
-import { createLogger } from "./Logger.js";
-import { PlanningStoreError } from "./StoreErrors.js";
-import { StoreIntegrity } from "./StoreIntegrity.js";
-import type { PlanningLedger, PlanningView } from "./PlanningLedger.js";
+import { createLogger } from "./Logger";
+import { PlanningStoreError } from "./StoreErrors";
+import { StoreIntegrity } from "./StoreIntegrity";
+import type { PlanningLedger, PlanningView } from "./PlanningLedger";
 
 const logger = createLogger("view-store");
 

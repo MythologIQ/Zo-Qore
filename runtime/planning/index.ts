@@ -1,32 +1,32 @@
 export {
   PlanningStoreError,
   type PlanningStoreErrorCode,
-} from "./StoreErrors.js";
+} from "./StoreErrors";
 
-export { createLogger, planningLogger } from "./Logger.js";
+export { createLogger, planningLogger } from "./Logger";
 
 export {
   StoreIntegrity,
   createStoreIntegrity,
-} from "./StoreIntegrity.js";
+} from "./StoreIntegrity";
 
 export {
   VoidStore,
   createVoidStore,
-} from "./VoidStore.js";
+} from "./VoidStore";
 
 export {
   ViewStore,
   createViewStore,
   type ViewType,
-} from "./ViewStore.js";
+} from "./ViewStore";
 
 export {
   ProjectStore,
   createProjectStore,
   listProjects,
   DEFAULT_PROJECTS_DIR,
-} from "./ProjectStore.js";
+} from "./ProjectStore";
 
 export {
   PlanningLedger,
@@ -35,7 +35,7 @@ export {
   type PlanningAction,
   type PlanningLedgerEntry,
   type LedgerSummary,
-} from "./PlanningLedger.js";
+} from "./PlanningLedger";
 
 export {
   IntegrityChecker,
@@ -43,4 +43,4 @@ export {
   type CheckId,
   type CheckResult,
   type IntegrityCheckSummary,
-} from "./IntegrityChecker.js";
+} from "./IntegrityChecker";

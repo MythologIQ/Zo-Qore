@@ -1,7 +1,7 @@
 import { readFile, writeFile, mkdir, readdir } from "fs/promises";
 import { join } from "path";
-import { createLogger } from "./Logger.js";
-import { PlanningStoreError } from "./StoreErrors.js";
+import { createLogger } from "./Logger";
+import { PlanningStoreError } from "./StoreErrors";
 
 export type PlanningView =
   | "void"
