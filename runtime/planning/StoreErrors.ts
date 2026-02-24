@@ -10,7 +10,10 @@ export type PlanningStoreErrorCode =
   | "INVALID_ARTIFACT_DATA"
   | "WRITE_FAILED"
   | "READ_FAILED"
-  | "CHECKSUM_MISMATCH";
+  | "CHECKSUM_MISMATCH"
+  | "EXPORT_FAILED"
+  | "VALIDATION_FAILED"
+  | "QUERY_FAILED";
 
 const errorMessages: Record<PlanningStoreErrorCode, string> = {
   PROJECT_NOT_FOUND: "Project not found",
@@ -23,6 +26,9 @@ const errorMessages: Record<PlanningStoreErrorCode, string> = {
   WRITE_FAILED: "Failed to write data",
   READ_FAILED: "Failed to read data",
   CHECKSUM_MISMATCH: "Checksum mismatch detected",
+  EXPORT_FAILED: "Failed to export project data",
+  VALIDATION_FAILED: "Validation failed",
+  QUERY_FAILED: "Query processing failed",
 };
 
 export class PlanningStoreError extends RuntimeError {

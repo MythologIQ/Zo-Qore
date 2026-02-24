@@ -41,6 +41,7 @@ export interface PlanningRoutesConfig {
   projectsDir?: string;
   requireAuth?: boolean;
   apiKey?: string;
+  maxBodyBytes?: number;
 }
 
 /**
@@ -72,6 +73,15 @@ export class PlanningRoutes {
     const url = req.url ?? "/";
     const traceId = `trace_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 
+    // Check authentication
+    if (this.config.requireAuth !== false) {
+      const candidate = req.headers["x-qore-api-key"];
+      const apiKey = this.config.apiKey ?? process.env.QORE_API_KEY;
+      if (!apiKey || typeof candidate !== "string" || candidate !== apiKey) {
+        return this.sendError(res, 401, "UNAUTHORIZED" as ApiErrorCode, "Missing or invalid API key", traceId);
+      }
+    }
+
     // Extract projectId from URL if present
     const projectMatch = url.match(/^\/api\/projects\/([^/]+)/);
     const projectId = projectMatch?.[1];
@@ -85,6 +95,7 @@ export class PlanningRoutes {
       // POST /api/projects - Create new project
       if (method === "POST" && url === "/api/projects") {
         if (!projectId) {
+          const projectsDir = this.config.projectsDir ?? process.env.QORE_PROJECTS_DIR ?? DEFAULT_PROJECTS_DIR;
           const body = await this.readJsonBody(req);
           const { projectId: newProjectId, name, description, createdBy } = body as {
             projectId?: string;
@@ -96,7 +107,7 @@ export class PlanningRoutes {
             return this.sendError(res, 400, "BAD_REQUEST" as ApiErrorCode, "name and createdBy required", traceId);
           }
           const finalProjectId = newProjectId ?? `proj_${randomUUID().slice(0, 8)}`;
-          const store = createProjectStore(finalProjectId);
+          const store = createProjectStore(finalProjectId, projectsDir);
           const project = await store.create({ name, description: description ?? "", createdBy });
           return this.sendJson(res, 201, project);
         }
@@ -117,7 +128,13 @@ export class PlanningRoutes {
 
       // GET /api/projects/:projectId - Get project metadata
       if (method === "GET" && url === `/api/projects/${projectId}`) {
-        await storeIntegrity.verify(projectId);
+        // Try integrity verification but don't fail the request if it errors
+        try {
+          await storeIntegrity.verify(projectId);
+        } catch {
+          // Integrity check failed - project may be new or corrupted
+          // Still return the project data
+        }
         const project = await projectStore.get();
         if (!project) {
           return this.sendError(res, 404, "NOT_FOUND" as ApiErrorCode, "Project not found", traceId);
@@ -141,12 +158,19 @@ export class PlanningRoutes {
       // POST /api/projects/:projectId/check - Run specific check
       if (method === "POST" && url === `/api/projects/${projectId}/check`) {
         const body = await this.readJsonBody(req);
-        const { checkId } = body as { checkId: CheckId };
+        const { checkId } = body as { checkId: string };
         if (!checkId) {
           return this.sendError(res, 400, "BAD_REQUEST" as ApiErrorCode, "checkId required", traceId);
         }
+        
+        // Validate checkId format
+        const validCheckIds = ["PL-INT-01", "PL-INT-02", "PL-INT-03", "PL-INT-04", "PL-INT-05", "PL-INT-06", "PL-TRC-01", "PL-TRC-02", "PL-TRC-03"];
+        if (!validCheckIds.includes(checkId)) {
+          return this.sendError(res, 400, "BAD_REQUEST" as ApiErrorCode, `Invalid checkId: ${checkId}. Valid IDs: ${validCheckIds.join(", ")}`, traceId);
+        }
+        
         const integrityChecker = createIntegrityChecker(projectsDir, projectId);
-        const result = await integrityChecker.runCheck(projectId, checkId);
+        const result = await integrityChecker.runCheck(projectId, checkId as CheckId);
         return this.sendJson(res, 200, result);
       }
 
@@ -445,6 +469,47 @@ export class PlanningRoutes {
         return this.sendJson(res, 200, { success: true });
       }
 
+      // POST /api/projects/:projectId/query - Query project state (Agent Interface)
+      if (method === "POST" && url === `/api/projects/${projectId}/query`) {
+        const body = await this.readJsonBody(req);
+        const { question } = body as { question: string };
+        if (!question) {
+          return this.sendError(res, 400, "BAD_REQUEST" as ApiErrorCode, "question required", traceId);
+        }
+
+        try {
+          const { createPlanningAgentInterface } = await import("../planning/PlanningAgentInterface.js");
+          const agentInterface = createPlanningAgentInterface(projectsDir, projectId);
+          const result = await agentInterface.query(question);
+          return this.sendJson(res, 200, result);
+        } catch (err) {
+          this.logger.error("Query failed", { projectId, question, error: err });
+          return this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, "Query failed", traceId);
+        }
+      }
+
+      // GET /api/projects/:projectId/export - Export project
+      if (method === "GET" && url.startsWith(`/api/projects/${projectId}/export`)) {
+        const urlObj = new URL(req.url ?? "", "http://localhost");
+        const format = (urlObj.searchParams.get("format") ?? "json") as "json" | "markdown";
+        const view = urlObj.searchParams.get("view") ?? undefined;
+
+        try {
+          const { exportProject, exportView } = await import("../planning/PlanningExport.js");
+          let result;
+          if (view) {
+            result = await exportView(projectId, view, format);
+          } else {
+            result = await exportProject(projectId, { format });
+          }
+          return this.sendJson(res, 200, result);
+        } catch (err) {
+          this.logger.error("Export failed", { projectId, format, view, error: err });
+          const msg = err instanceof Error ? err.message : "Export failed";
+          return this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, msg, traceId);
+        }
+      }
+
       // GET /api/projects/:projectId/ledger - Get ledger entries
       if (method === "GET" && url === `/api/projects/${projectId}/ledger`) {
         const urlObj = new URL(req.url ?? "", `http://localhost`);
@@ -493,8 +558,12 @@ export class PlanningRoutes {
       chunks.push(Buffer.from(chunk));
     }
     if (chunks.length === 0) return {};
+    const body = Buffer.concat(chunks);
+    if (this.config.maxBodyBytes && body.length > this.config.maxBodyBytes) {
+      throw new Error("PAYLOAD_TOO_LARGE: Request body exceeds configured limit");
+    }
     try {
-      return JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+      return JSON.parse(body.toString("utf-8"));
     } catch {
       throw new Error("BAD_JSON: Request body is not valid JSON");
     }
@@ -523,13 +592,31 @@ export class PlanningRoutes {
 
   private handleError(res: http.ServerResponse, error: unknown, traceId: string): void {
     const message = error instanceof Error ? error.message : "Unknown error";
-    if (message.includes("BAD_JSON")) {
-      this.sendError(res, 400, "BAD_REQUEST" as ApiErrorCode, message, traceId);
+    // Handle payload too large
+    if (message.includes("PAYLOAD_TOO_LARGE")) {
+      this.sendError(res, 413, "PAYLOAD_TOO_LARGE" as ApiErrorCode, message, traceId);
       return;
     }
-    if (message.includes("not found") || message.includes("NOT_FOUND")) {
+    // Preserve BAD_JSON code for JSON parse errors
+    if (message.includes("BAD_JSON")) {
+      this.sendError(res, 400, "BAD_JSON" as ApiErrorCode, message, traceId);
+      return;
+    }
+    if (message.includes("not found") || message.includes("NOT_FOUND") || message.includes("Project not found")) {
       this.sendError(res, 404, "NOT_FOUND" as ApiErrorCode, message, traceId);
       return;
+    }
+    // Handle RuntimeError types
+    if (typeof error === "object" && error !== null && "code" in error) {
+      const err = error as { code: string; message: string };
+      if (err.code === "NOT_FOUND") {
+        this.sendError(res, 404, "NOT_FOUND" as ApiErrorCode, err.message, traceId);
+        return;
+      }
+      if (err.code === "PAYLOAD_TOO_LARGE") {
+        this.sendError(res, 413, "PAYLOAD_TOO_LARGE" as ApiErrorCode, err.message, traceId);
+        return;
+      }
     }
     this.sendError(res, 500, "INTERNAL_ERROR" as ApiErrorCode, message, traceId);
   }

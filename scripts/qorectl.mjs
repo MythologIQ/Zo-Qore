@@ -1,10 +1,32 @@
 #!/usr/bin/env node
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 function usage() {
   console.log(
-    `qorectl v${VERSION}\n\nUsage:\n  qorectl doctor\n  qorectl sessions\n  qorectl devices\n  qorectl revoke-sessions [--all|--current|--session <tokenId>|--device <deviceId>]\n  qorectl mfa-reset [--secret <base32>] [--account <name>] [--issuer <name>] [--confirm RESET_MFA]\n\nEnvironment:\n  QORECTL_RUNTIME_URL          Runtime base URL (default: http://127.0.0.1:7777)\n  QORECTL_UI_URL               UI base URL (default: http://127.0.0.1:9380)\n  QORE_API_KEY                 Runtime API key for /health and /policy/version\n  QORE_UI_ADMIN_TOKEN          Admin token for /api/admin/* endpoints\n  QORE_UI_BASIC_AUTH_USER      Optional basic auth username for UI /health\n  QORE_UI_BASIC_AUTH_PASS      Optional basic auth password for UI /health\n`
+    `qorectl v${VERSION}
+
+Usage:
+  qorectl doctor
+  qorectl sessions
+  qorectl devices
+  qorectl revoke-sessions [--all|--current|--session <tokenId>|--device <deviceId>]
+  qorectl mfa-reset [--secret <base32>] [--account <name>] [--issuer <name>] [--confirm RESET_MFA]
+  qorectl project list
+  qorectl project create --name <name> [--description <desc>] --created-by <actor>
+  qorectl project show <projectId>
+  qorectl project delete <projectId>
+  qorectl project export <projectId> [--format json|markdown] [--view void|reveal|constellation|path|risk|autonomy]
+  qorectl project query <projectId> --question "<question>"
+
+Environment:
+  QORECTL_RUNTIME_URL          Runtime base URL (default: http://127.0.0.1:7777)
+  QORECTL_UI_URL               UI base URL (default: http://127.0.0.1:9380)
+  QORE_API_KEY                 Runtime API key for /health and /policy/version
+  QORE_UI_ADMIN_TOKEN          Admin token for /api/admin/* endpoints
+  QORE_UI_BASIC_AUTH_USER      Optional basic auth username for UI /health
+  QORE_UI_BASIC_AUTH_PASS      Optional basic auth password for UI /health
+`
   );
 }
 
@@ -222,6 +244,187 @@ async function resetMfa(args) {
   console.log(JSON.stringify(response.json || {}, null, 2));
 }
 
+// --- Planning Project Commands ---
+
+async function projectList() {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+
+  const response = await fetchJson(`${runtimeUrl}/api/projects`, {
+    headers: { "x-qore-api-key": apiKey },
+  });
+  if (!response.ok) {
+    console.error(`project list failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || { projects: [] }, null, 2));
+}
+
+async function projectCreate(args) {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+
+  const name = readArgValue(args, "--name");
+  const description = readArgValue(args, "--description") || "";
+  const createdBy = readArgValue(args, "--created-by");
+
+  if (!name || !createdBy) {
+    console.error("project create requires --name and --created-by");
+    process.exitCode = 2;
+    return;
+  }
+
+  const response = await fetchJson(`${runtimeUrl}/api/projects`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-qore-api-key": apiKey,
+    },
+    body: JSON.stringify({ name, description, createdBy }),
+  });
+  if (!response.ok) {
+    console.error(`project create failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || {}, null, 2));
+}
+
+async function projectShow(projectId) {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+  if (!projectId) {
+    console.error("project show requires a projectId");
+    process.exitCode = 2;
+    return;
+  }
+
+  const response = await fetchJson(`${runtimeUrl}/api/projects/${projectId}`, {
+    headers: { "x-qore-api-key": apiKey },
+  });
+  if (!response.ok) {
+    console.error(`project show failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || {}, null, 2));
+}
+
+async function projectDelete(projectId) {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+  if (!projectId) {
+    console.error("project delete requires a projectId");
+    process.exitCode = 2;
+    return;
+  }
+
+  const response = await fetchJson(`${runtimeUrl}/api/projects/${projectId}`, {
+    method: "DELETE",
+    headers: { "x-qore-api-key": apiKey },
+  });
+  if (!response.ok) {
+    console.error(`project delete failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || { success: true }, null, 2));
+}
+
+async function projectExport(projectId, args) {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+  if (!projectId) {
+    console.error("project export requires a projectId");
+    process.exitCode = 2;
+    return;
+  }
+
+  const format = readArgValue(args, "--format") || "json";
+  const view = readArgValue(args, "--view");
+  if (format !== "json" && format !== "markdown") {
+    console.error("Invalid format. Use json or markdown.");
+    process.exitCode = 2;
+    return;
+  }
+
+  let url = `${runtimeUrl}/api/projects/${projectId}/export?format=${format}`;
+  if (view) url += `&view=${view}`;
+
+  const response = await fetchJson(url, {
+    headers: { "x-qore-api-key": apiKey },
+  });
+  if (!response.ok) {
+    console.error(`project export failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || {}, null, 2));
+}
+
+async function projectQuery(projectId, args) {
+  const runtimeUrl = (process.env.QORECTL_RUNTIME_URL || "http://127.0.0.1:7777").replace(/\/$/, "");
+  const apiKey = process.env.QORE_API_KEY;
+  if (!apiKey) {
+    console.error("QORE_API_KEY is required for project operations.");
+    process.exitCode = 2;
+    return;
+  }
+  if (!projectId) {
+    console.error("project query requires a projectId");
+    process.exitCode = 2;
+    return;
+  }
+
+  const question = readArgValue(args, "--question");
+  if (!question) {
+    console.error("project query requires --question");
+    process.exitCode = 2;
+    return;
+  }
+
+  const response = await fetchJson(`${runtimeUrl}/api/projects/${projectId}/query`, {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      "x-qore-api-key": apiKey,
+    },
+    body: JSON.stringify({ question }),
+  });
+  if (!response.ok) {
+    console.error(`project query failed: status=${response.status} ${response.text || JSON.stringify(response.json || {})}`);
+    process.exitCode = 1;
+    return;
+  }
+  console.log(JSON.stringify(response.json || {}, null, 2));
+}
+
 async function main() {
   const { cmd, args } = parseArgs(process.argv);
   if (!cmd || cmd === "--help" || cmd === "-h") {
@@ -251,6 +454,51 @@ async function main() {
 
   if (cmd === "mfa-reset") {
     await resetMfa(args);
+    return;
+  }
+
+  if (cmd === "project") {
+    const subcmd = args[0];
+    const restArgs = args.slice(1);
+    if (!subcmd) {
+      console.error("project subcommand required");
+      usage();
+      process.exitCode = 2;
+      return;
+    }
+    if (subcmd === "list") {
+      await projectList();
+      return;
+    }
+    if (subcmd === "create") {
+      await projectCreate(restArgs);
+      return;
+    }
+    if (subcmd === "show") {
+      const projectId = restArgs[0];
+      await projectShow(projectId);
+      return;
+    }
+    if (subcmd === "delete") {
+      const projectId = restArgs[0];
+      await projectDelete(projectId);
+      return;
+    }
+    if (subcmd === "export") {
+      const projectId = restArgs[0];
+      const exportArgs = restArgs.slice(1);
+      await projectExport(projectId, exportArgs);
+      return;
+    }
+    if (subcmd === "query") {
+      const projectId = restArgs[0];
+      const queryArgs = restArgs.slice(1);
+      await projectQuery(projectId, queryArgs);
+      return;
+    }
+    console.error(`unknown project subcommand: ${subcmd}`);
+    usage();
+    process.exitCode = 2;
     return;
   }
 
