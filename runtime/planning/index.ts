@@ -44,3 +44,12 @@ export {
   type CheckResult,
   type IntegrityCheckSummary,
 } from "./IntegrityChecker";
+
+export {
+  PlanningGovernance,
+  createPlanningGovernance,
+  buildPlanningDecisionRequest,
+  evaluatePlanningDecision,
+  type DecisionRequest,
+  type DecisionResponse,
+} from "./PlanningGovernance";

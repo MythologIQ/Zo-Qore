@@ -9,6 +9,7 @@ import { PlanningLedger, createPlanningLedger } from "./PlanningLedger";
 import type {
   QoreProject,
   PipelineState,
+  FullProjectState,
 } from "@mythologiq/qore-contracts";
 import type {
   VoidThought,
@@ -195,6 +196,70 @@ export class ProjectStore {
 
   async getVoidStore(): Promise<VoidStore> {
     return this.voidStore;
+  }
+
+  async getFullProjectState(): Promise<FullProjectState> {
+    const project = await this.get();
+    const voidStore = await this.getVoidStore();
+    const revealStore = await this.getViewStore('reveal');
+    const constellationStore = await this.getViewStore('constellation');
+    const pathStore = await this.getViewStore('path');
+    const riskStore = await this.getViewStore('risk');
+    const autonomyStore = await this.getViewStore('autonomy');
+
+    const [thoughts, clusters, constellation, phases, risks, autonomyConfig] = 
+      await Promise.all([
+        voidStore.getAllThoughts().catch(() => []),
+        revealStore.read<RevealCluster[]>().catch(() => [] as RevealCluster[]),
+        constellationStore.read<ConstellationMap | null>().catch(() => null),
+        pathStore.read<PathPhase[]>().catch(() => [] as PathPhase[]),
+        riskStore.read<RiskEntry[]>().catch(() => [] as RiskEntry[]),
+        autonomyStore.read<AutonomyConfig | null>().catch(() => null),
+      ]);
+
+    // Ensure all arrays are defined (not null) for FullProjectState
+    const safeClusters = clusters ?? [];
+    const safePhases = phases ?? [];
+    const safeRisks = risks ?? [];
+
+    // If project doesn't exist, return empty state
+    if (!project) {
+      return {
+        project: {
+          projectId: this.projectId,
+          name: '',
+          description: '',
+          createdAt: '',
+          updatedAt: '',
+          createdBy: '',
+          pipelineState: {
+            void: 'empty',
+            reveal: 'empty',
+            constellation: 'empty',
+            path: 'empty',
+            risk: 'empty',
+            autonomy: 'empty',
+          },
+          checksum: '',
+        },
+        thoughts,
+        clusters: safeClusters,
+        constellation,
+        phases: safePhases,
+        risks: safeRisks,
+        autonomy: autonomyConfig,
+      };
+    }
+
+    return {
+      project,
+      thoughts,
+      clusters: safeClusters,
+      constellation,
+      phases: safePhases,
+      risks: safeRisks,
+      autonomy: autonomyConfig,
+    };
   }
 
   async verifyIntegrity(): Promise<{ valid: boolean; errors: string[] }> {
