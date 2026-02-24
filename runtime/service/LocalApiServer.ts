@@ -8,6 +8,14 @@ import {
 } from "@mythologiq/qore-contracts/schemas/ApiTypes";
 import { QoreRuntimeService } from "./QoreRuntimeService";
 import { RuntimeError } from "./errors";
+import { PlanningRoutes, type PlanningRoutesConfig } from "./planning-routes";
+import {
+  createProjectStore,
+  createStoreIntegrity,
+  createIntegrityChecker,
+  DEFAULT_PROJECTS_DIR,
+} from "../planning";
+import { reviewPlanningProject, type PlanningReviewResult } from "../../zo/victor/planning";
 
 export interface LocalApiServerOptions {
   host?: string;
@@ -15,6 +23,7 @@ export interface LocalApiServerOptions {
   apiKey?: string;
   requireAuth?: boolean;
   publicHealth?: boolean;
+  projectsDir?: string;
   maxBodyBytes?: number;
   rateLimitMaxRequests?: number;
   rateLimitWindowMs?: number;
@@ -30,6 +39,7 @@ export class LocalApiServer {
   private rateLimitMap = new Map<string, RateLimitEntry>();
   private readonly rateLimitMaxRequests: number;
   private readonly rateLimitWindowMs: number;
+  private readonly planningRoutes: PlanningRoutes;
 
   constructor(
     private readonly runtime: QoreRuntimeService,
@@ -37,6 +47,7 @@ export class LocalApiServer {
   ) {
     this.rateLimitMaxRequests = options.rateLimitMaxRequests ?? 100;
     this.rateLimitWindowMs = options.rateLimitWindowMs ?? 60000; // 1 minute default
+    this.planningRoutes = new PlanningRoutes(this.runtime, this.options);
   }
 
   async start(): Promise<void> {
@@ -274,6 +285,93 @@ When asked to check emails or calendar, USE THE TOOLS. Do not say you could chec
           // TODO: Persist logs to storage
           console.log("[Log Entry]", JSON.stringify(body));
           return this.sendJson(res, 200, { success: true });
+        }
+
+        // Nav-state endpoint: Get project navigation state with live pipeline data
+        const navStateMatch = url.match(/^\/api\/project\/([^/]+)\/nav-state$/);
+        if (method === "GET" && navStateMatch) {
+          const projectId = navStateMatch[1];
+          const projectsDir = this.options.projectsDir ?? process.env.QORE_PROJECTS_DIR ?? DEFAULT_PROJECTS_DIR;
+          
+          try {
+            // Get project store and pipeline state
+            const projectStore = createProjectStore(projectId, projectsDir);
+            const project = await projectStore.get();
+            
+            if (!project) {
+              return this.sendJson(res, 200, {
+                routes: {},
+                pipelineState: null,
+                integrity: { valid: false, lastChecked: null },
+                victorStance: null
+              });
+            }
+            
+            // Get integrity check
+            const storeIntegrity = createStoreIntegrity(projectsDir);
+            let integrityValid = false;
+            let lastChecked: string | null = null;
+            try {
+              const verifyResult = await storeIntegrity.verify(projectId);
+              integrityValid = verifyResult.valid;
+              lastChecked = new Date().toISOString();
+            } catch {
+              // Integrity check failed - still return valid=false
+            }
+            
+            // Get Victor stance from full project state
+            let victorStance: PlanningReviewResult["stance"] | null = null;
+            try {
+              const fullState = await projectStore.getFullProjectState();
+              const reviewResult = reviewPlanningProject(fullState);
+              victorStance = reviewResult.stance;
+            } catch {
+              // Victor review failed - leave as null
+            }
+            
+            // Determine route availability based on pipeline state
+            const pipelineState = project.pipelineState;
+            const routes: Record<string, { available: boolean; label: string }> = {
+              void: { available: true, label: "Brainstorm" },
+              reveal: { available: pipelineState.void === "active", label: "Organize" },
+              constellation: { available: pipelineState.reveal === "active", label: "Mind Map" },
+              path: { available: pipelineState.constellation === "active", label: "Roadmap" },
+              risk: { available: pipelineState.path === "active", label: "Risk Register" },
+              autonomy: { available: pipelineState.risk === "active", label: "Autonomy" }
+            };
+            
+            // Determine recommended next view
+            let recommendedNext: string | null = null;
+            if (pipelineState.void === "empty") recommendedNext = "void";
+            else if (pipelineState.reveal === "empty") recommendedNext = "reveal";
+            else if (pipelineState.constellation === "empty") recommendedNext = "constellation";
+            else if (pipelineState.path === "empty") recommendedNext = "path";
+            else if (pipelineState.risk === "empty") recommendedNext = "risk";
+            else if (pipelineState.autonomy === "empty") recommendedNext = "autonomy";
+            
+            return this.sendJson(res, 200, {
+              routes,
+              pipelineState,
+              integrity: { valid: integrityValid, lastChecked },
+              victorStance,
+              recommendedNext
+            });
+          } catch (err) {
+            // Return default state on error
+            return this.sendJson(res, 200, {
+              routes: {},
+              pipelineState: null,
+              integrity: { valid: false, lastChecked: null },
+              victorStance: null,
+              recommendedNext: null
+            });
+          }
+        }
+
+        // Delegate planning routes (API projects and Victor review)
+        if (url.startsWith("/api/projects") || url.startsWith("/api/victor/review-plan")) {
+          const handled = await this.planningRoutes.handleRequest(req, res);
+          if (handled) return;
         }
 
         this.sendError(res, 404, "NOT_FOUND", "Route not found", traceId);

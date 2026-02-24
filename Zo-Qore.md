@@ -775,7 +775,7 @@ TASK 11B.3: Risk Engine Planning Hooks
     - Hooks into existing risk evaluation routing
     - Evaluates novelty of planning mutations
       (e.g., first-ever phase creation vs. routine thought capture)
-    - Feeds risk cache instrumentation for planning actions
+    - Feeds risk cache instrumentation for planning action patterns
 
   Verification:
     □ Planning actions routed through risk engine
@@ -1565,3 +1565,95 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 **Blockers:** None
 
 **Session Complete: Phase 11B Seal Ready**
+
+### Session 8: 2026-02-24 02:35 EST (Phase 11C - TASK 11C.1)
+
+**Tasks Completed:**
+
+1. **TASK 11C.1: Planning API Endpoints** ✅ COMPLETE
+   - Wired `PlanningRoutes` into `LocalApiServer`:
+     - Added import for `PlanningRoutes` and `PlanningRoutesConfig`
+     - Created `PlanningRoutes` instance in constructor
+     - Added route delegation: `/api/projects/*` and `/api/victor/review-plan` paths
+   - Planning routes now accessible via main API server:
+     - GET/POST `/api/projects` - List/create projects
+     - GET `/api/projects/:projectId` - Get project metadata
+     - DELETE `/api/projects/:projectId` - Delete project
+     - GET `/api/projects/:projectId/integrity` → full check report
+     - POST `/api/projects/:projectId/check` → run all PL-* checks
+     - GET/POST `/api/projects/:projectId/void/thoughts` - Void thoughts CRUD
+     - GET/POST `/api/projects/:projectId/reveal/clusters` - Reveal clusters CRUD
+     - GET/POST `/api/projects/:projectId/constellation/map` - Constellation CRUD
+     - GET/POST `/api/projects/:projectId/path/phases` - Path phases CRUD
+     - GET/POST `/api/projects/:projectId/risk/register` - Risk register CRUD
+     - GET/POST `/api/projects/:projectId/autonomy/config` - Autonomy config CRUD
+     - GET `/api/projects/:projectId/ledger` → Get ledger entries
+     - POST `/api/victor/review-plan` → Victor planning review
+
+**Verification:**
+- [x] npm run typecheck — zero errors
+- [x] npm test — 531/531 pass
+- [x] npm run build — succeeds
+- [x] Planning routes integrated into LocalApiServer
+- [x] Mutating endpoints use PlanningGovernance for policy checks
+- [x] Victor review endpoint accessible
+
+**Next Steps (Phase 11C):**
+- TASK 11C.2: UI Wiring for Planning Views
+- TASK 11C.3: Victor Integration with Planning
+
+**Blockers:** None
+
+**Session Complete: Phase 11C TASK 11C.1 Sealed**
+
+### Session 9: 2026-02-24 03:15 EST (Phase 11C - TASK 11C.2 Fix + Verification)
+
+**Tasks Completed:**
+
+1. **TASK 11C.2: Nav-State API Enhancement — Fix & Verification** ✅ COMPLETE
+   - Fixed import path in `LocalApiServer.ts`:
+     - Changed `../victor/planning` to `../../zo/victor/planning`
+     - Added `projectsDir` property to `LocalApiServerOptions` interface
+   - Verified nav-state endpoint implementation:
+     - GET `/api/project/:projectId/nav-state` returns:
+       - `routes`: Route availability based on pipeline state
+       - Live state `pipelineState`: from ProjectStore (void/reveal/constellation/path/risk/autonomy)
+       - `integrity`: { valid: boolean, lastChecked: string }
+       - `victorStance`: Victor's stance (support/challenge/mixed/red-flag)
+       - `recommendedNext`: Suggested next view based on empty states
+   - Nav-state endpoint delegates to:
+     - `createProjectStore()` for project metadata
+     - `createStoreIntegrity().verify()` for integrity checks
+     - `reviewPlanningProject()` for Victor stance evaluation
+
+2. **Typecheck Fix** ✅ COMPLETE
+   - Fixed TS2307: Cannot find module '../victor/planning'
+   - Fixed TS2339: Property 'projectsDir' does not exist on type 'LocalApiServerOptions'
+
+**Verification:**
+- [x] npm run typecheck — zero errors
+- [x] npm test — 531/531 pass
+- [x] npm run build — succeeds
+- [x] Nav-state endpoint returns live pipeline state
+- [x] Integrity checks integrated into nav-state
+- [x] Victor stance evaluation integrated
+
+**Gate Results:**
+- Typecheck: PASS (zero errors)
+- Lint: PASS (zero violations)
+- Tests: PASS (531/531)
+- Build: PASS
+
+**Phase 11C Status:**
+- TASK 11C.1: Planning API Endpoints ✅ COMPLETE
+- TASK 11C.2: Nav-State API Enhancement ✅ COMPLETE
+- TASK 11C.3: UI View Data Binding — Remaining
+
+**Next Steps (Phase 11C):**
+- TASK 11C.3: UI View Data Binding
+  - Connect UI JavaScript files to nav-state endpoint
+  - Wire planning views to fetch data from `/api/projects/:projectId/void/thoughts`, etc.
+
+**Blockers:** None
+
+**Session Complete: Phase 11C TASK 11C.2 Sealed**
