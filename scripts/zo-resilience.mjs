@@ -11,10 +11,13 @@ Usage:
   node scripts/zo-resilience.mjs backup [--workspace <path>] [--out <dir>]
   node scripts/zo-resilience.mjs list [--workspace <path>] [--out <dir>]
   node scripts/zo-resilience.mjs restore --from <backupDir> --confirm RESTORE [--workspace <path>] [--dry-run]
+  node scripts/zo-resilience.mjs verify --from <backupDir>
 
 Notes:
   - Backup captures runtime state files, not node_modules or build artifacts.
+  - Backup includes planning data (.qore/projects/) with integrity checksums.
   - Restore requires --confirm RESTORE to reduce accidental overwrite risk.
+  - Use 'verify' to check backup integrity without restoring.
 `);
 }
 
@@ -68,6 +71,46 @@ function defaultPaths(workspace) {
   ];
 }
 
+function getPlanningProjectsPath(workspace) {
+  return process.env.QORE_PROJECTS_DIR || path.join(workspace, ".qore", "projects");
+}
+
+function collectPlanningFiles(projectsPath) {
+  const files = [];
+  if (!fs.existsSync(projectsPath)) {
+    return files;
+  }
+  const projects = fs.readdirSync(projectsPath, { withFileTypes: true });
+  for (const projectDir of projects) {
+    if (!projectDir.isDirectory()) continue;
+    const projectId = projectDir.name;
+    const projectPath = path.join(projectsPath, projectId);
+    collectFilesRecursively(projectPath, projectPath, files, projectId);
+  }
+  return files;
+}
+
+function collectFilesRecursively(dir, baseDir, files, projectId) {
+  const entries = fs.readdirSync(dir, { withFileTypes: true });
+  for (const entry of entries) {
+    const fullPath = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      collectFilesRecursively(fullPath, baseDir, files, projectId);
+    } else {
+      const relPath = path.relative(baseDir, fullPath);
+      const stat = fs.statSync(fullPath);
+      files.push({
+        sourcePath: fullPath,
+        size: stat.size,
+        mtimeMs: stat.mtimeMs,
+        sha256: sha256(fullPath),
+        projectId,
+        backupRelativePath: path.join(projectId, relPath),
+      });
+    }
+  }
+}
+
 function collectExisting(paths) {
   const out = [];
   for (const p of paths) {
@@ -103,9 +146,20 @@ function doBackup(flags) {
   const filesDir = path.join(backupDir, "files");
   ensureDir(filesDir);
 
+  // Collect existing default files
   const sources = collectExisting(defaultPaths(workspace));
   for (const file of sources) {
     const rel = safeRelativeFromWorkspace(workspace, file.sourcePath);
+    const to = path.join(filesDir, rel);
+    ensureDir(path.dirname(to));
+    fs.copyFileSync(file.sourcePath, to);
+  }
+
+  // Collect planning data files
+  const planningPath = getPlanningProjectsPath(workspace);
+  const planningFiles = collectPlanningFiles(planningPath);
+  for (const file of planningFiles) {
+    const rel = path.join(".qore", "projects", file.backupRelativePath);
     const to = path.join(filesDir, rel);
     ensureDir(path.dirname(to));
     fs.copyFileSync(file.sourcePath, to);
@@ -115,13 +169,23 @@ function doBackup(flags) {
     createdAt: new Date().toISOString(),
     workspace,
     outRoot,
-    files: sources.map((file) => ({
-      ...file,
-      backupRelativePath: safeRelativeFromWorkspace(workspace, file.sourcePath),
-    })),
+    backupType: "full",
+    includesPlanningData: true,
+    files: [
+      ...sources.map((file) => ({
+        ...file,
+        backupRelativePath: safeRelativeFromWorkspace(workspace, file.sourcePath),
+      })),
+      ...planningFiles.map((file) => ({
+        ...file,
+        backupRelativePath: path.join(".qore", "projects", file.backupRelativePath),
+      })),
+    ],
+    planningProjects: planningFiles.map((f) => f.projectId).filter((v, i, a) => a.indexOf(v) === i),
+    planningChecksumFile: ".qore/projects/checksums.json",
   };
   writeJson(path.join(backupDir, "manifest.json"), manifest);
-  console.log(JSON.stringify({ ok: true, backupDir, files: sources.length }, null, 2));
+  console.log(JSON.stringify({ ok: true, backupDir, files: sources.length, planningProjects: manifest.planningProjects.length }, null, 2));
 }
 
 function doList(flags) {
@@ -152,6 +216,98 @@ function loadManifest(backupDir) {
   return parsed;
 }
 
+function verifyPlanningChecksums(backupDir, workspace) {
+  const filesDir = path.join(backupDir, "files", ".qore", "projects");
+  if (!fs.existsSync(filesDir)) {
+    return { valid: false, error: "planning projects directory not found in backup" };
+  }
+
+  const projects = fs.readdirSync(filesDir, { withFileTypes: true });
+  for (const projectDir of projects) {
+    if (!projectDir.isDirectory()) continue;
+    const projectId = projectDir.name;
+    const checksumsPath = path.join(filesDir, projectId, "checksums.json");
+    
+    if (!fs.existsSync(checksumsPath)) {
+      return { valid: false, error: `checksums.json not found for project: ${projectId}` };
+    }
+
+    let checksums;
+    try {
+      checksums = JSON.parse(fs.readFileSync(checksumsPath, "utf8"));
+    } catch {
+      return { valid: false, error: `invalid checksums.json for project: ${projectId}` };
+    }
+
+    // Handle StoreIntegrity format: { version, generatedAt, files: [{file, hash, size, lastModified}] }
+    const fileEntries = checksums.files || [];
+    if (!Array.isArray(fileEntries)) {
+      return { valid: false, error: `invalid checksums.files format for project: ${projectId}` };
+    }
+
+    for (const entry of fileEntries) {
+      const filePath = entry.file;
+      const expectedHash = entry.hash;
+      if (!filePath || !expectedHash) continue;
+      
+      const fullPath = path.join(filesDir, projectId, filePath);
+      if (!fs.existsSync(fullPath)) {
+        return { valid: false, error: `file missing: ${projectId}/${filePath}` };
+      }
+      const actualHash = sha256(fullPath);
+      if (actualHash !== expectedHash) {
+        return { valid: false, error: `checksum mismatch: ${projectId}/${filePath}` };
+      }
+    }
+  }
+  return { valid: true };
+}
+
+function doVerify(flags) {
+  const from = flags.get("--from");
+  if (!from) {
+    throw new Error("--from is required");
+  }
+  const backupDir = path.resolve(from);
+  const workspace = path.resolve(flags.get("--workspace") || process.cwd());
+
+  const manifest = loadManifest(backupDir);
+  const filesDir = path.join(backupDir, "files");
+  let verified = 0;
+  let errors = [];
+
+  for (const file of manifest.files) {
+    const rel = String(file.backupRelativePath || "");
+    if (!rel) continue;
+    const fromFile = path.join(filesDir, rel);
+    if (!fs.existsSync(fromFile)) {
+      errors.push(`backup file missing: ${rel}`);
+      continue;
+    }
+    const actualHash = sha256(fromFile);
+    if (actualHash !== file.sha256) {
+      errors.push(`checksum mismatch: ${rel}`);
+      continue;
+    }
+    verified += 1;
+  }
+
+  // Verify planning checksums if present
+  const planningCheck = verifyPlanningChecksums(backupDir, workspace);
+  if (!planningCheck.valid) {
+    errors.push(`planning integrity check failed: ${planningCheck.error}`);
+  }
+
+  console.log(JSON.stringify({
+    ok: errors.length === 0,
+    backupDir,
+    verified,
+    total: manifest.files.length,
+    planningIntegrity: planningCheck.valid,
+    errors: errors.length > 0 ? errors : undefined,
+  }, null, 2));
+}
+
 function doRestore(flags) {
   const from = flags.get("--from");
   const confirm = flags.get("--confirm");
@@ -169,6 +325,7 @@ function doRestore(flags) {
   const manifest = loadManifest(backupDir);
   const filesDir = path.join(backupDir, "files");
   let restored = 0;
+  let planningRestored = 0;
 
   for (const file of manifest.files) {
     const rel = String(file.backupRelativePath || "");
@@ -189,9 +346,30 @@ function doRestore(flags) {
       fs.copyFileSync(fromFile, toFile);
     }
     restored += 1;
+    if (rel.startsWith(".qore" + path.sep + "projects")) {
+      planningRestored += 1;
+    }
   }
 
-  console.log(JSON.stringify({ ok: true, backupDir, workspace, restored, dryRun }, null, 2));
+  // Verify planning data integrity after restore
+  let planningValid = false;
+  if (!dryRun && planningRestored > 0) {
+    const planningCheck = verifyPlanningChecksums(backupDir, workspace);
+    planningValid = planningCheck.valid;
+    if (!planningValid) {
+      console.error(`WARNING: planning integrity check failed: ${planningCheck.error}`);
+    }
+  }
+
+  console.log(JSON.stringify({
+    ok: true,
+    backupDir,
+    workspace,
+    restored,
+    planningRestored,
+    planningIntegrityVerified: planningValid,
+    dryRun
+  }, null, 2));
 }
 
 function main() {
@@ -206,6 +384,10 @@ function main() {
   }
   if (command === "list") {
     doList(flags);
+    return;
+  }
+  if (command === "verify") {
+    doVerify(flags);
     return;
   }
   if (command === "restore") {
