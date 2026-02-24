@@ -36,3 +36,11 @@ export {
   type PlanningLedgerEntry,
   type LedgerSummary,
 } from "./PlanningLedger.js";
+
+export {
+  IntegrityChecker,
+  createIntegrityChecker,
+  type CheckId,
+  type CheckResult,
+  type IntegrityCheckSummary,
+} from "./IntegrityChecker.js";

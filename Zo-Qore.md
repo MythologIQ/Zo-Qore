@@ -1343,10 +1343,6 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 
 ---
 
-*Next session scheduled: 2026-02-23 18:15 EST*
-
----
-
 ### Session 3: 2026-02-23 18:50 EST (Phase 11A - TASK 11A.3)
 
 **Tasks Completed:**
@@ -1392,4 +1388,45 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 - `runtime/planning/VoidStore.ts` (added ledger integration)
 - `runtime/planning/ViewStore.ts` (added ledger integration)
 - `runtime/planning/ProjectStore.ts` (wired ledger into stores)
-- `runtime/planning/index.ts` (added ledger exports)
+
+---
+
+### Session 4: 2026-02-23 19:25 EST (Phase 11A - TASK 11A.4)
+
+**Tasks Completed:**
+
+1. **TASK 11A.4: Integrity Check Runner** ✅ COMPLETE
+   - Created `runtime/planning/IntegrityChecker.ts`:
+     - Implements all 9 PL-* checks:
+       - PL-INT-01: Store checksum verification (via StoreIntegrity)
+       - PL-INT-02: Ledger consistency verification (via PlanningLedger)
+       - PL-INT-03: Void→Reveal reference check (thoughtIds exist)
+       - PL-INT-04: Reveal→Constellation reference check (clusterIds exist)
+       - PL-INT-05: Constellation→Path reference check (sourceClusterIds exist)
+       - PL-INT-06: Path→Risk reference check (phaseIds exist)
+       - PL-TRC-01: Full traceability check (thought→cluster→constellation→phase→risk chain)
+       - PL-TRC-02: Orphan detection (claimed thoughts not in any cluster)
+       - PL-TRC-03: Coverage check (active views have content)
+     - `runAllChecks()` returns IntegrityCheckSummary with pass/fail counts
+     - `runCheck()` runs individual checks by ID
+     - Each check is an independent async function
+
+2. **Added IntegrityChecker to Barrel Export**:
+   - Exported `IntegrityChecker`, `createIntegrityChecker` from index.ts
+   - Exported types: `CheckId`, `CheckResult`, `IntegrityCheckSummary`
+
+**Verification:**
+- [x] npm run typecheck passes (zero errors)
+- [x] npm test passes (449 tests)
+- [x] All 9 PL-* checks implemented
+- [x] Individual check functions callable via runCheck()
+- [x] Aggregated results via runAllChecks()
+
+**Next Steps (TASK 11A.5):**
+- Create test files in `tests/planning/`
+- Add ≥40 new tests covering store operations, integrity checks, ledger integration
+- Run all tests to verify gate criteria
+
+**Files Modified:**
+- `runtime/planning/IntegrityChecker.ts` (new)
+- `runtime/planning/index.ts` (added IntegrityChecker exports)
