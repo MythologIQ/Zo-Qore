@@ -1,5 +1,3 @@
-
-
 # Zo-Qore — Phase 11+ PRD: Planning Pipeline Hardening
 
 ## Reinforcing Project Planning Storage, Structure & Accessibility
@@ -1423,7 +1421,7 @@ Every check implemented in 11A is **immediately enforced** by governance in 11B,
 
 **Next Steps (TASK 11A.5):**
 - Create test files in `tests/planning/`
-- Add ≥40 new tests covering store operations, integrity checks, ledger integration
+- Add ≥40 new tests covering all planning operations
 - Run all tests to verify gate criteria
 
 **Files Modified:**
