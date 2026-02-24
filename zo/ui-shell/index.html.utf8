@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Zo-Qore Command Center</title>
+  <link rel="icon" type="image/png" href="/favicon.png">
+  <link rel="stylesheet" href="legacy-roadmap.css?v=101">
+  <link rel="stylesheet" href="void.css?v=1">
+  <link rel="stylesheet" href="reveal.css?v=1">
+  <link rel="stylesheet" href="constellation.css?v=1">
+  <link rel="stylesheet" href="zo-nav.css?v=1">
+  <link rel="stylesheet" href="empty-state.css?v=1">
+  <link rel="stylesheet" href="void-stt.css?v=1">
+    <link rel="stylesheet" href="risk-register.css?v=1">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Orbitron:wght@500;700;800&display=swap">
+</head>
+<body>
+    <nav class="zoqore-view-toggle" aria-label="View switch">
+    <button type="button" data-zoqore-switch>Monitor</button>
+  </nav>
+  <script>
+    (function(){
+      var button=document.querySelector('[data-zoqore-switch]');
+      if(!button){ return; }
+      var path=window.location.pathname||'/';
+      var params=new URLSearchParams(window.location.search||'');
+      var onMonitor=path.indexOf('/ui/monitor')===0 || (path==='/' && params.get('ui')==='compact');
+      button.textContent=onMonitor?'Command Center':'Monitor';
+      if(onMonitor){
+        var topBar=document.querySelector('.brand');
+        var statusLine=document.getElementById('status-line');
+        var nav=button.closest('.zoqore-view-toggle');
+        if(topBar && nav){
+          nav.classList.add('in-bar');
+          topBar.appendChild(nav);
+        }
+        if(statusLine){
+          statusLine.classList.add('is-hidden');
+        }
+      }
+      function enforcePopupMonitorSize(){
+        if(!onMonitor || params.get('popup')!=='1'){ return; }
+        var desiredInnerWidth=parseInt(params.get('w')||'0',10);
+        var desiredInnerHeight=parseInt(params.get('h')||'0',10);
+        if(!(desiredInnerWidth>0)){
+          var bodyW=(document.body&&document.body.scrollWidth)||0;
+          var docW=(document.documentElement&&document.documentElement.scrollWidth)||0;
+          desiredInnerWidth=Math.max(560, bodyW, docW) + 24;
+        }
+        if(!(desiredInnerHeight>0)){
+          var bodyH=(document.body&&document.body.scrollHeight)||0;
+          var docH=(document.documentElement&&document.documentElement.scrollHeight)||0;
+          desiredInnerHeight=Math.max(760, bodyH, docH) + 24;
+        }
+        if(!window.resizeTo){ return; }
+        var frameW=Math.max(0, (window.outerWidth||desiredInnerWidth) - (window.innerWidth||desiredInnerWidth));
+        var frameH=Math.max(0, (window.outerHeight||desiredInnerHeight) - (window.innerHeight||desiredInnerHeight));
+        var maxW=(window.screen && window.screen.availWidth) ? window.screen.availWidth : desiredInnerWidth + frameW;
+        var maxH=(window.screen && window.screen.availHeight) ? window.screen.availHeight : desiredInnerHeight + frameH;
+        var targetOuterW=Math.min(maxW, desiredInnerWidth + frameW);
+        var targetOuterH=Math.min(maxH, desiredInnerHeight + frameH);
+        try {
+          window.resizeTo(targetOuterW, targetOuterH);
+          var left=Math.max(0, Math.floor((((window.screen && window.screen.availWidth) || targetOuterW)-targetOuterW)/2));
+          var top=Math.max(0, Math.floor((((window.screen && window.screen.availHeight) || targetOuterH)-targetOuterH)/2));
+          if(window.moveTo){ window.moveTo(left, top); }
+        } catch (error) {
+        }
+      }
+      enforcePopupMonitorSize();
+      function openMonitorPopup(){
+        var width=410;
+        var height=1060;
+        var left=Math.max(0, Math.floor((window.screen.width-width)/2));
+        var top=Math.max(0, Math.floor((window.screen.height-height)/2));
+        var features='popup=yes,toolbar=no,menubar=no,location=yes,status=no,resizable=yes,scrollbars=yes,width=410,height=1060,left='+left+',top='+top;
+        var monitorWindow=window.open('/?ui=compact&popup=1&w='+width+'&h='+height, 'zoqore_monitor', features);
+        if(monitorWindow){
+          monitorWindow.focus();
+          return;
+        }
+        window.location.assign('/?ui=compact&popup=1&w='+width+'&h='+height);
+      }
+      function returnToCommandCenter(){
+        if(window.opener && !window.opener.closed){
+          try {
+            window.opener.location.assign('/?ui=full');
+            window.opener.focus();
+            window.close();
+            return;
+          } catch (error) {
+          }
+        }
+        window.location.assign('/?ui=full');
+      }
+      button.addEventListener('click', function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        if(onMonitor){
+          returnToCommandCenter();
+          return;
+        }
+        openMonitorPopup();
+      }, true);
+    })();
+  </script>
+<aside class="zoqore-side-banner zoqore-side-rail" aria-hidden="true">
+    <img src="/zoqore-side-banner.png" alt="">
+    <div class="side-beta-callout" aria-hidden="false">
+      <span class="side-beta-eyebrow">Open Source Beta</span>
+      <h3>Build Zo-Qore With Us</h3>
+      <p>Test real governance workflows, surface edge cases, and help ship a stronger platform for everyone building with autonomous systems.</p>
+      <a class="hub-action-btn primary side-beta-cta" href="https://github.com/MythologIQ/Zo-Qore" target="_blank" rel="noopener noreferrer">Join the Beta on GitHub</a>
+    </div>
+  </aside>
+  <div id="app">
+    <div class="bg-layer-logo"></div>
+    <div class="bg-layer-overlay"></div>
+    <header id="header">
+      <div class="header-content">
+        <div class="brand-left">
+          <img src="/favicon.png" alt="Zo-Qore logo" class="brand-icon">
+          <div>
+            <h1>Zo-Qore</h1>
+            <div class="brand-subtitle">Command Center</div>
+          </div>
+        </div>
+        <div class="header-controls">
+          <div class="account-controls">
+            <span id="session-user" class="session-user">Logged in: operator@local</span>
+            <button id="session-logout" class="header-btn" type="button">Logout</button>
+            <button id="settings-gear" class="header-btn icon-btn" type="button" aria-label="Settings">&#9881;</button>
+          </div>
+          <div id="connection-status" class="status-indicator" aria-live="polite">
+            <span class="status-dot"></span>
+            <span class="status-text">Connecting...</span>
+          </div>
+          <div id="resume-summary" class="resume-summary">Loading session...</div>
+        </div>
+      </div>
+      <nav id="tabs" class="tabs" aria-label="Zo-Qore Sections">
+        <button class="tab active" data-route="home" type="button">Home</button>
+        <button class="tab" data-route="skills" type="button">Comms</button>
+        <button class="tab" data-route="persona" type="button">Persona</button>
+        <button class="tab" data-route="workflows" type="button">Workflows</button>
+        <button class="tab" data-route="projects" type="button">Projects</button>
+        <button class="tab" data-route="run" type="button">Run</button>
+        <button class="tab" data-route="governance" type="button">Governance</button>
+        <button class="tab" data-route="library" type="button">Skill Library</button>
+        <button class="tab" data-route="reports" type="button">Reports</button>
+      </nav>
+      <div class="status-strip" aria-live="polite">
+        <div class="status-strip-left">
+          <span class="status-pill status-pill-governance" id="status-governance-pill" tabindex="0">
+            <span class="status-pill-label">Governance Protocol</span>
+            <span id="status-governance">Baseline</span>
+            <span class="governance-hover-card" id="status-governance-card" role="tooltip">
+              <span class="governance-hover-row"><span>Governance Mode</span><strong id="status-governance-mode">Baseline</strong></span>
+              <span class="governance-hover-row"><span>Policy Profile</span><strong id="status-governance-profile">Production</strong></span>
+              <span class="governance-hover-row"><span>Protocol</span><strong id="status-governance-protocol">GP-01</strong></span>
+            </span>
+          </span>
+          <span class="status-pill status-pill-sentinel">
+            <span class="status-pill-label">Sentinel</span>
+            <span id="status-sentinel">Nominal</span>
+          </span>
+        </div>
+        <div class="status-strip-right">
+          <span><span class="status-dot-mini"></span><span id="status-latency">-- ms</span></span>
+          <span><span class="status-dot-mini good"></span><span id="status-load">--</span></span>
+          <span id="status-version">v1.0.0</span>
+        </div>
+      </div>
+    </header>
+
+    <main id="main">
+      <section id="global-error" class="error-banner hidden" aria-live="polite"></section>
+
+      <section id="panel-home" class="panel route-panel active-panel overview-panel" data-route="home">
+        <div class="session-chat-dock card">
+          <div class="session-chat-dock-title">Session/Chat ID</div>
+          <div class="session-chat-dock-row">
+            <span id="session-chat-id" class="session-chat-id-value">pending</span>
+            <button id="session-chat-new" class="hub-action-btn primary small" type="button">New Chat</button>
+          </div>
+          <label class="visually-hidden" for="session-chat-memory">Zo Memory</label>
+          <select id="session-chat-memory" class="intent-select session-chat-memory" aria-label="Select chat from Zo memory">
+            <option value="">Zo Memory</option>
+          </select>
+        </div>
+        <div class="panel-headline">
+          <div class="command-badge">Command Center Active</div>
+          <h2>System Overview</h2>
+          <p class="panel-subline">Centralized monitoring and orchestration for autonomous intelligence workflows.</p>
+        </div>
+        <div id="home-kpis" class="overview-cards"></div>
+        <section class="home-grid">
+          <div class="home-left">
+            <article class="card home-stream-card" id="home-operational"></article>
+            <div class="home-bottom-grid">
+              <article class="card home-resource-card" id="home-resource"></article>
+            </div>
+          </div>
+          <aside class="home-right">
+            <article class="card home-node-card" id="home-forensic"></article>
+            <article class="card home-nextgen-card" id="home-nextgen"></article>
+          </aside>
+        </section>
+      </section>
+
+      <section id="panel-run" class="panel route-panel run-panel-redesign" data-route="run">
+        <!-- Panic Stop Zone - Top Center Prominent -->
+        <div class="run-panic-zone">
+          <button id="panic-stop-main" class="panic-stop-btn" type="button">
+            <span class="panic-icon">&#9724;</span>
+            <span class="panic-label">Panic Stop</span>
+          </button>
+        </div>
+
+        <div class="run-redesign-layout">
+          <!-- Left Sidebar with Circular Gauge at top -->
+          <aside class="run-sidebar">
+            <!-- Circular Phases Gauge - Top of sidebar -->
+            <div class="circular-phases-container sidebar-gauge">
+              <svg id="circular-phases-svg" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+                <defs>
+                  <linearGradient id="arc-gradient-active" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:var(--primary)"/>
+                    <stop offset="100%" style="stop-color:var(--accent)"/>
+                  </linearGradient>
+                  <!-- Center circle gradient - dark with subtle depth -->
+                  <radialGradient id="center-gradient" cx="50%" cy="50%" r="50%" fx="35%" fy="35%">
+                    <stop offset="0%" stop-color="#1e293b" stop-opacity="1"/>
+                    <stop offset="60%" stop-color="#0f172a" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#020617" stop-opacity="1"/>
+                  </radialGradient>
+                  <!-- Inner center - slightly lighter for depth -->
+                  <radialGradient id="center-gradient-inner" cx="50%" cy="50%" r="50%" fx="30%" fy="30%">
+                    <stop offset="0%" stop-color="#334155" stop-opacity="0.6"/>
+                    <stop offset="40%" stop-color="#1e293b" stop-opacity="0.8"/>
+                    <stop offset="80%" stop-color="#0f172a" stop-opacity="1"/>
+                    <stop offset="100%" stop-color="#020617" stop-opacity="1"/>
+                  </radialGradient>
+                  <!-- Cyan glow for ring -->
+                  <filter id="glow-cyan" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="4" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                  <filter id="glow-arc" x="-50%" y="-50%" width="200%" height="200%">
+                    <feGaussianBlur stdDeviation="3" result="blur"/>
+                    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                  </filter>
+                </defs>
+                <!-- Phase Arcs (JS populates both tracks and fills here) -->
+                <g id="phase-arcs-fills"></g>
+                <!-- Phase Labels (positioned outside arcs by JS) -->
+                <g id="phase-labels-group"></g>
+                <!-- Center Debug Indicator (rendered on top of arcs) -->
+                <g id="debug-indicator-center"></g>
+              </svg>
+            </div>
+
+            <div class="run-sidebar-section">
+              <h3>Deployment</h3>
+              <div id="run-deployment-info" class="deployment-info-compact"></div>
+            </div>
+            <div class="run-sidebar-section">
+              <h3>Recent Actions</h3>
+              <div id="run-recent-actions" class="recent-actions-compact"></div>
+            </div>
+            <div class="run-sidebar-section">
+              <h3>Performance</h3>
+              <div id="run-performance" class="performance-compact"></div>
+            </div>
+            <div class="run-sidebar-section run-blockers-section">
+              <h3>Blockers</h3>
+              <div id="run-blockers" class="blockers-panel-compact"></div>
+            </div>
+            <div id="action-feedback" class="action-feedback">No recent actions.</div>
+          </aside>
+
+          <!-- Main Area - Phase Visualization Window -->
+          <div class="run-main-area">
+            <div class="visualization-window">
+              <div class="visualization-header">
+                <h3 id="viz-phase-title">Plan Phase</h3>
+                <span id="viz-phase-badge" class="viz-phase-badge">ACTIVE</span>
+              </div>
+              <div class="visualization-viewport">
+                <svg id="phase-visualization-svg" viewBox="0 0 950 340" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <marker id="viz-arrow" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+                      <path d="M0,0 L0,8 L8,4 z" class="viz-arrow-head"/>
+                    </marker>
+                    <symbol id="sym-file-node" viewBox="0 0 40 50">
+                      <rect class="file-node-bg" x="2" y="2" width="36" height="46" rx="3"/>
+                      <path class="file-node-fold" d="M28,2 L38,12 L28,12 Z"/>
+                    </symbol>
+                  </defs>
+                  <g id="viz-background-layer"></g>
+                  <g id="viz-connections-layer"></g>
+                  <g id="viz-nodes-layer"></g>
+                  <g id="viz-annotations-layer"></g>
+                </svg>
+              </div>
+              <div id="viz-legend" class="visualization-legend"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-skills" class="panel route-panel skills-panel" data-route="skills">
+        <div class="panel-headline">
+          <h2>Prompt Pipeline</h2>
+          <p class="panel-subline">Intent-first orchestration with context, skill fit, persona, template deck, and model recommendation.</p>
+        </div>
+
+        <section class="intent-shell prompt-pipeline-shell">
+          <div class="prompt-grid">
+            <div class="prompt-main">
+              <div class="prompt-row">
+                <label class="intent-label" for="intent-template">Template Deck</label>
+                <select id="intent-template" class="intent-select">
+                  <option value="planning">Planning</option>
+                  <option value="fast">Fast Action</option>
+                  <option value="analysis">Deep Analysis</option>
+                  <option value="build">Build + Verify</option>
+                  <option value="migration">Migration / Refactor</option>
+                </select>
+              </div>
+
+              <div class="prompt-row">
+                <label class="intent-label" for="intent-input">Intent</label>
+                <textarea id="intent-input" class="intent-input" rows="2" placeholder="What should be achieved? Define outcome and constraints."></textarea>
+              </div>
+
+              <div class="prompt-row">
+                <label class="intent-label" for="intent-context-input">Context</label>
+                <textarea id="intent-context-input" class="intent-input" rows="2" placeholder="Repository details, dependencies, deadlines, constraints, and acceptance criteria."></textarea>
+              </div>
+
+              <div class="prompt-row prompt-row-inline">
+                <div>
+                  <label class="intent-label" for="intent-persona">Agent Persona</label>
+                  <select id="intent-persona" class="intent-select">
+                    <option value="systems">Systems Engineer</option>
+                    <option value="security">Security Auditor</option>
+                    <option value="performance">Performance Optimizer</option>
+                    <option value="product">Product Implementer</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="intent-label" for="intent-skill-select">Execution Skill</label>
+                  <select id="intent-skill-select" class="intent-select">
+                    <option value="">Auto (Recommended)</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="intent-label" for="intent-model-mode">Model Selection Mode</label>
+                  <select id="intent-model-mode" class="intent-select">
+                    <option value="auto">Auto Best Value</option>
+                    <option value="suggest">Suggest Only</option>
+                    <option value="manual">Manual Override</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <aside id="intent-flow-pipeline" class="prompt-side card flow-stage" data-flow-state="pending">
+              <h3>Pipeline Guidance</h3>
+              <div class="prompt-guidance-grid">
+                <article class="guidance-tile tile-context">
+                  <h4>Intent Buffer</h4>
+                  <div id="intent-context" class="intent-context"></div>
+                </article>
+                <article class="guidance-tile tile-task">
+                  <h4>Task Classification</h4>
+                  <div id="intent-task-nature" class="prompt-insight">Task nature: unknown</div>
+                </article>
+                <article class="guidance-tile tile-model">
+                  <h4>Model Recommendation</h4>
+                  <div id="intent-model-recommendation" class="prompt-insight">Model recommendation appears after generation.</div>
+                </article>
+                <article class="guidance-tile tile-practices">
+                  <h4>Vendor Practices</h4>
+                  <div id="intent-vendor-practices" class="prompt-practices">Vendor prompting best practices for selected model will appear here.</div>
+                </article>
+              </div>
+              <div class="prompt-wishlist">
+                <strong>Wishlist:</strong> Persona Management UI is planned for a future release. Add Projects tab with project selector and sub-tabs for Kanban, Gantt Sheet, and Roadmap. Add dedicated Agent Persona and Workflows tabs.
+              </div>
+            </aside>
+          </div>
+
+          <div class="intent-results-grid">
+            <section id="intent-flow-chat" class="flow-stage intent-result-panel" data-flow-state="idle">
+              <div class="intent-result-head">
+                <h4 class="intent-chat-label">Chat OUTPUT</h4>
+                <button id="intent-chat-logs" class="hub-action-btn ghost small" type="button" disabled>Chat Logs</button>
+              </div>
+              <div class="intent-chat-id-row">Session/Chat ID: <span id="intent-chat-id">pending</span></div>
+              <pre id="intent-chat-output" class="intent-output intent-chat-output">Assistant responses appear here after send.</pre>
+            </section>
+
+            <section id="intent-flow-package" class="flow-stage intent-result-panel" data-flow-state="idle">
+              <h4 class="intent-chat-label">Prompt Preview</h4>
+              <p class="intent-action-note">Package generation is deterministic and non-executing. It prepares a high-fidelity prompt package for the selected model profile.</p>
+              <pre id="intent-output" class="intent-output intent-package-output">Package preview appears here after generation.</pre>
+              <div class="intent-actions intent-generate-row-left">
+                <button id="intent-generate" class="hub-action-btn primary intent-generate-xl" type="button">Generate Package</button>
+                <button id="intent-send" class="hub-action-btn primary" type="button">Send Package</button>
+              </div>
+            </section>
+          </div>
+        </section>
+      </section>
+
+      <section id="panel-library" class="panel route-panel skills-panel" data-route="library">
+        <div class="panel-headline">
+          <h2>Skill Library</h2>
+          <p class="panel-subline">Ingest, curate, and draft skills. Manual and auto workspace ingestion live here.</p>
+        </div>
+
+        <section class="card skill-scribe-shell">
+          <div class="skill-scribe-head">
+            <h3>Skill Scribe</h3>
+            <span class="skills-library-badge">Draft Generator</span>
+          </div>
+          <div class="skill-scribe-grid">
+            <textarea id="skill-scribe-goal" class="intent-input" rows="3" placeholder="What job should this new skill solve?"></textarea>
+            <textarea id="skill-scribe-guidance" class="intent-input" rows="3" placeholder="Primary guidance, rules, constraints, references, and expected outputs."></textarea>
+          </div>
+          <div class="skill-scribe-grid">
+            <textarea id="skill-scribe-context" class="intent-input" rows="3" placeholder="Add more context iteratively, then click Add Context."></textarea>
+            <div class="skill-context-log-shell">
+              <div id="skill-scribe-context-log" class="skill-context-log">No additional context captured yet.</div>
+            </div>
+          </div>
+          <div class="intent-actions intent-actions-right">
+            <button id="skill-scribe-add-context" class="hub-action-btn" type="button">Add Context</button>
+            <button id="skill-scribe-generate" class="hub-action-btn primary" type="button">Generate Skill Draft</button>
+            <button id="skill-scribe-copy" class="hub-action-btn ghost" type="button">Copy Draft</button>
+          </div>
+          <div id="skill-scribe-alert" class="skill-scribe-alert" aria-live="polite"></div>
+          <pre id="skill-scribe-output" class="intent-output">Skill draft will appear here.</pre>
+        </section>
+
+        <div class="skills-command-grid">
+          <div class="skills-library-shell">
+            <div class="skills-library-head">
+              <h3>Skill Library</h3>
+              <div class="skills-library-head-right">
+                <span class="skills-buffer-inline">Buffer 14.2%</span>
+                <span class="skills-library-badge"><span id="skills-active-count">0</span> Active Modules</span>
+              </div>
+            </div>
+            <div class="skills-toolbar">
+              <div class="ingest-head" style="display:none"></div>
+              <div class="ingest-branch">
+                <button id="skill-manual-ingest" class="hub-action-btn primary ingest-main" type="button" aria-haspopup="menu" aria-expanded="false">Manual Ingest</button>
+                <div id="skill-ingest-menu" class="skill-ingest-menu" role="menu" aria-label="Manual ingest options" hidden>
+                  <button id="skill-manual-file" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Single File</button>
+                  <button id="skill-manual-folder" class="hub-action-btn ingest-option" type="button" role="menuitem">Ingest Directory</button>
+                </div>
+              </div>
+              <button id="skill-auto-ingest" class="hub-action-btn auto-workspace" type="button">Auto Workspace</button>
+              <div id="skill-phase-label" class="skill-context-title"></div>
+              <div id="skill-ingest-status" class="skill-ingest-status">Only admitted local skills are recognized.</div>
+              <input id="skill-manual-file-input" type="file" accept=".md,.yml,.yaml,.txt" class="visually-hidden">
+              <input id="skill-manual-folder-input" type="file" webkitdirectory directory multiple class="visually-hidden">
+            </div>
+            <div class="skill-tabs" role="tablist" aria-label="Skill categories">
+              <button class="skill-tab active" type="button" role="tab" aria-selected="true" data-skill-tab="recommended">Recommended</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allRelevant">All Relevant</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="allInstalled">All Installed</button>
+              <button class="skill-tab" type="button" role="tab" aria-selected="false" data-skill-tab="otherAvailable">Other Available</button>
+            </div>
+
+            <div class="skills-layout">
+              <section class="skill-group skill-tab-panel active" data-skill-panel="recommended">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="prev" aria-label="Previous recommended skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-recommended" data-carousel-dir="next" aria-label="Next recommended skills">&gt;</button>
+                </div>
+                <div id="skill-recommended" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allRelevant">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="prev" aria-label="Previous relevant skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-relevant" data-carousel-dir="next" aria-label="Next relevant skills">&gt;</button>
+                </div>
+                <div id="skill-all-relevant" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="allInstalled">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="prev" aria-label="Previous installed skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-all-installed" data-carousel-dir="next" aria-label="Next installed skills">&gt;</button>
+                </div>
+                <div id="skill-all-installed" class="skill-list"></div>
+              </section>
+              <section class="skill-group skill-tab-panel" data-skill-panel="otherAvailable">
+                <div class="skill-carousel-controls">
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="prev" aria-label="Previous other skills">&lt;</button>
+                  <button class="carousel-btn" type="button" data-carousel-target="skill-other" data-carousel-dir="next" aria-label="Next other skills">&gt;</button>
+                </div>
+                <div id="skill-other" class="skill-list"></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-persona" class="panel route-panel" data-route="persona">
+        <div class="panel-headline">
+          <h2>Agent Persona</h2>
+          <p class="panel-subline">Configure and manage reusable persona profiles for prompt generation.</p>
+        </div>
+        <section class="card coming-soon-card">
+          <h3>Coming Soon</h3>
+          <p>Persona profile management UI is in progress. This tab will support persona creation, tuning, and selection presets.</p>
+        </section>
+      </section>
+
+      <section id="panel-workflows" class="panel route-panel" data-route="workflows">
+        <div class="panel-headline">
+          <h2>Workflows</h2>
+          <p class="panel-subline">Create and orchestrate reusable execution workflows for common task patterns.</p>
+        </div>
+        <section class="card coming-soon-card">
+          <h3>Coming Soon</h3>
+          <p>Workflow authoring and sequencing controls are in progress. This tab will host reusable multi-step execution flows.</p>
+        </section>
+      </section>
+
+      <section id="panel-projects" class="panel route-panel" data-route="projects">
+        <!-- Project Navigation Sidebar -->
+        <div id="zo-nav-container" class="zo-nav-in-panel"></div>
+
+        <!-- Projects Content Area - Sub-panels for each view -->
+        <div class="projects-content">
+          <div id="empty-state-container"></div>
+
+          <!-- Brainstorm View -->
+          <div id="subpanel-void" class="projects-subpanel active" data-subroute="void">
+            <section class="card brainstorm-card">
+              <header class="card-head brainstorm-header">
+                <div class="brainstorm-title-row">
+                  <span class="eyebrow">Brainstorm</span>
+                  <span class="brainstorm-count">0 ideas</span>
+                </div>
+              </header>
+
+              <div id="void-container" class="brainstorm-container" data-mode="genesis">
+                <div class="brainstorm-input-area">
+                  <textarea
+                    class="brainstorm-textarea"
+                    placeholder="What's on your mind? Add ideas, questions, or goals..."
+                    rows="3"
+                  ></textarea>
+                  <button class="brainstorm-submit-btn" type="button">Add Idea</button>
+                </div>
+
+                <div class="brainstorm-ideas-list">
+                  <!-- Ideas will be rendered here -->
+                </div>
+
+                <div class="void-interim-preview"></div>
+
+                <div class="brainstorm-offer">
+                  <div class="brainstorm-offer-text">
+                    Patterns emerging. Ready to visualize your mind map?
+                  </div>
+                  <button class="brainstorm-offer-btn secondary" type="button">Keep Adding</button>
+                  <button class="brainstorm-offer-btn primary" type="button" data-navigate="constellation">View Mind Map</button>
+                </div>
+
+                <div class="brainstorm-voice-section">
+                  <div class="brainstorm-record-controls">
+                    <button id="brainstorm-record-btn" class="brainstorm-record-btn" type="button" aria-label="Record brainstorm">
+                      <span class="brainstorm-rec-dot"></span>
+                      <span class="brainstorm-rec-label">Record</span>
+                    </button>
+                    <span id="brainstorm-rec-timer" class="brainstorm-rec-timer"></span>
+                    <button id="brainstorm-send-btn" class="brainstorm-send-btn" type="button" disabled>
+                      <span class="brainstorm-send-label">Send to Mind Map</span>
+                    </button>
+                  </div>
+                  <p class="brainstorm-encourage">
+                    Speak freely. Recordings are transcribed and woven into your mind map.
+                  </p>
+                  <div id="brainstorm-rec-status" class="brainstorm-rec-status"></div>
+                </div>
+
+                <div class="brainstorm-status">
+                  <span class="brainstorm-status-dot"></span>
+                  <span>AI analyzing connections...</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- Mind Map View -->
+          <div id="subpanel-constellation" class="projects-subpanel" data-subroute="constellation">
+            <section id="constellation-container" class="mindmap-container">
+              <header class="card-head mindmap-header">
+                <span class="eyebrow">Mind Map</span>
+                <div class="mindmap-view-toggle">
+                  <button class="mindmap-toggle-btn active" data-view="hierarchical" type="button">Tree</button>
+                  <button class="mindmap-toggle-btn" data-view="spatial" type="button">Spatial</button>
+                </div>
+              </header>
+
+              <div class="mindmap-canvas">
+                <div class="constellation-tree"></div>
+                <canvas class="constellation-canvas" style="display: none;"></canvas>
+              </div>
+
+              <div class="mindmap-actions">
+                <button class="mindmap-btn secondary" type="button">Edit Clusters</button>
+                <button class="mindmap-btn primary" type="button" data-navigate="path">Generate Roadmap</button>
+              </div>
+            </section>
+          </div>
+
+          <!-- Roadmap View -->
+          <div id="subpanel-path" class="projects-subpanel" data-subroute="path">
+            <section id="roadmap-container" class="roadmap-container">
+              <header class="card-head roadmap-header">
+                <span class="eyebrow">Roadmap</span>
+                <div class="roadmap-view-toggle">
+                  <button class="roadmap-toggle-btn active" data-view="gantt" type="button">Gantt</button>
+                  <button class="roadmap-toggle-btn" data-view="kanban" type="button">Kanban</button>
+                </div>
+              </header>
+
+              <div class="roadmap-gantt-view">
+                <!-- Gantt chart will render here -->
+                <div class="roadmap-empty-state">
+                  <p>Generate phases from your mind map to see your project roadmap.</p>
+                </div>
+              </div>
+
+              <div class="roadmap-kanban-view" style="display: none;">
+                <!-- Kanban board will render here -->
+              </div>
+            </section>
+          </div>
+
+          <!-- Risk Register View -->
+          <div id="subpanel-risk" class="projects-subpanel" data-subroute="risk">
+            <section id="risk-container" class="risk-container">
+              <header class="card-head risk-header">
+                <span class="eyebrow">Risk Register</span>
+                <button class="risk-add-btn" type="button">+ Add Risk</button>
+              </header>
+
+              <div class="risk-list">
+                <!-- Risks will render here -->
+                <div class="risk-empty-state">
+                  <p>Risks will be identified from your roadmap phases.</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <!-- All Projects View -->
+          <div id="subpanel-autonomy" class="projects-subpanel" data-subroute="autonomy">
+            <section class="projects-list-container">
+              <header class="card-head projects-list-header">
+                <span class="eyebrow">All Projects</span>
+                <button class="projects-new-btn" type="button">+ New Project</button>
+              </header>
+
+              <div class="projects-list">
+                <!-- Project cards will render here -->
+                <div class="projects-empty-state">
+                  <p>No projects yet. Create a new project to get started.</p>
+                </div>
+              </div>
+            </section>
+          </div>
+
+        </div><!-- /.projects-content -->
+      </section>
+
+      <section id="panel-governance" class="panel route-panel governance-panel governance-shell" data-route="governance">
+        <div class="panel-headline">
+          <h2>System Governance</h2>
+          <p class="panel-subline">Unified oversight of protocol health and policy enforcement signals.</p>
+        </div>
+        <section class="governance-layout">
+          <div class="governance-left-col">
+            <article class="card governance-card"><h3>Sentinel Status</h3><div id="sentinel-status"></div></article>
+            <article class="card governance-card"><h3>Active Policies</h3><div id="trust-summary"></div></article>
+          </div>
+          <div class="governance-right-col">
+            <article class="card governance-card queue-card">
+              <div class="governance-card-head">
+                <h3>L3 Verification Queue</h3>
+                <button class="hub-action-btn primary small" type="button">Process All</button>
+              </div>
+              <div id="l3-queue"></div>
+            </article>
+            <article class="card governance-card audit-card">
+              <div class="governance-card-head">
+                <h3>Protocol Audit Logs</h3>
+                <span class="governance-stream-tag">RT_STREAM: STABLE</span>
+              </div>
+              <div id="sentinel-alerts"></div>
+            </article>
+          </div>
+        </section>
+      </section>
+
+      <section id="panel-reports" class="panel route-panel reports-shell" data-route="reports" data-min-profile="standard">
+        <h2>Reports</h2>
+        <div class="reports-subtabs" role="tablist" aria-label="Reports sections">
+          <button class="reports-subtab active" type="button" data-report-subtab="summary">Summary</button>
+          <button class="reports-subtab" type="button" data-report-subtab="activity">Activity Logs</button>
+        </div>
+        <section class="reports-panel active" data-report-panel="summary">
+          <section class="split-grid">
+            <article class="card" id="reports-summary"></article>
+            <article class="card" id="reports-evidence" data-min-profile="expert"></article>
+          </section>
+        </section>
+        <section class="reports-panel" data-report-panel="activity">
+          <div class="activity-head">
+            <div>
+              <h3>Activity Log</h3>
+              <p class="panel-subline">System-wide event telemetry and execution auditing.</p>
+            </div>
+            <div class="activity-controls">
+              <button id="focus-toggle" class="focus-toggle" type="button" aria-pressed="false">Focus Mode: Off</button>
+              <button id="activity-filter" class="focus-toggle" type="button" aria-pressed="false" disabled>Filter Events</button>
+            </div>
+          </div>
+          <div id="event-stream" class="event-stream"></div>
+        </section>
+      </section>
+
+      <section id="panel-settings" class="panel route-panel" data-route="settings">
+        <div class="panel-headline">
+          <h2>Control Surface</h2>
+          <p class="panel-subline">Tune runtime behavior, visuals, and operational preferences.</p>
+        </div>
+        <div class="settings-grid">
+          <section class="settings-card">
+            <h3>Visual Theme</h3>
+            <div class="theme-options-grid">
+              <button class="theme-card" type="button" data-theme-choice="mythiq">
+                <div class="theme-swatch">
+                  <span style="background:#0f1219;"></span><span style="background:#6366f1;"></span>
+                </div>
+                <span class="theme-name">Mythiq</span>
+              </button>
+              <button class="theme-card" type="button" data-theme-choice="pegasus">
+                <div class="theme-swatch">
+                  <span style="background:#f1f5f9;"></span><span style="background:#3b82f6;"></span>
+                </div>
+                <span class="theme-name">Pegasus</span>
+              </button>
+              <button class="theme-card" type="button" data-theme-choice="midnight">
+                <div class="theme-swatch">
+                  <span style="background:#000000;"></span><span style="background:#475569;"></span>
+                </div>
+                <span class="theme-name">Midnight</span>
+              </button>
+              <button class="theme-card" type="button" data-theme-choice="aurora">
+                <div class="theme-swatch">
+                  <span style="background:#022c22;"></span><span style="background:#2dd4bf;"></span>
+                </div>
+                <span class="theme-name">Aurora</span>
+              </button>
+              <button class="theme-card" type="button" data-theme-choice="crimson">
+                <div class="theme-swatch">
+                  <span style="background:#2a0a0a;"></span><span style="background:#ef4444;"></span>
+                </div>
+                <span class="theme-name">Crimson</span>
+              </button>
+              <button class="theme-card" type="button" data-theme-choice="atmosphere">
+                <div class="theme-swatch">
+                  <span style="background:linear-gradient(135deg, #0f172a, #334155);"></span><span style="background:linear-gradient(45deg, #38bdf8, #facc15);"></span>
+                </div>
+                <span class="theme-name">Atmosphere</span>
+              </button>
+            </div>
+          </section>
+
+
+        </div>
+      </section>
+    </main>
+
+    <footer id="footer">
+      <span>Zo-Qore is an open source project by <a href="https://www.MythologIQ.studio" target="_blank" rel="noopener noreferrer">MythologIQ Labs, LLC</a>, provided "as is" without warranty of any kind.</span>
+    </footer>
+  </div>
+
+  <div id="intent-chat-log-modal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="intent-chat-log-title">
+    <section class="modal-card">
+      <header class="modal-head">
+        <h3 id="intent-chat-log-title">Current Session Chat Logs</h3>
+        <button id="intent-chat-log-close" class="hub-action-btn ghost small" type="button">Close</button>
+      </header>
+      <pre id="intent-chat-log-content" class="intent-output intent-chat-log-content">No chat responses for this session yet.</pre>
+    </section>
+  </div>
+
+  <!-- Navigation & Empty States -->
+  <script src="zo-nav.js?v=1"></script>
+  <script src="empty-state.js?v=1"></script>
+  <script src="empty-reveal.js?v=1"></script>
+  <script src="empty-constellation.js?v=1"></script>
+  <script src="empty-path.js?v=1"></script>
+  <script src="empty-risk.js?v=1"></script>
+  <script src="empty-autonomy.js?v=1"></script>
+  <script src="shared/planning-client.js?v=1"></script>
+  <script src="void-stt.js?v=1"></script>
+
+  <!-- Core Components -->
+  <script src="void.js?v=1"></script>
+  <script src="reveal.js?v=1"></script>
+  <script src="reveal-drag.js?v=1"></script>
+    <script src="risk-register.js?v=1"></script>
+  <script src="constellation-tree.js?v=1"></script>
+  <script src="constellation-spatial.js?v=1"></script>
+  <script type="module" src="legacy/main.js?v=101"></script>
+
+  <!-- Initialize Navigation -->
+  <script>
+    (function() {
+      var navContainer = document.getElementById('zo-nav-container');
+      var emptyContainer = document.getElementById('empty-state-container');
+
+      if (window.ZoNav && navContainer) {
+        ZoNav.mount(navContainer);
+
+        // Handle navigation events
+        ZoNav.onNavigate = function(route) {
+          // Show/hide views based on route
+          var views = {
+            void: document.getElementById('void-container'),
+            reveal: document.querySelector('.reveal-container'),
+            constellation: document.getElementById('constellation-container')
+          };
+
+          // Hide all views
+          Object.keys(views).forEach(function(key) {
+            if (views[key]) views[key].style.display = 'none';
+          });
+
+          // Show current view
+          if (views[route]) {
+            views[route].style.display = '';
+          }
+        };
+      }
+
+      if (window.EmptyStateRenderer && emptyContainer) {
+        EmptyStateRenderer.mount(emptyContainer);
+      }
+    })();
+  </script>
+</body>
+</html>
+

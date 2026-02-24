@@ -44,6 +44,32 @@
     'Structure is forming. Ready to see it?'
   ];
 
+  // Integrity indicator helper
+  function updateIntegrityIndicator() {
+    var indicator = document.getElementById('integrity-indicator');
+    if (!indicator) return;
+    
+    var projectId = typeof PlanningClient !== 'undefined' ? PlanningClient.getCurrentProjectId() : 'default-project';
+    
+    if (typeof PlanningClient !== 'undefined') {
+      PlanningClient.checkIntegrity(projectId)
+        .then(function(result) {
+          var dot = indicator.querySelector('.integrity-dot');
+          var tooltip = indicator.querySelector('.integrity-tooltip');
+          if (dot) {
+            dot.className = 'integrity-dot ' + (result.valid ? 'valid' : 'invalid');
+          }
+          if (tooltip && result.lastChecked) {
+            tooltip.textContent = 'Integrity: ' + (result.valid ? 'Valid' : 'Invalid') + ' • Checked: ' + new Date(result.lastChecked).toLocaleTimeString();
+          }
+        })
+        .catch(function() {
+          var dot = indicator.querySelector('.integrity-dot');
+          if (dot) dot.className = 'integrity-dot unknown';
+        });
+    }
+  }
+
   // Initialize
   function init() {
     container = document.getElementById('void-container');
@@ -57,9 +83,29 @@
     micBtn = container.querySelector('.void-mic-btn');
     interimPreview = container.querySelector('.void-interim-preview');
 
+    // Add integrity indicator if not present
+    if (!document.getElementById('integrity-indicator')) {
+      var indicator = document.createElement('div');
+      indicator.id = 'integrity-indicator';
+      indicator.className = 'integrity-indicator';
+      indicator.innerHTML = '<span class="integrity-dot"></span><span class="integrity-tooltip">Checking integrity...</span>';
+      indicator.style.cssText = 'position: absolute; top: 12px; right: 12px; display: flex; align-items: center; gap: 6px; cursor: help; z-index: 100;';
+      var dot = indicator.querySelector('.integrity-dot');
+      dot.style.cssText = 'width: 10px; height: 10px; border-radius: 50%; background: #64748b; transition: background 0.3s;';
+      dot.className = 'integrity-dot checking';
+      var tooltip = indicator.querySelector('.integrity-tooltip');
+      tooltip.style.cssText = 'font-size: 11px; color: #94a3b8; white-space: nowrap;';
+      container.style.position = 'relative';
+      container.appendChild(indicator);
+    }
+
     bindEvents();
     checkSavedSession();
     initSTT();
+    
+    // Initialize integrity indicator
+    updateIntegrityIndicator();
+    setInterval(updateIntegrityIndicator, 60000); // Check every minute
 
     window.addEventListener('genesis:event', function(e) {
       if (e.detail && e.detail.type === 'ready_for_reveal') showOffer();
@@ -248,54 +294,56 @@
   }
 
   function checkCompleteness() {
-    if (!sessionId) {
-      showPrompt(randomFrom(CALIBRATED_QUESTIONS));
-      return;
-    }
-
-    fetch('/api/void/session/' + encodeURIComponent(sessionId))
-      .then(function(resp) {
-        if (!resp.ok) throw new Error('Failed to fetch session');
-        return resp.json();
-      })
-      .then(function(data) {
-        if (data.readyForReveal) {
-          showOffer();
-        } else {
+    // New API: check if there are enough thoughts
+    if (typeof PlanningClient !== 'undefined') {
+      PlanningClient.getThoughts()
+        .then(function(thoughts) {
+          thoughtCount = thoughts.length;
+          if (thoughtCount >= MIN_THOUGHTS_FOR_OFFER) {
+            showOffer();
+          } else {
+            showPrompt(randomFrom(CALIBRATED_QUESTIONS));
+          }
+          updateThoughtCount();
+        })
+        .catch(function() {
           showPrompt(randomFrom(CALIBRATED_QUESTIONS));
-        }
-      })
-      .catch(function() {
+        });
+    } else {
+      // Fallback: use local state
+      if (thoughtCount >= MIN_THOUGHTS_FOR_OFFER) {
+        showOffer();
+      } else {
         showPrompt(randomFrom(CALIBRATED_QUESTIONS));
-      });
+      }
+    }
   }
 
   function submitThought() {
     var content = textarea.value.trim();
     if (!content) return;
 
-    // Ensure session exists
-    var promise = sessionId ? Promise.resolve() : startSession();
-
-    promise.then(function() {
-      return fetch('/api/void/thought', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sessionId: sessionId, content: content })
-      });
-    })
-    .then(function(resp) {
-      if (resp.ok) {
-        thoughtCount++;
-        updateThoughtCount();
-        textarea.value = '';
-        hidePrompt();
-        resetSilenceTimer();
-      }
-    })
-    .catch(function() {
-      // Silently handle errors - UI continues to work offline
-    });
+    // Use PlanningClient if available, otherwise fallback
+    if (typeof PlanningClient !== 'undefined') {
+      PlanningClient.addThought(content, 'text', 'user', [])
+        .then(function() {
+          thoughtCount++;
+          updateThoughtCount();
+          textarea.value = '';
+          hidePrompt();
+          resetSilenceTimer();
+        })
+        .catch(function() {
+          // Silently handle errors
+        });
+    } else {
+      // Fallback: just increment local count
+      thoughtCount++;
+      updateThoughtCount();
+      textarea.value = '';
+      hidePrompt();
+      resetSilenceTimer();
+    }
   }
 
   function startSession() {
@@ -346,35 +394,23 @@
   }
 
   function loadThoughtCount() {
-    if (!sessionId) return;
-
-    fetch('/api/void/session/' + encodeURIComponent(sessionId))
-      .then(function(resp) {
-        if (!resp.ok) throw new Error('Failed to fetch session');
-        return resp.json();
-      })
-      .then(function(data) {
-        thoughtCount = data.thoughtCount || 0;
-        updateThoughtCount();
-      })
-      .catch(function() {
-        // Ignore - use local count
-      });
+    if (typeof PlanningClient !== 'undefined') {
+      PlanningClient.getThoughts()
+        .then(function(thoughts) {
+          thoughtCount = thoughts.length;
+          updateThoughtCount();
+        })
+        .catch(function() {
+          // Ignore - use local count
+        });
+    }
+    // If PlanningClient not available, use local thoughtCount
   }
 
   function setMode(newMode) {
     mode = newMode;
     updateModeUI();
     container.dataset.mode = newMode;
-
-    if (sessionId) {
-      fetch('/api/void/mode', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ sessionId: sessionId, mode: mode })
-      }).catch(function() {});
-    }
-
     saveSession();
   }
 
@@ -483,7 +519,24 @@
     VoidSTT.onTranscript = function(text, isFinal) {
       if (isFinal) {
         textarea.value += (textarea.value ? ' ' : '') + text;
-        submitThought();
+        // Use PlanningClient if available, otherwise fallback
+        if (typeof PlanningClient !== 'undefined') {
+          PlanningClient.addThought(text, 'voice', 'user', [])
+            .then(function() {
+              thoughtCount++;
+              updateThoughtCount();
+              window.dispatchEvent(new CustomEvent('void:thought-added', { detail: { source: 'voice' } }));
+            })
+            .catch(function() {
+              // Fallback to local increment
+              thoughtCount++;
+              updateThoughtCount();
+            });
+        } else {
+          // Fallback: just increment local count
+          thoughtCount++;
+          updateThoughtCount();
+        }
         hideInterimPreview();
       } else {
         showInterimPreview(text);
